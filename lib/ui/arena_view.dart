@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/number_format.dart';
+import '../core/palette.dart';
 import '../game/arena_game.dart';
 import '../services/game_controller.dart';
 import 'pixel_scale.dart';
@@ -33,16 +34,29 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       virtualSize: Vector2(virtualWidth.toDouble(), widget.virtualHeight),
       fx: content.balance.fx,
       onTap: controller.tap,
+      onLuckyTap: controller.collectLucky,
       opponent: controller.engine.opponent,
+      playerMaskColor: _maskColor(controller),
     );
     _hits = controller.hits.listen(
-      (e) => _game.hit(formatBig(e.damage), isTap: e.isTap),
+      (e) => _game.hit(formatBig(e.damage), isTap: e.isTap, isBig: e.isBig),
     );
     ref.listenManual(gameControllerProvider, (previous, next) {
       if (previous?.fightNumber != next.fightNumber) {
         _game.showOpponent(controller.engine.opponent);
       }
+      if (previous?.equippedMask != next.equippedMask) {
+        _game.setPlayerMask(_maskColor(controller));
+      }
+      final lucky = next.lucky;
+      _game.setLucky(visible: lucky != null, x: lucky?.x ?? 0.5, y: lucky?.y ?? 0.5);
     });
+  }
+
+  /// Base color (the middle of the three slot colors) of the equipped mask.
+  int _maskColor(GameController controller) {
+    final mask = controller.engine.equippedMaskDef;
+    return mask == null ? Palette.violet : Palette.byId[mask.slotColors[1]]!;
   }
 
   @override

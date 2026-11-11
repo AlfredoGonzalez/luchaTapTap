@@ -18,7 +18,11 @@
     "beltCoinDivisor": 1000000
   },
   "buy": {
-    "fixedAmounts": [1, 10, 100],
+    "fixedAmounts": [
+      1,
+      10,
+      100
+    ],
     "maxBulkLevels": 100000
   },
   "start": {
@@ -31,5 +35,59 @@
     "damageNumberRisePx": 12,
     "damageNumberSeconds": 0.6,
     "damageNumberJitterPx": 6
+  },
+  "combo": {
+    "fillPerTap": 0.1,
+    "holdSeconds": 1.5,
+    "decayPerSecond": 0.5,
+    "finisherMultiplier": 20
+  },
+  "boss": {
+    "timerSeconds": 30
+  },
+  "crit": {
+    "multiplier": 2,
+    "maxChance": 0.75
+  },
+  "lucky": {
+    "spawnPerSecond": 0.03,
+    "lifetimeSeconds": 6,
+    "rewardCoinMultiple": 8
+  },
+  "prestige": {
+    "minBelts": 1,
+    "beltDamageBonus": 0.02
+  },
+  "skills": {
+    "cooldownReductionCap": 0.5
+  },
+  "offline": {
+    "baseCapHours": 4,
+    "maxCapHours": 8,
+    "minPopupSeconds": 60,
+    "adMultiplier": 2,
+    "purchaseCapHours": {
+      "mas_descanso": 2
+    }
+  },
+  "save": {
+    "intervalSeconds": 10
+  },
+  "debug": {
+    "coinAmounts": [
+      1000,
+      1000000,
+      1000000000000
+    ],
+    "fastForwardMinutes": [
+      1,
+      10,
+      60
+    ],
+    "absenceHours": [
+      1,
+      4,
+      12
+    ]
   }
 }

@@ -130,7 +130,8 @@ class TrainerDef {
 }
 
 enum UpgradeEffect {
-  tapDamage;
+  tapDamage,
+  critChance;
 
   static UpgradeEffect parse(String source, String id, String name) {
     for (final value in values) {
@@ -171,4 +172,302 @@ class UpgradeDef {
 
   /// Amount of [effect] added per level owned.
   final double perLevelValue;
+}
+
+enum SkillEffect {
+  /// Instant hit worth `value` times the tap damage.
+  burst,
+
+  /// Tap damage times `value` while active.
+  tapMultiplier,
+
+  /// Lucky-event spawn rate times `value` while active.
+  luckBoost,
+
+  /// Trainer damage times `value` while active.
+  trainerMultiplier,
+
+  /// Adds `value` seconds to the boss countdown.
+  bossTimerExtend;
+
+  static SkillEffect parse(String id, String name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    throw ContentException(
+        'skills.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})');
+  }
+}
+
+class SkillDef {
+  const SkillDef({
+    required this.id,
+    required this.name,
+    required this.shortName,
+    required this.icon,
+    required this.effect,
+    required this.cooldown,
+    required this.duration,
+    required this.baseValue,
+    required this.perLevelValue,
+    required this.unlockFight,
+    required this.baseCost,
+    required this.maxLevel,
+  });
+
+  factory SkillDef.fromReader(JsonReader r) {
+    final id = r.string('id');
+    final effect = SkillEffect.parse(id, r.string('effect'));
+    final duration = r.number('duration', min: 0);
+    if (duration == 0 &&
+        (effect == SkillEffect.tapMultiplier ||
+            effect == SkillEffect.luckBoost ||
+            effect == SkillEffect.trainerMultiplier)) {
+      throw ContentException('skills.json: "$id" (${effect.name}) needs a duration above 0');
+    }
+    return SkillDef(
+      id: id,
+      name: r.string('name'),
+      shortName: r.string('shortName'),
+      icon: r.string('icon'),
+      effect: effect,
+      cooldown: r.number('cooldown', min: 0, minExclusive: true),
+      duration: duration,
+      baseValue: r.number('baseValue', min: 0, minExclusive: true),
+      perLevelValue: r.number('perLevelValue', min: 0),
+      unlockFight: r.integer('unlockFight', min: 1),
+      baseCost: r.number('baseCost', min: 0, minExclusive: true),
+      maxLevel: r.integer('maxLevel', min: 1),
+    );
+  }
+
+  final String id;
+  final String name;
+
+  /// Three-letter label for the skill button until icons exist.
+  final String shortName;
+  final String icon;
+  final SkillEffect effect;
+  final double cooldown;
+
+  /// Seconds the effect lasts (0 for instant skills).
+  final double duration;
+  final double baseValue;
+  final double perLevelValue;
+  final int unlockFight;
+  final double baseCost;
+  final int maxLevel;
+
+  /// Effect value at [level] (1-based).
+  double valueAt(int level) => baseValue + perLevelValue * (level - 1);
+}
+
+enum TalentEffect {
+  tapDamageMultiplier,
+  trainerDamageMultiplier,
+  coinGainMultiplier,
+  critChance,
+  skillCooldownReduction,
+  offlineCapHours,
+  luckyRateMultiplier,
+  startingCoins;
+
+  static TalentEffect parse(String id, String name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    throw ContentException(
+        'talents.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})');
+  }
+}
+
+class TalentDef {
+  const TalentDef({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.branchId,
+    required this.maxLevel,
+    required this.costs,
+    required this.effect,
+    required this.valuePerLevel,
+    required this.parent,
+  });
+
+  factory TalentDef.fromReader(JsonReader r, String branchId) {
+    final id = r.string('id');
+    final maxLevel = r.integer('maxLevel', min: 1);
+    final costs = r.numbers('costs', min: 1);
+    if (costs.length != maxLevel) {
+      throw ContentException(
+          'talents.json: "$id" needs exactly $maxLevel costs (one per level), found ${costs.length}');
+    }
+    return TalentDef(
+      id: id,
+      name: r.string('name'),
+      icon: r.string('icon'),
+      branchId: branchId,
+      maxLevel: maxLevel,
+      costs: costs,
+      effect: TalentEffect.parse(id, r.string('effect')),
+      valuePerLevel: r.number('valuePerLevel', min: 0, minExclusive: true),
+      parent: r.optionalString('parent'),
+    );
+  }
+
+  final String id;
+  final String name;
+  final String icon;
+  final String branchId;
+  final int maxLevel;
+
+  /// Belt cost of each level, level 1 first.
+  final List<double> costs;
+  final TalentEffect effect;
+  final double valuePerLevel;
+
+  /// Talent that needs at least one level before this one can be bought.
+  final String? parent;
+}
+
+class TalentBranchDef {
+  const TalentBranchDef({required this.id, required this.name, required this.nodes});
+
+  final String id;
+  final String name;
+  final List<TalentDef> nodes;
+}
+
+enum MaskBonusType {
+  tapDamageMultiplier,
+  trainerDamageMultiplier,
+  coinGainMultiplier,
+  bossCoinMultiplier,
+  offlineCapHours;
+
+  static MaskBonusType parse(String id, String name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    throw ContentException(
+        'masks.json: "$id" has unknown bonus "$name" (known: ${values.map((e) => e.name).join(', ')})');
+  }
+}
+
+enum MaskUnlockRule {
+  /// Owned from the start.
+  starter,
+
+  /// Bought with Belts (`value` is the price).
+  belts,
+
+  /// Unlocked when the boss of league number `value` is defeated.
+  league,
+
+  /// Granted by a store purchase.
+  shop;
+
+  static MaskUnlockRule parse(String id, String name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    throw ContentException(
+        'masks.json: "$id" has unknown unlock rule "$name" (known: ${values.map((e) => e.name).join(', ')})');
+  }
+}
+
+class MaskDef {
+  const MaskDef({
+    required this.id,
+    required this.name,
+    required this.rarity,
+    required this.bonusType,
+    required this.bonusValue,
+    required this.unlockRule,
+    required this.unlockValue,
+    required this.slotColors,
+  });
+
+  factory MaskDef.fromReader(JsonReader r) {
+    final id = r.string('id');
+    final bonus = r.object('bonus');
+    final unlock = r.object('unlock');
+    final rule = MaskUnlockRule.parse(id, unlock.string('rule'));
+    final needsValue = rule == MaskUnlockRule.belts || rule == MaskUnlockRule.league;
+    final slots = r.strings('slotColors');
+    if (slots.length != 3) {
+      throw ContentException('masks.json: "$id" slotColors needs exactly 3 palette colors');
+    }
+    for (final c in slots) {
+      if (!Palette.byId.containsKey(c)) {
+        throw ContentException('masks.json: "$id" slot color "$c" is not in the palette');
+      }
+    }
+    return MaskDef(
+      id: id,
+      name: r.string('name'),
+      rarity: r.string('rarity'),
+      bonusType: MaskBonusType.parse(id, bonus.string('type')),
+      bonusValue: bonus.number('value', min: 0, minExclusive: true),
+      unlockRule: rule,
+      unlockValue: needsValue ? unlock.number('value', min: 1) : 0,
+      slotColors: slots,
+    );
+  }
+
+  final String id;
+  final String name;
+  final String rarity;
+  final MaskBonusType bonusType;
+  final double bonusValue;
+  final MaskUnlockRule unlockRule;
+
+  /// Belt price (belts rule) or league number (league rule); 0 otherwise.
+  final double unlockValue;
+
+  /// Palette ids that replace the mask's reserved Night Purple, Violet and
+  /// Lilac at runtime (shadow, base, light).
+  final List<String> slotColors;
+}
+
+enum AchievementCounter {
+  taps,
+  defeats,
+  bosses,
+  prestiges;
+
+  static AchievementCounter parse(String id, String name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    throw ContentException(
+        'achievements.json: "$id" has unknown counter "$name" (known: ${values.map((e) => e.name).join(', ')})');
+  }
+}
+
+class AchievementDef {
+  const AchievementDef({
+    required this.id,
+    required this.name,
+    required this.counter,
+    required this.target,
+    required this.rewardBelts,
+  });
+
+  factory AchievementDef.fromReader(JsonReader r) {
+    final id = r.string('id');
+    return AchievementDef(
+      id: id,
+      name: r.string('name'),
+      counter: AchievementCounter.parse(id, r.string('counter')),
+      target: r.integer('target', min: 1),
+      rewardBelts: r.integer('rewardBelts', min: 0),
+    );
+  }
+
+  final String id;
+  final String name;
+  final AchievementCounter counter;
+  final int target;
+  final int rewardBelts;
 }

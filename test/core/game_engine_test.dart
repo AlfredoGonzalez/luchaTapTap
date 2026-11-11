@@ -10,8 +10,13 @@ const x1 = BuyAmount.fixed(1);
 const x10 = BuyAmount.fixed(10);
 const max = BuyAmount.max();
 
+/// An engine whose arithmetic is easy to follow: the starter mask's tap bonus
+/// is swapped for one that does not affect regular fights.
 GameEngine newEngine([void Function(Map<String, Map<String, dynamic>>)? edit]) =>
-    GameEngine(content: loadTestContent(edit));
+    GameEngine(content: loadTestContent((files) {
+      files['masks.json']!['masks'][0]['bonus'] = {'type': 'bossCoinMultiplier', 'value': 0.5};
+      edit?.call(files);
+    }));
 
 void main() {
   group('start', () {

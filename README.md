@@ -15,20 +15,23 @@ All in [`docs/`](docs/). The Technical Spec is the entry point for building; if 
 
 ## Status
 
-**M1 (core loop) done**, pending the designer's review and a run on a real Android device. Next: M2 (systems). See the milestone list in the Technical Spec, section 9.
+**M1 (core loop), M2 (systems) and M3 (save and offline) are built**, pending the designer's review and a run on a real Android device. Next: M4 (UI to the mockups). See the milestone list in the Technical Spec, section 9, and [`docs/DECISIONS.md`](docs/DECISIONS.md) for the choices made where the documents were silent.
 
-M1 contains: `Big` number type, economy formulas, the game engine (tap, fixed tick, upgrades, trainers, fights, buy x1/x10/x100/MAX), all content in JSON, and one placeholder fight screen drawn with palette-colored rectangles.
+- **M1:** `Big` number type, economy formulas, game engine, JSON content, placeholder fight screen.
+- **M2:** combo and finisher, 5 skills, bosses with a countdown, lucky pickups, prestige with Belts, talent tree, masks, achievements, endless leagues.
+- **M3:** save and load (atomic write, backup, migrations), offline earnings with the pop-up and a rewarded-ad double (fake ad service), debug panel.
 
 ## Layout
 
 ```
 lib/
-  core/       pure Dart (no Flutter): Big, formulas, GameEngine, GameState, fixed-step tick
+  core/       pure Dart (no Flutter): Big, formulas, GameEngine, GameState, save codec, seeded RNG
   data/       JSON models, validation, loader
   game/       Flame arena (placeholder art)
-  ui/         Flutter screens and widgets
-  services/   game controller (Riverpod), strings
-assets/data/  balance.json, opponents.json, leagues.json, trainers.json, upgrades.json, strings_es.json
+  ui/         Flutter screens, panels, dialogs and widgets
+  services/   game controller (Riverpod), save store, ad service, strings
+assets/data/  balance, opponents, leagues, trainers, upgrades, skills, talents, masks,
+              achievements and strings_es (all JSON)
 test/         unit, data and widget tests
 docs/         design documents
 ```
@@ -50,3 +53,5 @@ flutter analyze
 flutter test
 flutter run            # on an Android device or emulator
 ```
+
+In a debug build, long-press the fight number to open the debug panel (add coins, skip fights, fast-forward time, simulate an absence).

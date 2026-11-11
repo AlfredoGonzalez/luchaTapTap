@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui' show PointMode;
+
 import 'package:flutter/widgets.dart';
 
 import '../core/palette.dart';
@@ -14,6 +17,7 @@ class PixelText extends StatelessWidget {
     this.color,
     this.align = TextAlign.left,
     this.maxLines = 1,
+    this.wrap = false,
   });
 
   final String text;
@@ -22,15 +26,18 @@ class PixelText extends StatelessWidget {
   final TextAlign align;
   final int maxLines;
 
+  /// Breaks long text over several lines instead of clipping it.
+  final bool wrap;
+
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
     return Text(
       text,
       textAlign: align,
-      maxLines: maxLines,
+      maxLines: wrap ? null : maxLines,
       overflow: TextOverflow.clip,
-      softWrap: false,
+      softWrap: wrap,
       style: TextStyle(
         color: color ?? Palette.bone.color,
         fontSize: scale.px(size),
@@ -177,6 +184,97 @@ class PixelBar extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// 1-pixel checkerboard of Ink over the whole screen, used behind pop-ups
+/// instead of a semi-transparent fill so the screen keeps strict pixel rules.
+class CheckerOverlay extends StatelessWidget {
+  const CheckerOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = PixelScale.of(context);
+    return SizedBox.expand(
+      child: CustomPaint(
+        painter: _CheckerPainter(scale: scale.scale, color: Palette.ink.color),
+      ),
+    );
+  }
+}
+
+class _CheckerPainter extends CustomPainter {
+  _CheckerPainter({required this.scale, required this.color});
+
+  final int scale;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final columns = (size.width / scale).ceil();
+    final rows = (size.height / scale).ceil();
+    final points = <double>[];
+    for (var y = 0; y < rows; y++) {
+      for (var x = y.isEven ? 0 : 1; x < columns; x += 2) {
+        points
+          ..add((x + 0.5) * scale)
+          ..add((y + 0.5) * scale);
+      }
+    }
+    canvas.drawRawPoints(
+      PointMode.points,
+      Float32List.fromList(points),
+      Paint()
+        ..color = color
+        ..strokeWidth = scale.toDouble()
+        ..strokeCap = StrokeCap.butt
+        ..isAntiAlias = false,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CheckerPainter old) => old.scale != scale || old.color != color;
+}
+
+/// Centered pop-up: panel up to 150 virtual pixels wide with a 16 px title,
+/// content and a row of buttons.
+class PixelDialog extends StatelessWidget {
+  const PixelDialog({super.key, required this.title, required this.body, required this.actions});
+
+  final String title;
+  final List<Widget> body;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = PixelScale.of(context);
+    return Stack(
+      children: [
+        const CheckerOverlay(),
+        Center(
+          child: SizedBox(
+            width: scale.px(150),
+            child: PixelPanel(
+              padding: 6,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PixelText(title, size: 16, align: TextAlign.center, wrap: true, color: Palette.sunYellow.color),
+                  SizedBox(height: scale.px(6)),
+                  ...body,
+                  SizedBox(height: scale.px(6)),
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) SizedBox(height: scale.px(4)),
+                    actions[i],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

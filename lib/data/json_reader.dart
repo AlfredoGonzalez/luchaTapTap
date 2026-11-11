@@ -92,6 +92,27 @@ class JsonReader {
     return value.toInt();
   }
 
+  List<double> numbers(String key, {double? min}) {
+    final value = _typed<List<dynamic>>(key, 'a list of numbers');
+    return [
+      for (var i = 0; i < value.length; i++)
+        value[i] is num && (min == null || (value[i] as num) >= min)
+            ? (value[i] as num).toDouble()
+            : throw ContentException(
+                '${_where('$key[$i]')} must be a number${min == null ? '' : ' of at least $min'}'),
+    ];
+  }
+
+  Map<String, double> numberMap(String key) {
+    final value = _typed<Map<String, dynamic>>(key, 'an object of numbers');
+    return {
+      for (final entry in value.entries)
+        entry.key: entry.value is num
+            ? (entry.value as num).toDouble()
+            : throw ContentException('${_where('$key.${entry.key}')} must be a number'),
+    };
+  }
+
   List<String> strings(String key) {
     final value = _typed<List<dynamic>>(key, 'a list of strings');
     return [

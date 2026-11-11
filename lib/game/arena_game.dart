@@ -21,16 +21,23 @@ class ArenaGame extends FlameGame {
     required this.virtualSize,
     required this.fx,
     required this.onTap,
+    required this.onLuckyTap,
     required this.opponent,
+    this.playerMaskColor = Palette.violet,
   });
 
   final Vector2 virtualSize;
   final FxConfig fx;
   final void Function() onTap;
+  final void Function() onLuckyTap;
+
+  /// Placeholder color of the player's head (the equipped mask's base color).
+  int playerMaskColor;
 
   /// Opponent currently shown (updated by [showOpponent]).
   OpponentDef opponent;
-  late final _Fighter _player;
+  late _Fighter _player;
+  _LuckyPickup? _lucky;
   late _Fighter _enemy;
   int _hitCount = 0;
 
@@ -49,16 +56,18 @@ class ArenaGame extends FlameGame {
     camera.viewfinder.position = Vector2.zero();
 
     world.add(_ArenaBackdrop(size: virtualSize, floorY: _floorY));
-    _player = _Fighter(
-      bodyColor: Palette.luchaRed,
-      accentColor: Palette.violet, // the mask: reserved mask colors
-      spriteSize: regularSpriteSize,
-      idleFps: fx.idleFps,
-      flashSeconds: fx.hitFlashSeconds,
-    )..position = Vector2(_sideMargin, _floorY - regularSpriteSize);
+    _player = _buildPlayer();
     _enemy = _buildEnemy(opponent);
     world.addAll([_player, _enemy, _TapArea(size: virtualSize, onTap: onTap)]);
   }
+
+  _Fighter _buildPlayer() => _Fighter(
+        bodyColor: Palette.luchaRed,
+        accentColor: playerMaskColor,
+        spriteSize: regularSpriteSize,
+        idleFps: fx.idleFps,
+        flashSeconds: fx.hitFlashSeconds,
+      )..position = Vector2(_sideMargin, _floorY - regularSpriteSize);
 
   _Fighter _buildEnemy(OpponentDef o) {
     final size = o.size.toDouble();
@@ -80,8 +89,39 @@ class ArenaGame extends FlameGame {
     world.add(_enemy);
   }
 
+  /// Shows the equipped mask's color on the player's head.
+  void setPlayerMask(int color) {
+    playerMaskColor = color;
+    if (!isLoaded) return;
+    final position = _player.position.clone();
+    _player.removeFromParent();
+    _player = _buildPlayer()..position = position;
+    world.add(_player);
+  }
+
+  /// Shows (or removes) the lucky pickup at a fractional position.
+  void setLucky({required bool visible, double x = 0.5, double y = 0.5}) {
+    if (!isLoaded) return;
+    if (!visible) {
+      _lucky?.removeFromParent();
+      _lucky = null;
+      return;
+    }
+    if (_lucky != null) return;
+    final margin = _LuckyPickup.spriteSize;
+    _lucky = _LuckyPickup(
+      onTap: onLuckyTap,
+      position: Vector2(
+        (margin.x + x * (virtualSize.x - 3 * margin.x)).roundToDouble(),
+        (margin.y + y * (_floorY - 3 * margin.y)).roundToDouble(),
+      ),
+    );
+    world.add(_lucky!);
+  }
+
   /// Reaction to a hit: flash the opponent and float the damage number.
-  void hit(String damageText, {required bool isTap}) {
+  /// [isBig] (critical hits, finishers) uses the large yellow number.
+  void hit(String damageText, {required bool isTap, bool isBig = false}) {
     if (!isLoaded) return;
     _enemy.flash();
     if (!isTap) return;
@@ -97,6 +137,7 @@ class ArenaGame extends FlameGame {
       start: spawn,
       risePx: fx.damageNumberRisePx.toDouble(),
       seconds: fx.damageNumberSeconds,
+      big: isBig,
     ));
   }
 }
@@ -185,19 +226,47 @@ class _TapArea extends PositionComponent with TapCallbacks {
   void onTapDown(TapDownEvent event) => onTap();
 }
 
+/// A floating belt that pays coins when tapped quickly.
+class _LuckyPickup extends PositionComponent with TapCallbacks {
+  _LuckyPickup({required this.onTap, required Vector2 position})
+      : super(position: position, size: spriteSize.clone(), priority: 20);
+
+  static final Vector2 spriteSize = Vector2(14, 8);
+
+  final void Function() onTap;
+
+  @override
+  void render(Canvas canvas) {
+    final paint = Paint()..isAntiAlias = false;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), paint..color = Palette.ink.color);
+    canvas.drawRect(Rect.fromLTWH(1, 1, size.x - 2, size.y - 2), paint..color = Palette.marigold.color);
+    canvas.drawRect(Rect.fromLTWH(1, 1, size.x - 2, 2), paint..color = Palette.sunYellow.color);
+    canvas.drawRect(Rect.fromLTWH(size.x / 2 - 2, 2, 4, 4), paint..color = Palette.luchaRed.color);
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) => onTap();
+
+  // A generous touch area: the sprite is small but touch targets are not.
+  @override
+  bool containsLocalPoint(Vector2 point) =>
+      point.x >= -8 && point.y >= -8 && point.x <= size.x + 8 && point.y <= size.y + 8;
+}
+
 class _DamageNumber extends TextComponent {
   _DamageNumber({
     required String text,
     required this.start,
     required this.risePx,
     required this.seconds,
+    this.big = false,
   }) : super(
           text: text,
           anchor: Anchor.bottomCenter,
           textRenderer: TextPaint(
             style: TextStyle(
-              color: Palette.bone.color,
-              fontSize: 8,
+              color: (big ? Palette.sunYellow : Palette.bone).color,
+              fontSize: big ? 16 : 8,
               height: 1,
               shadows: [Shadow(color: Palette.ink.color, offset: const Offset(1, 1))],
             ),
@@ -207,6 +276,7 @@ class _DamageNumber extends TextComponent {
   final Vector2 start;
   final double risePx;
   final double seconds;
+  final bool big;
   double _age = 0;
 
   @override

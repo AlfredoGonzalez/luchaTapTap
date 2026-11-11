@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "branches": [
+    {
+      "id": "dano",
+      "name": "Daño",
+      "nodes": [
+        {
+          "id": "punos_acero",
+          "name": "Puños de acero",
+          "icon": "tl_punos",
+          "maxLevel": 5,
+          "costs": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "effect": "tapDamageMultiplier",
+          "valuePerLevel": 0.1,
+          "parent": null
+        },
+        {
+          "id": "golpe_critico",
+          "name": "Golpe crítico",
+          "icon": "tl_critico",
+          "maxLevel": 5,
+          "costs": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "effect": "critChance",
+          "valuePerLevel": 0.02,
+          "parent": "punos_acero"
+        }
+      ]
+    },
+    {
+      "id": "idle",
+      "name": "Idle",
+      "nodes": [
+        {
+          "id": "entrenamiento",
+          "name": "Entrenamiento",
+          "icon": "tl_entrenamiento",
+          "maxLevel": 5,
+          "costs": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "effect": "trainerDamageMultiplier",
+          "valuePerLevel": 0.1,
+          "parent": null
+        },
+        {
+          "id": "siesta",
+          "name": "Siesta",
+          "icon": "tl_siesta",
+          "maxLevel": 4,
+          "costs": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "effect": "offlineCapHours",
+          "valuePerLevel": 0.5,
+          "parent": "entrenamiento"
+        },
+        {
+          "id": "cartera",
+          "name": "Cartera gorda",
+          "icon": "tl_cartera",
+          "maxLevel": 5,
+          "costs": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "effect": "coinGainMultiplier",
+          "valuePerLevel": 0.05,
+          "parent": null
+        }
+      ]
+    },
+    {
+      "id": "suerte",
+      "name": "Suerte",
+      "nodes": [
+        {
+          "id": "buena_racha",
+          "name": "Buena racha",
+          "icon": "tl_racha",
+          "maxLevel": 5,
+          "costs": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "effect": "luckyRateMultiplier",
+          "valuePerLevel": 0.2,
+          "parent": null
+        },
+        {
+          "id": "ahorrito",
+          "name": "Ahorrito",
+          "icon": "tl_ahorrito",
+          "maxLevel": 5,
+          "costs": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "effect": "startingCoins",
+          "valuePerLevel": 100,
+          "parent": "buena_racha"
+        },
+        {
+          "id": "descanso_corto",
+          "name": "Descanso corto",
+          "icon": "tl_descanso",
+          "maxLevel": 5,
+          "costs": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "effect": "skillCooldownReduction",
+          "valuePerLevel": 0.05,
+          "parent": null
+        }
+      ]
+    }
+  ]
+}

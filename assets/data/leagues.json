@@ -1,8 +1,23 @@
 {
   "schemaVersion": 1,
   "leagues": [
-    { "id": "league_1", "name": "Arena del Barrio", "order": 1,
-      "opponentIds": ["mr_aguacate", "el_tamal_mortal", "el_taquero_cosmico"],
-      "bossId": null, "loopScale": 1.0 }
+    {
+      "id": "league_1",
+      "name": "Arena del Barrio",
+      "order": 1,
+      "opponentIds": [
+        "mr_aguacate",
+        "el_tamal_mortal",
+        "el_taquero_cosmico",
+        "mr_aguacate",
+        "el_tamal_mortal",
+        "el_taquero_cosmico",
+        "mr_aguacate",
+        "el_tamal_mortal",
+        "el_taquero_cosmico"
+      ],
+      "bossId": "el_mariachi_furioso",
+      "loopScale": 1.0
+    }
   ]
 }

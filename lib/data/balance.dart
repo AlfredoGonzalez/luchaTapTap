@@ -1,3 +1,4 @@
+import 'content_exception.dart';
 import 'json_reader.dart';
 
 /// Every global game constant, read from `assets/data/balance.json`.
@@ -22,6 +23,15 @@ class Balance {
     required this.startCoins,
     required this.startFightNumber,
     required this.fx,
+    required this.combo,
+    required this.bossTimerSeconds,
+    required this.crit,
+    required this.lucky,
+    required this.prestige,
+    required this.skillCooldownReductionCap,
+    required this.offline,
+    required this.saveIntervalSeconds,
+    required this.debug,
   });
 
   static const int schemaVersion = 1;
@@ -50,6 +60,16 @@ class Balance {
       startCoins: start.number('coins', min: 0),
       startFightNumber: start.integer('fightNumber', min: 1),
       fx: FxConfig.fromReader(r.object('fx')),
+      combo: ComboConfig.fromReader(r.object('combo')),
+      bossTimerSeconds: r.object('boss').number('timerSeconds', min: 0, minExclusive: true),
+      crit: CritConfig.fromReader(r.object('crit')),
+      lucky: LuckyConfig.fromReader(r.object('lucky')),
+      prestige: PrestigeConfig.fromReader(r.object('prestige')),
+      skillCooldownReductionCap:
+          r.object('skills').number('cooldownReductionCap', min: 0),
+      offline: OfflineConfig.fromReader(r.object('offline')),
+      saveIntervalSeconds: r.object('save').number('intervalSeconds', min: 0, minExclusive: true),
+      debug: DebugConfig.fromReader(r.object('debug')),
     );
   }
 
@@ -89,6 +109,152 @@ class Balance {
   final int startFightNumber;
 
   final FxConfig fx;
+  final ComboConfig combo;
+
+  /// Default boss countdown (an opponent may override it).
+  final double bossTimerSeconds;
+  final CritConfig crit;
+  final LuckyConfig lucky;
+  final PrestigeConfig prestige;
+
+  /// Skill cooldowns can never be reduced by more than this fraction.
+  final double skillCooldownReductionCap;
+  final OfflineConfig offline;
+
+  /// Seconds between automatic saves while playing.
+  final double saveIntervalSeconds;
+  final DebugConfig debug;
+}
+
+class ComboConfig {
+  const ComboConfig({
+    required this.fillPerTap,
+    required this.holdSeconds,
+    required this.decayPerSecond,
+    required this.finisherMultiplier,
+  });
+
+  factory ComboConfig.fromReader(JsonReader r) => ComboConfig(
+        fillPerTap: r.number('fillPerTap', min: 0, minExclusive: true),
+        holdSeconds: r.number('holdSeconds', min: 0),
+        decayPerSecond: r.number('decayPerSecond', min: 0),
+        finisherMultiplier: r.number('finisherMultiplier', min: 1),
+      );
+
+  /// Meter (0 to 1) gained per tap.
+  final double fillPerTap;
+
+  /// Seconds after the last tap before the meter starts to decay.
+  final double holdSeconds;
+  final double decayPerSecond;
+
+  /// Finisher damage as a multiple of tap damage.
+  final double finisherMultiplier;
+}
+
+class CritConfig {
+  const CritConfig({required this.multiplier, required this.maxChance});
+
+  factory CritConfig.fromReader(JsonReader r) => CritConfig(
+        multiplier: r.number('multiplier', min: 1),
+        maxChance: r.number('maxChance', min: 0),
+      );
+
+  final double multiplier;
+  final double maxChance;
+}
+
+class LuckyConfig {
+  const LuckyConfig({
+    required this.spawnPerSecond,
+    required this.lifetimeSeconds,
+    required this.rewardCoinMultiple,
+  });
+
+  factory LuckyConfig.fromReader(JsonReader r) => LuckyConfig(
+        spawnPerSecond: r.number('spawnPerSecond', min: 0),
+        lifetimeSeconds: r.number('lifetimeSeconds', min: 0, minExclusive: true),
+        rewardCoinMultiple: r.number('rewardCoinMultiple', min: 0),
+      );
+
+  /// Chance per second that a pickup appears (while none is on screen).
+  final double spawnPerSecond;
+  final double lifetimeSeconds;
+
+  /// Reward as a multiple of the coins paid by the current fight.
+  final double rewardCoinMultiple;
+}
+
+class PrestigeConfig {
+  const PrestigeConfig({required this.minBelts, required this.beltDamageBonus});
+
+  factory PrestigeConfig.fromReader(JsonReader r) => PrestigeConfig(
+        minBelts: r.integer('minBelts', min: 1),
+        beltDamageBonus: r.number('beltDamageBonus', min: 0),
+      );
+
+  /// Belts the run must be worth before Change Mask is allowed.
+  final int minBelts;
+
+  /// Damage bonus per Belt earned (0.02 is +2%).
+  final double beltDamageBonus;
+}
+
+class OfflineConfig {
+  const OfflineConfig({
+    required this.baseCapHours,
+    required this.maxCapHours,
+    required this.minPopupSeconds,
+    required this.adMultiplier,
+    required this.purchaseCapHours,
+  });
+
+  factory OfflineConfig.fromReader(JsonReader r) {
+    final base = r.number('baseCapHours', min: 0, minExclusive: true);
+    final max = r.number('maxCapHours', min: 0, minExclusive: true);
+    if (max < base) {
+      throw ContentException('balance.json: offline.maxCapHours must be at least baseCapHours');
+    }
+    return OfflineConfig(
+      baseCapHours: base,
+      maxCapHours: max,
+      minPopupSeconds: r.number('minPopupSeconds', min: 0),
+      adMultiplier: r.number('adMultiplier', min: 1),
+      purchaseCapHours: r.numberMap('purchaseCapHours'),
+    );
+  }
+
+  /// The offline cap is `baseCapHours` plus bonuses (Siesta talent, masks,
+  /// purchases), never more than `maxCapHours`.
+  final double baseCapHours;
+  final double maxCapHours;
+
+  /// Away time below this is collected silently, with no pop-up.
+  final double minPopupSeconds;
+
+  /// Factor applied to the offline coins when the rewarded ad is watched.
+  final double adMultiplier;
+
+  /// Purchase id to extra cap hours.
+  final Map<String, double> purchaseCapHours;
+}
+
+class DebugConfig {
+  const DebugConfig({
+    required this.coinAmounts,
+    required this.fastForwardMinutes,
+    required this.absenceHours,
+  });
+
+  factory DebugConfig.fromReader(JsonReader r) => DebugConfig(
+        coinAmounts: r.numbers('coinAmounts', min: 0),
+        fastForwardMinutes: r.integers('fastForwardMinutes', min: 1),
+        absenceHours: r.integers('absenceHours', min: 1),
+      );
+
+  final List<double> coinAmounts;
+  final List<int> fastForwardMinutes;
+  final List<int> absenceHours;
 }
 
 /// Visual effect timings. Not game balance, but tunable without code changes.

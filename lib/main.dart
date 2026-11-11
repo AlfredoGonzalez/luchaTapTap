@@ -2,19 +2,35 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'app.dart';
 import 'data/content_exception.dart';
+import 'core/save_codec.dart';
 import 'data/content_loader.dart';
 import 'services/game_controller.dart';
+import 'services/save_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   try {
     final content = await loadContent();
+    final store = FileSaveStore(
+      directory: await getApplicationDocumentsDirectory(),
+      codec: SaveCodec(content: content),
+    );
+    final loaded = await store.load();
+    if (loaded.error != null) {
+      // A damaged main save falls back to the backup; report it for debugging.
+      debugPrint('Save problem (${loaded.source.name}): ${loaded.error}');
+    }
     runApp(ProviderScope(
-      overrides: [contentProvider.overrideWithValue(content)],
+      overrides: [
+        contentProvider.overrideWithValue(content),
+        saveStoreProvider.overrideWithValue(store),
+        initialSaveProvider.overrideWithValue(loaded.data),
+      ],
       child: const LuchaTapApp(),
     ));
   } on ContentException catch (e) {

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "id": "plancha",
+      "name": "Plancha",
+      "shortName": "PLA",
+      "icon": "sk_plancha",
+      "effect": "burst",
+      "cooldown": 25,
+      "duration": 0,
+      "baseValue": 15,
+      "perLevelValue": 5,
+      "unlockFight": 3,
+      "baseCost": 200,
+      "maxLevel": 10
+    },
+    {
+      "id": "furia",
+      "name": "Furia",
+      "shortName": "FUR",
+      "icon": "sk_furia",
+      "effect": "tapMultiplier",
+      "cooldown": 60,
+      "duration": 10,
+      "baseValue": 2,
+      "perLevelValue": 0.25,
+      "unlockFight": 5,
+      "baseCost": 800,
+      "maxLevel": 10
+    },
+    {
+      "id": "suerte",
+      "name": "Suerte",
+      "shortName": "SUE",
+      "icon": "sk_suerte",
+      "effect": "luckBoost",
+      "cooldown": 90,
+      "duration": 20,
+      "baseValue": 5,
+      "perLevelValue": 1,
+      "unlockFight": 7,
+      "baseCost": 2000,
+      "maxLevel": 10
+    },
+    {
+      "id": "grito",
+      "name": "Grito",
+      "shortName": "GRI",
+      "icon": "sk_grito",
+      "effect": "trainerMultiplier",
+      "cooldown": 60,
+      "duration": 15,
+      "baseValue": 2,
+      "perLevelValue": 0.25,
+      "unlockFight": 9,
+      "baseCost": 4000,
+      "maxLevel": 10
+    },
+    {
+      "id": "llave",
+      "name": "Llave",
+      "shortName": "LLA",
+      "icon": "sk_llave",
+      "effect": "bossTimerExtend",
+      "cooldown": 45,
+      "duration": 0,
+      "baseValue": 10,
+      "perLevelValue": 1,
+      "unlockFight": 10,
+      "baseCost": 8000,
+      "maxLevel": 10
+    }
+  ]
+}

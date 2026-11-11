@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucha_tap_tap/core/palette.dart';
 import 'package:lucha_tap_tap/data/content_bundle.dart';
 import 'package:lucha_tap_tap/data/content_exception.dart';
+import 'package:lucha_tap_tap/data/content_models.dart';
 
 import '../test_content.dart';
 
@@ -17,10 +18,13 @@ void expectInvalid(void Function(Map<String, Map<String, dynamic>>) edit, String
 void main() {
   test('the shipped data files load and validate', () {
     final c = loadTestContent();
-    expect(c.opponents.length, 3);
-    expect(c.trainers.length, 1);
-    expect(c.upgrades.length, 1);
-    expect(c.leagues.first.opponentIds.length, 3);
+    expect(c.opponents.length, 4);
+    expect(c.trainers.length, 2);
+    expect(c.upgrades.length, 2);
+    expect(c.skills.length, 5);
+    expect(c.masks.length, 2);
+    expect(c.talents.length, 8);
+    expect(c.leagues.first.opponentIds.length, 9);
   });
 
   test('every data file has a schemaVersion', () {
@@ -75,6 +79,35 @@ void main() {
       expectInvalid((f) => f['balance.json']!['tick']['ticksPerSecond'] = 2.5, 'whole number');
     });
 
+    test('talent with the wrong number of costs', () {
+      expectInvalid((f) => f['talents.json']!['branches'][0]['nodes'][0]['costs'] = [1], 'needs exactly 5 costs');
+    });
+
+    test('talent parent must exist, be in the same branch and come first', () {
+      expectInvalid((f) => f['talents.json']!['branches'][0]['nodes'][1]['parent'] = 'ghost', 'unknown parent');
+      expectInvalid((f) => f['talents.json']!['branches'][0]['nodes'][1]['parent'] = 'cartera', 'same branch');
+      expectInvalid((f) {
+        final nodes = f['talents.json']!['branches'][0]['nodes'] as List;
+        f['talents.json']!['branches'][0]['nodes'] = nodes.reversed.toList();
+      }, 'must be listed before');
+    });
+
+    test('mask rules: palette colors, starter present, known league', () {
+      expectInvalid((f) => f['masks.json']!['masks'][0]['slotColors'] = ['ink', 'ink', 'hot_pink'], 'not in the palette');
+      expectInvalid((f) => f['masks.json']!['masks'][0]['slotColors'] = ['ink'], 'exactly 3');
+      expectInvalid((f) => f['masks.json']!['masks'][0]['unlock'] = {'rule': 'belts', 'value': 2}, 'starter mask');
+      expectInvalid((f) => f['masks.json']!['masks'][1]['unlock'] = {'rule': 'league', 'value': 9}, 'league 9');
+    });
+
+    test('skills: unknown effect and missing duration', () {
+      expectInvalid((f) => f['skills.json']!['skills'][0]['effect'] = 'laser', 'unknown effect');
+      expectInvalid((f) => f['skills.json']!['skills'][1]['duration'] = 0, 'needs a duration');
+    });
+
+    test('offline cap must not be below the base', () {
+      expectInvalid((f) => f['balance.json']!['offline']['maxCapHours'] = 1, 'maxCapHours');
+    });
+
     test('boss id must point at a boss', () {
       expectInvalid((f) => f['leagues.json']!['leagues'][0]['bossId'] = 'mr_aguacate', 'isBoss true');
     });
@@ -107,12 +140,39 @@ void main() {
     });
   });
 
+  group('dynamic Spanish strings', () {
+    final content = loadTestContent();
+    final strings = content.strings;
+
+    test('every skill effect, mask bonus and talent effect has a text', () {
+      // These keys are built from enum names, so the regex test above cannot see them.
+      for (final e in SkillEffect.values) {
+        expect(strings.containsKey('skill_${e.name}'), isTrue, reason: 'skill_${e.name}');
+      }
+      for (final b in MaskBonusType.values) {
+        expect(strings.containsKey('mask_bonus_${b.name}'), isTrue, reason: 'mask_bonus_${b.name}');
+      }
+      for (final t in TalentEffect.values) {
+        expect(strings.containsKey('talent_${t.name}'), isTrue, reason: 'talent_${t.name}');
+      }
+    });
+
+    test('no string is empty', () {
+      strings.forEach((key, value) => expect(value.trim(), isNotEmpty, reason: key));
+    });
+  });
+
   group('no balance numbers in Dart', () {
     test('formula and engine code reads constants from Balance, not literals', () {
       // Guard rail, not a proof: the economy constants must not appear as
       // literals in the rules code.
       final forbidden = [RegExp(r'\b1\.55\b'), RegExp(r'\b1\.15\b'), RegExp(r'\b0\.15\b')];
-      for (final path in ['lib/core/formulas.dart', 'lib/core/game_engine.dart']) {
+      for (final path in [
+        'lib/core/formulas.dart',
+        'lib/core/game_engine.dart',
+        'lib/core/save_codec.dart',
+        'lib/services/game_controller.dart',
+      ]) {
         final code = File(path)
             .readAsLinesSync()
             .where((l) => !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
