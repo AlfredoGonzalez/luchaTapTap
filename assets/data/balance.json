@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "tick": {
+    "ticksPerSecond": 10,
+    "maxFightsPerTick": 50,
+    "maxCatchUpTicks": 100
+  },
+  "tap": {
+    "baseDamage": 1
+  },
+  "economy": {
+    "hpBase": 10,
+    "hpGrowth": 1.55,
+    "bossHpMultiplier": 10,
+    "coinsPerHpFraction": 0.15,
+    "bossCoinMultiplier": 5,
+    "costGrowth": 1.15,
+    "beltCoinDivisor": 1000000
+  },
+  "buy": {
+    "fixedAmounts": [1, 10, 100],
+    "maxBulkLevels": 100000
+  },
+  "start": {
+    "coins": 0,
+    "fightNumber": 1
+  },
+  "fx": {
+    "idleFps": 6,
+    "hitFlashSeconds": 0.1,
+    "damageNumberRisePx": 12,
+    "damageNumberSeconds": 0.6,
+    "damageNumberJitterPx": 6
+  }
+}

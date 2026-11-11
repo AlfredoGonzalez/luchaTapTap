@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "strings": {
+    "app_title": "Lucha Tap, Tap!",
+    "hud_fight": "Pelea {n}",
+    "hud_coins": "Monedas",
+    "hud_per_second": "{n}/s",
+    "buy_max": "MAX",
+    "buy_x": "x{n}",
+    "row_level": "Nv. {n}",
+    "row_locked": "???",
+    "row_unlock_fight": "Desde la pelea {n}",
+    "upgrade_tap_damage": "+{n} por toque",
+    "trainer_dps": "+{n} daño por segundo",
+    "load_error": "No se pudieron cargar los datos del juego."
+  }
+}

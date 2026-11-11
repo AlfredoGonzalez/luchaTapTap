@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "opponents": [
+    { "id": "mr_aguacate", "name": "Mr. Aguacate", "sprite": "opp_mr_aguacate", "placeholderColor": "nopal",
+      "size": 48, "isBoss": false, "hpMultiplier": 1.0, "coinMultiplier": 1.0,
+      "flavor": "Madurito, pero con mucha fuerza." },
+    { "id": "el_tamal_mortal", "name": "El Tamal Mortal", "sprite": "opp_el_tamal_mortal", "placeholderColor": "sand",
+      "size": 48, "isBoss": false, "hpMultiplier": 1.0, "coinMultiplier": 1.0,
+      "flavor": "Viene envuelto y con muy mal humor." },
+    { "id": "el_taquero_cosmico", "name": "El Taquero Cósmico", "sprite": "opp_el_taquero_cosmico", "placeholderColor": "burnt_orange",
+      "size": 48, "isBoss": false, "hpMultiplier": 1.0, "coinMultiplier": 1.0,
+      "flavor": "Su salsa pica hasta en otra galaxia." }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "trainers": [
+    { "id": "don_chuy", "name": "Don Chuy", "portrait": "tr_don_chuy",
+      "baseCost": 50, "baseDps": 1, "unlockFight": 1 }
+  ]
+}
