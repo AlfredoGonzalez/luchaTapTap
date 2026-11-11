@@ -111,10 +111,14 @@ class Big implements Comparable<Big> {
     if (gap < -_precisionDigits) return other;
     if (gap >= 0) {
       return _normalize(
-          mantissa + other.mantissa * math.pow(10, -gap), exponent);
+        mantissa + other.mantissa * math.pow(10, -gap),
+        exponent,
+      );
     }
     return _normalize(
-        other.mantissa + mantissa * math.pow(10, gap), other.exponent);
+      other.mantissa + mantissa * math.pow(10, gap),
+      other.exponent,
+    );
   }
 
   /// Subtraction clamped at zero: a Big is never negative.
@@ -126,8 +130,7 @@ class Big implements Comparable<Big> {
     }
     final gap = exponent - other.exponent;
     if (gap > _precisionDigits) return this;
-    return _normalize(
-        mantissa - other.mantissa * math.pow(10, -gap), exponent);
+    return _normalize(mantissa - other.mantissa * math.pow(10, -gap), exponent);
   }
 
   Big operator *(Big other) {

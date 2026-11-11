@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'data/content_exception.dart';
 import 'core/save_codec.dart';
 import 'data/content_loader.dart';
 import 'services/game_controller.dart';
+import 'services/prefs_save_store.dart';
 import 'services/save_store.dart';
 
 Future<void> main() async {
@@ -16,23 +18,33 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   try {
     final content = await loadContent();
-    final store = FileSaveStore(
-      directory: await getApplicationDocumentsDirectory(),
-      codec: SaveCodec(content: content),
-    );
+    final codec = SaveCodec(content: content);
+    // Android keeps the save in a file; the browser test build (GitHub Pages)
+    // keeps it in local storage.
+    final SaveStore store = kIsWeb
+        ? PrefsSaveStore(
+            prefs: await SharedPreferences.getInstance(),
+            codec: codec,
+          )
+        : FileSaveStore(
+            directory: await getApplicationDocumentsDirectory(),
+            codec: codec,
+          );
     final loaded = await store.load();
     if (loaded.error != null) {
       // A damaged main save falls back to the backup; report it for debugging.
       debugPrint('Save problem (${loaded.source.name}): ${loaded.error}');
     }
-    runApp(ProviderScope(
-      overrides: [
-        contentProvider.overrideWithValue(content),
-        saveStoreProvider.overrideWithValue(store),
-        initialSaveProvider.overrideWithValue(loaded.data),
-      ],
-      child: const LuchaTapApp(),
-    ));
+    runApp(
+      ProviderScope(
+        overrides: [
+          contentProvider.overrideWithValue(content),
+          saveStoreProvider.overrideWithValue(store),
+          initialSaveProvider.overrideWithValue(loaded.data),
+        ],
+        child: const LuchaTapApp(),
+      ),
+    );
   } on ContentException catch (e) {
     // A bad data file must fail loudly: debug builds crash with the message,
     // release builds show a plain error screen instead of a broken game.

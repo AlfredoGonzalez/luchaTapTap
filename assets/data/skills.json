@@ -13,7 +13,8 @@
       "perLevelValue": 5,
       "unlockFight": 3,
       "baseCost": 200,
-      "maxLevel": 10
+      "maxLevel": 10,
+      "description": "Salto desde las cuerdas: daño x{n} al instante."
     },
     {
       "id": "furia",
@@ -27,7 +28,8 @@
       "perLevelValue": 0.25,
       "unlockFight": 5,
       "baseCost": 800,
-      "maxLevel": 10
+      "maxLevel": 10,
+      "description": "Tus toques pegan x{n} durante {d} s."
     },
     {
       "id": "suerte",
@@ -41,7 +43,8 @@
       "perLevelValue": 1,
       "unlockFight": 7,
       "baseCost": 2000,
-      "maxLevel": 10
+      "maxLevel": 10,
+      "description": "Los eventos de suerte salen x{n} veces más durante {d} s."
     },
     {
       "id": "grito",
@@ -55,7 +58,8 @@
       "perLevelValue": 0.25,
       "unlockFight": 9,
       "baseCost": 4000,
-      "maxLevel": 10
+      "maxLevel": 10,
+      "description": "Tus entrenadores pegan x{n} durante {d} s."
     },
     {
       "id": "llave",
@@ -69,7 +73,8 @@
       "perLevelValue": 1,
       "unlockFight": 10,
       "baseCost": 8000,
-      "maxLevel": 10
+      "maxLevel": 10,
+      "description": "Suma {n} s al reloj del jefe."
     }
   ]
 }

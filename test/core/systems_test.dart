@@ -51,12 +51,34 @@ void main() {
       expect(e.state.enemyHp.toDouble(), closeTo(f.baseHp(11).toDouble() * 3, 1e-6));
     });
 
-    test('the countdown starts on the first tick and failing drops one fight', () {
+    test('the boss waits for its intro: nothing happens until startBoss', () {
+      final e = newEngine((f) => f['trainers.json']!['trainers'][0]['baseDps'] = 5);
+      e.debugGoToBoss();
+      e.debugAddCoins(Big.fromInt(1000));
+      e.buyTrainer('don_chuy', x1);
+      expect(e.awaitingBossStart, isTrue);
+      final hp = e.state.enemyHp;
+      for (var i = 0; i < 50; i++) {
+        e.tick();
+      }
+      expect(e.tap().defeats, 0);
+      expect(e.tap().damageDealt, Big.zero); // taps are ignored too
+      expect(e.state.enemyHp, hp);
+      expect(e.state.bossTimeLeft, isNull);
+      e.startBoss();
+      expect(e.awaitingBossStart, isFalse);
+      expect(e.state.bossTimeLeft, 30);
+      e.tick();
+      expect(e.state.enemyHp < hp, isTrue); // now the fight is on
+    });
+
+    test('the countdown runs and failing drops one fight', () {
       final e = newEngine();
       e.debugGoToBoss();
       expect(e.state.bossTimeLeft, isNull);
+      e.startBoss();
       e.tick();
-      expect(e.state.bossTimeLeft, 30);
+      expect(e.state.bossTimeLeft, closeTo(29.9, 1e-9));
       var ticks = 1;
       var timedOut = false;
       while (!timedOut && ticks < 400) {
@@ -77,14 +99,14 @@ void main() {
         opp['bossTimerSeconds'] = 12;
       });
       e.debugGoToBoss();
-      e.tick();
+      e.startBoss();
       expect(e.state.bossTimeLeft, 12);
     });
 
     test('defeating the boss clears the timer, pays and counts it', () {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e9});
       e.debugGoToBoss();
-      e.tick();
+      e.startBoss();
       expect(e.state.bossTimeLeft, isNotNull);
       final r = e.tap();
       expect(r.defeats, 1);
@@ -251,9 +273,13 @@ void main() {
       final e = rich();
       e.debugSkipFights(9);
       e.buySkill('llave');
+      expect(e.useSkill('llave').failure, SkillFailure.waitingBoss); // intro not done
+      e.debugSkipFights(-1);
+      expect(e.isBossFight, isFalse);
       expect(e.useSkill('llave').failure, SkillFailure.noBoss);
       expect(e.state.skillCooldownLeft('llave'), 0); // a failed use costs nothing
       e.debugGoToBoss();
+      e.startBoss();
       e.tick();
       final before = e.state.bossTimeLeft!;
       expect(e.useSkill('llave').ok, isTrue);
@@ -407,6 +433,7 @@ void main() {
       });
       expect(e.ownsMask('la_calaverita'), isFalse);
       e.debugGoToBoss();
+      e.startBoss();
       e.tap();
       expect(e.state.fightNumber, 11);
       expect(e.ownsMask('la_calaverita'), isTrue);
@@ -537,6 +564,88 @@ void main() {
       final a = SeededRng(99)..nextDouble()..nextDouble();
       final restored = SeededRng(a.state);
       expect(restored.nextDouble(), a.nextDouble());
+    });
+  });
+
+  group('store purchases, boosts and ad offers', () {
+    test('Doble moneda doubles every reward, forever', () {
+      final e = newEngine();
+      final base = e.currentReward.toDouble();
+      e.grantPurchase('doble_moneda');
+      expect(e.currentReward.toDouble(), closeTo(base * 2, 1e-9));
+      expect(e.ownsPurchase('doble_moneda'), isTrue);
+    });
+
+    test('an unknown purchase id is rejected', () {
+      expect(() => newEngine().grantPurchase('nope'), throwsArgumentError);
+    });
+
+    test('belt packs add spendable belts but not the permanent damage bonus', () {
+      final e = newEngine();
+      e.grantBeltPack('belts_100');
+      expect(e.state.belts.toDouble(), 100);
+      expect(e.state.lifetimeBelts, Big.zero);
+      expect(e.beltMultiplier, Big.one);
+    });
+
+    test('the 2-minute boost doubles coins and then ends', () {
+      final e = newEngine();
+      final base = e.currentReward.toDouble();
+      expect(e.claimAdOffer('doble_2min', 0), isTrue);
+      expect(e.currentReward.toDouble(), closeTo(base * 2, 1e-9));
+      expect(e.state.boostLeft, 120);
+      for (var i = 0; i < 1201; i++) {
+        e.tick();
+      }
+      expect(e.state.boostLeft, 0);
+      expect(e.currentReward.toDouble(), closeTo(base, 1e-9));
+    });
+
+    test('boost and Doble moneda stack', () {
+      final e = newEngine();
+      final base = e.currentReward.toDouble();
+      e.grantPurchase('doble_moneda');
+      e.claimAdOffer('doble_2min', 0);
+      expect(e.currentReward.toDouble(), closeTo(base * 4, 1e-9));
+    });
+
+    test('a free belt for an ad, then a cooldown from the data file', () {
+      final e = newEngine();
+      expect(e.claimAdOffer('cinturon_gratis', 1000), isTrue);
+      expect(e.state.belts.toDouble(), 1);
+      expect(e.adOfferWait('cinturon_gratis', 1000), 1800); // 30 minutes
+      expect(e.claimAdOffer('cinturon_gratis', 1000 + 60000), isFalse);
+      expect(e.state.belts.toDouble(), 1);
+      expect(e.adOfferWait('cinturon_gratis', 1000 + 900000), closeTo(900 - 0, 1e-6));
+      expect(e.claimAdOffer('cinturon_gratis', 1000 + 1800000), isTrue);
+      expect(e.state.belts.toDouble(), 2);
+    });
+
+    test('cooldowns come from shop.json', () {
+      final e = newEngine((f) {
+        final item = (f['shop.json']!['items'] as List).last as Map;
+        item['cooldownSeconds'] = 5;
+      });
+      e.claimAdOffer('cinturon_gratis', 0);
+      expect(e.adOfferWait('cinturon_gratis', 0), 5);
+    });
+
+    test('paid items are not ad offers', () {
+      final e = newEngine();
+      expect(e.claimAdOffer('belts_20', 0), isFalse);
+      expect(e.claimAdOffer('mas_descanso', 0), isFalse);
+      expect(e.state.belts, Big.zero);
+    });
+
+    test('Borrar datos starts a brand new game', () {
+      final e = newEngine();
+      e.debugAddCoins(Big.fromInt(500));
+      e.debugSkipFights(5);
+      e.grantPurchase('mas_descanso');
+      e.resetAll();
+      expect(e.state.fightNumber, 1);
+      expect(e.state.coins, Big.zero);
+      expect(e.state.purchases, isEmpty);
     });
   });
 }

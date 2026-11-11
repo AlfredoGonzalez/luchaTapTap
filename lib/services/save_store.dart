@@ -30,9 +30,9 @@ class MemorySaveStore implements SaveStore {
 
   @override
   Future<SaveLoad> load() async => SaveLoad(
-        data: current,
-        source: current == null ? SaveSource.none : SaveSource.main,
-      );
+    data: current,
+    source: current == null ? SaveSource.none : SaveSource.main,
+  );
 
   @override
   Future<void> save(SaveData data) async {
@@ -51,10 +51,13 @@ class MemorySaveStore implements SaveStore {
 /// A crash at any point leaves either the old or the new save intact; if the
 /// main file fails to parse, the backup (the save before it) is used.
 class FileSaveStore implements SaveStore {
-  FileSaveStore({required Directory directory, required this.codec, this.fileName = 'save.json'})
-      : _main = File('${directory.path}/$fileName'),
-        _backup = File('${directory.path}/$fileName.bak'),
-        _temp = File('${directory.path}/$fileName.tmp');
+  FileSaveStore({
+    required Directory directory,
+    required this.codec,
+    this.fileName = 'save.json',
+  }) : _main = File('${directory.path}/$fileName'),
+       _backup = File('${directory.path}/$fileName.bak'),
+       _temp = File('${directory.path}/$fileName.tmp');
 
   final SaveCodec codec;
   final String fileName;
@@ -66,10 +69,16 @@ class FileSaveStore implements SaveStore {
   Future<SaveLoad> load() async {
     String? error;
     final fromMain = await _tryRead(_main, (e) => error = e);
-    if (fromMain != null) return SaveLoad(data: fromMain, source: SaveSource.main);
+    if (fromMain != null) {
+      return SaveLoad(data: fromMain, source: SaveSource.main);
+    }
     final fromBackup = await _tryRead(_backup, (_) {});
     if (fromBackup != null) {
-      return SaveLoad(data: fromBackup, source: SaveSource.backup, error: error);
+      return SaveLoad(
+        data: fromBackup,
+        source: SaveSource.backup,
+        error: error,
+      );
     }
     return SaveLoad(source: SaveSource.none, error: error);
   }

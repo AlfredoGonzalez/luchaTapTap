@@ -11,8 +11,11 @@ import 'package:lucha_tap_tap/core/game_state.dart';
 import 'package:lucha_tap_tap/core/save_codec.dart';
 import 'package:lucha_tap_tap/game/arena_game.dart';
 import 'package:lucha_tap_tap/services/ad_service.dart';
+import 'package:lucha_tap_tap/services/billing_service.dart';
 import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
+import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
+import 'package:lucha_tap_tap/ui/ui_state.dart';
 
 import '../test_content.dart';
 
@@ -31,23 +34,31 @@ SaveData saveFrom(void Function(GameEngine e) play, {Edit? edit, Duration ago = 
   );
 }
 
+/// Semantics handles must be released before a test ends.
+final List<SemanticsHandle> _handles = [];
+
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   Edit? edit,
   SaveData? save,
   SaveStore? store,
   AdService? ads,
+  BillingService? billing,
+  AppStage stage = AppStage.game,
   Size size = const Size(1080, 1920),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
+  _handles.add(tester.ensureSemantics());
   await tester.pumpWidget(ProviderScope(
     overrides: [
       contentProvider.overrideWithValue(loadTestContent(edit)),
+      initialAppStageProvider.overrideWithValue(stage),
       if (save != null) initialSaveProvider.overrideWithValue(save),
       if (store != null) saveStoreProvider.overrideWithValue(store),
       if (ads != null) adServiceProvider.overrideWithValue(ads),
+      if (billing != null) billingServiceProvider.overrideWithValue(billing),
     ],
     child: const LuchaTapApp(),
   ));
@@ -60,6 +71,10 @@ Future<void> closeApp(WidgetTester tester) async {
   // game timers are cancelled before the test ends.
   await tester.pump(const Duration(milliseconds: 200));
   await tester.pumpWidget(const SizedBox());
+  for (final handle in _handles) {
+    handle.dispose();
+  }
+  _handles.clear();
 }
 
 GameState stateOf(ProviderContainer c) => c.read(gameControllerProvider);
@@ -71,9 +86,23 @@ Future<void> elapse(WidgetTester tester, int seconds) async {
   }
 }
 
+const _short = Duration(milliseconds: 30);
+
+/// Taps a navigation tab (icon only; found by its spoken label).
 Future<void> openTab(WidgetTester tester, String label) async {
-  await tester.tap(find.text(label));
-  await tester.pump(const Duration(milliseconds: 20));
+  await tester.tap(find.bySemanticsLabel(label));
+  await tester.pump(_short);
+}
+
+/// The button (not its row) whose spoken label is [label].
+Finder buttonLabelled(String label) => find.byWidgetPredicate(
+      (w) => w is Semantics && w.properties.button == true && w.properties.label == label,
+    );
+
+/// Taps the [PixelButton] showing [text] (first match).
+Future<void> tapButton(WidgetTester tester, String text) async {
+  await tester.tap(find.widgetWithText(PixelButton, text).first);
+  await tester.pump(_short);
 }
 
 Future<void> tapArena(WidgetTester tester, [int times = 1]) async {
@@ -85,7 +114,7 @@ Future<void> tapArena(WidgetTester tester, [int times = 1]) async {
 }
 
 Future<void> scrollPanel(WidgetTester tester, double dy) async {
-  await tester.drag(find.byType(ListView), Offset(0, dy));
+  await tester.drag(find.byType(ListView).first, Offset(0, dy));
   await tester.pump(const Duration(milliseconds: 50));
 }
 
@@ -103,24 +132,85 @@ Future<void> backgroundFor(WidgetTester tester, Duration away) async {
 }
 
 const bigDps = 100.0;
-void fastTrainer(Map<String, Map<String, dynamic>> f) =>
-    f['trainers.json']!['trainers'][0]['baseDps'] = bigDps;
+void fastTrainer(Map<String, Map<String, dynamic>> f) => f['trainers.json']!['trainers'][0]['baseDps'] = bigDps;
+
+/// Opens the debug panel (long-press on the fight number).
+Future<void> openDebug(WidgetTester tester) async {
+  await tester.longPress(find.text('Pelea 1').first);
+  await tester.pump(_short);
+}
 
 void main() {
+  group('app flow', () {
+    testWidgets('studio splash, then loading, then the game', (tester) async {
+      final c = await pumpApp(tester, stage: AppStage.splash);
+      expect(find.text('AM Studios Play'), findsOneWidget);
+      expect(find.text('presenta'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3)); // splashSeconds = 2
+      expect(c.read(appStageProvider), AppStage.loading);
+      expect(find.text('LUCHA'), findsOneWidget);
+      expect(find.text('TAP, TAP!'), findsOneWidget);
+      // The bar fills first; tapping before it is full does nothing.
+      await tester.tapAt(tester.getCenter(find.text('LUCHA')));
+      await tester.pump(_short);
+      expect(c.read(appStageProvider), AppStage.loading);
+      await tester.pump(const Duration(milliseconds: 1600)); // loadingSeconds = 1.5
+      // The prompt blinks (0.5 s on, 0.5 s off): both states appear within a second.
+      var seenOn = false;
+      var seenOff = false;
+      for (var i = 0; i < 24; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        if (find.text('Toca para continuar').evaluate().isEmpty) {
+          seenOff = true;
+        } else {
+          seenOn = true;
+        }
+      }
+      expect([seenOn, seenOff], [true, true]);
+      while (find.text('Toca para continuar').evaluate().isEmpty) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.tapAt(tester.getCenter(find.text('LUCHA')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(c.read(appStageProvider), AppStage.game);
+      expect(find.text('Pelea 1'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('tapping the splash skips it', (tester) async {
+      final c = await pumpApp(tester, stage: AppStage.splash);
+      await tester.tap(find.text('AM Studios Play'));
+      await tester.pump(_short);
+      expect(c.read(appStageProvider), AppStage.loading);
+      await closeApp(tester);
+    });
+
+    testWidgets('the splash and loading times come from balance.json', (tester) async {
+      final c = await pumpApp(tester, stage: AppStage.splash, edit: (f) {
+        f['balance.json']!['ui']['splashSeconds'] = 10;
+      });
+      await tester.pump(const Duration(seconds: 5));
+      expect(c.read(appStageProvider), AppStage.splash);
+      await tester.pump(const Duration(seconds: 6));
+      expect(c.read(appStageProvider), AppStage.loading);
+      await closeApp(tester);
+    });
+  });
+
   group('fight screen', () {
     testWidgets('shows everything in Spanish', (tester) async {
       await pumpApp(tester);
       expect(find.text('Pelea 1'), findsOneWidget);
       expect(find.text('Mr. Aguacate'), findsOneWidget);
-      expect(find.text('Monedas'), findsOneWidget);
       expect(find.text('GOLPE'), findsOneWidget);
-      for (final tab in ['Mejoras', 'Habilidades', 'Máscaras', 'Talentos']) {
-        expect(find.text(tab), findsOneWidget);
+      expect(find.text('x0'), findsOneWidget);
+      for (final tab in ['Mejoras', 'Habilidades', 'Máscaras', 'Talentos', 'Tienda']) {
+        expect(find.bySemanticsLabel(tab), findsOneWidget, reason: tab);
       }
       expect(find.text('MAX'), findsOneWidget);
       expect(find.text('x10'), findsOneWidget);
-      expect(find.textContaining('Puño duro'), findsOneWidget);
-      expect(find.text('?'), findsNWidgets(5)); // five unlearned skills
+      expect(find.text('Puño duro'), findsOneWidget);
+      expect(find.text('Nv 0'), findsWidgets);
       await closeApp(tester);
     });
 
@@ -130,23 +220,38 @@ void main() {
       expect(find.text('Pelea 2'), findsOneWidget);
       expect(find.text('El Tamal Mortal'), findsOneWidget);
       expect(stateOf(c).coins.toDouble(), closeTo(1.5, 1e-9));
+      expect(find.text('1.5'), findsOneWidget); // the HUD coins
       await closeApp(tester);
     });
 
-    testWidgets('buying an upgrade spends coins and raises its level', (tester) async {
-      await pumpApp(tester, edit: (f) => f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1});
-      await tester.tap(find.text('10')); // cost button of "Puño duro"
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.textContaining('Puño duro  Nv. 1'), findsOneWidget);
+    testWidgets('buying an upgrade spends coins, raises its level and flashes the row', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1});
+      expect(find.text('1K'), findsOneWidget);
+      await tapButton(tester, '10'); // cost button of "Puño duro"
+      expect(stateOf(c).upgradeLevel('puno_duro'), 1);
+      expect(find.text('Nv 1'), findsOneWidget);
       expect(find.text('990'), findsOneWidget);
+      // The row flashes Sun Yellow for the time in balance.json, then stops.
+      expect(find.byWidgetPredicate((w) => w is ColoredBox && w.color.toARGB32() == 0xFFFFE066), findsWidgets);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byWidgetPredicate((w) => w is ColoredBox && w.color.toARGB32() == 0xFFFFE066), findsNothing);
       await closeApp(tester);
     });
 
     testWidgets('a button is disabled while unaffordable', (tester) async {
       final c = await pumpApp(tester);
-      await tester.tap(find.text('10'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.tap(find.widgetWithText(PixelButton, '10').first);
+      await tester.pump(_short);
       expect(stateOf(c).upgradeLevel('puno_duro'), 0);
+      await closeApp(tester);
+    });
+
+    testWidgets('a trainer is a mystery until its fight', (tester) async {
+      await pumpApp(tester, edit: (f) => f['trainers.json']!['trainers'][0]['unlockFight'] = 50);
+      await scrollPanel(tester, -200);
+      expect(find.text('???'), findsWidgets);
+      expect(find.text('Misterio'), findsWidgets);
+      expect(find.text('Pelea 50'), findsOneWidget);
       await closeApp(tester);
     });
 
@@ -156,8 +261,7 @@ void main() {
         fastTrainer(f);
       });
       await scrollPanel(tester, -200);
-      await tester.tap(find.text('50')); // hire Don Chuy
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, '50'); // hire Don Chuy
       await elapse(tester, 2);
       expect(stateOf(c).fightNumber, greaterThan(1));
       await closeApp(tester);
@@ -170,11 +274,21 @@ void main() {
       'very tall 1080x2560': const Size(1080, 2560),
       'wide-ish 1200x1920': const Size(1200, 1920),
     }.entries) {
-      // Any RenderFlex overflow fails the test, so this checks the layout.
+      // Any RenderFlex overflow fails the test, so this checks the layout of
+      // the fight screen and of every other view with the real pixel font.
       testWidgets('layout fits on ${entry.key}', (tester) async {
-        await pumpApp(tester, size: entry.value);
+        await pumpApp(tester, size: entry.value, save: saveFrom((e) => e.debugAddCoins(Big.fromInt(1000))));
         expect(find.text('Pelea 1'), findsOneWidget);
-        expect(find.text('Talentos'), findsOneWidget);
+        for (final tab in ['Habilidades', 'Máscaras', 'Talentos', 'Tienda', 'Mejoras']) {
+          await openTab(tester, tab);
+        }
+        await tester.tap(find.bySemanticsLabel('AJUSTES'));
+        await tester.pump(_short);
+        expect(find.text('Sonido'), findsOneWidget);
+        // All eight settings rows are visible without scrolling, "Borrar datos" included.
+        final area = tester.getRect(find.byType(ListView).first);
+        final last = tester.getRect(find.text('Borrar datos'));
+        expect(area.contains(last.center), isTrue);
         await closeApp(tester);
       });
     }
@@ -185,67 +299,91 @@ void main() {
       final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
       await tapArena(tester, 10);
       expect(stateOf(c).comboMeter, 1);
+      expect(find.text('x10'), findsWidgets); // combo count (and the buy selector)
       final hpBefore = stateOf(c).enemyHp;
-      await tester.tap(find.text('GOLPE'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'GOLPE');
       expect(stateOf(c).comboMeter, 0);
       // 20x a tap of 0.01, with the starter mask's +15%.
       expect((hpBefore - stateOf(c).enemyHp).toDouble(), closeTo(0.01 * 1.15 * 20, 1e-9));
       await closeApp(tester);
     });
 
-    testWidgets('learn Plancha in the skills tab and use it from the skills row', (tester) async {
+    testWidgets('skills view: locked, learn Plancha, details, then use it in the fight', (tester) async {
       final save = saveFrom((e) {
         e.debugAddCoins(Big.fromInt(100000));
         e.debugSkipFights(3);
       });
       final c = await pumpApp(tester, save: save);
       await openTab(tester, 'Habilidades');
-      expect(find.textContaining('Plancha'), findsOneWidget);
-      await tester.tap(find.text('200')); // Plancha's price
-      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.text('HABILIDADES'), findsOneWidget);
+      expect(find.text('Plancha'), findsWidgets);
+      expect(find.text('???'), findsWidgets); // skills that need a later fight
+      expect(find.textContaining('Salto desde las cuerdas: daño x15'), findsOneWidget);
+      await tapButton(tester, '200'); // Plancha's price
       expect(stateOf(c).skillLevel('plancha'), 1);
-      expect(find.text('PLA'), findsOneWidget);
+      expect(find.text('Nv 1 · 25s'), findsOneWidget);
+      expect(find.text('Nv 2: x20'), findsOneWidget); // preview of the next level
+      await openTab(tester, 'Mejoras');
       final hp = stateOf(c).enemyHp;
-      await tester.tap(find.text('PLA'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.tap(find.bySemanticsLabel('Plancha'));
+      await tester.pump(_short);
       expect(stateOf(c).enemyHp < hp, isTrue);
       expect(stateOf(c).skillCooldownLeft('plancha'), greaterThan(0));
       await closeApp(tester);
     });
   });
 
-  group('masks, talents and prestige', () {
-    testWidgets('masks tab shows the owned and the locked mask', (tester) async {
+  group('masks', () {
+    testWidgets('grid shows the owned mask, locked slots and the detail', (tester) async {
       await pumpApp(tester);
       await openTab(tester, 'Máscaras');
-      expect(find.text('Jaguar Dorado'), findsOneWidget);
-      expect(find.text('Puesta'), findsOneWidget);
-      expect(find.text('???'), findsOneWidget);
+      expect(find.text('MÁSCARAS'), findsOneWidget);
+      expect(find.text('1/2'), findsOneWidget);
+      expect(find.text('Jaguar Dorado'), findsWidgets);
+      expect(find.text('EQUIPADA'), findsOneWidget);
       expect(find.textContaining('+15% daño por toque'), findsOneWidget);
+      expect(find.text('???'), findsWidgets);
       await closeApp(tester);
     });
 
-    testWidgets('buy and equip a mask with belts', (tester) async {
+    testWidgets('buy a mask with belts, then equip it', (tester) async {
       final c = await pumpApp(tester, save: saveFrom((e) => e.debugGrantBelts(5)));
       await openTab(tester, 'Máscaras');
-      await tester.tap(find.text('3')); // price in belts
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.tap(find.bySemanticsLabel('???').first); // La Calaverita, locked
+      await tester.pump(_short);
+      expect(find.text('Cuesta 3 cinturones'), findsOneWidget);
+      await tapButton(tester, '3');
       expect(stateOf(c).ownedMasks, contains('la_calaverita'));
-      await tester.tap(find.text('Poner'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Poner');
       expect(stateOf(c).equippedMask, 'la_calaverita');
+      expect(find.text('EQUIPADA'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
+  group('talents and prestige', () {
+    testWidgets('talents view: branches, belts and the upgrade button', (tester) async {
+      final c = await pumpApp(tester, save: saveFrom((e) => e.debugGrantBelts(5)));
+      await openTab(tester, 'Talentos');
+      expect(find.text('TALENTOS'), findsOneWidget);
+      for (final branch in ['DAÑO', 'IDLE', 'SUERTE']) {
+        expect(find.text(branch), findsOneWidget);
+      }
+      expect(find.text('5'), findsNWidgets(2)); // belts in the HUD and in the title bar
+      expect(find.text('Puños de acero'), findsWidgets);
+      await tapButton(tester, 'Mejorar 1');
+      expect(stateOf(c).talentLevel('punos_acero'), 1);
+      expect(find.text('1/5'), findsOneWidget);
+      expect(find.text('4'), findsNWidgets(2));
       await closeApp(tester);
     });
 
-    testWidgets('talents tab: spend belts on a talent', (tester) async {
-      final c = await pumpApp(tester, save: saveFrom((e) => e.debugGrantBelts(5)));
+    testWidgets('a locked talent says what it needs', (tester) async {
+      await pumpApp(tester, save: saveFrom((e) => e.debugGrantBelts(5)));
       await openTab(tester, 'Talentos');
-      expect(find.textContaining('Cinturones: 5'), findsOneWidget);
-      await tester.tap(find.text('1').first);
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(stateOf(c).talentLevel('punos_acero'), 1);
-      expect(find.textContaining('Cinturones: 4'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel(RegExp('Golpe crítico')));
+      await tester.pump(_short);
+      expect(find.text('Requiere Puños de acero'), findsOneWidget);
       await closeApp(tester);
     });
 
@@ -257,56 +395,73 @@ void main() {
       });
       final c = await pumpApp(tester, save: save);
       await openTab(tester, 'Talentos');
-      await tester.tap(find.text('Cambiar de máscara'));
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('Ganarás 2 cinturones'), findsOneWidget);
-      expect(find.textContaining('Se reinicia'), findsOneWidget);
-      expect(find.textContaining('Se conserva'), findsOneWidget);
-      await tester.tap(find.text('¡Cambiar!'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Cambiar de máscara');
+      expect(find.text('¡NUEVA MÁSCARA!'), findsOneWidget);
+      expect(find.text('+2'), findsOneWidget);
+      expect(find.text('+2 cinturones'), findsOneWidget);
+      expect(find.text('+4% de daño para siempre'), findsOneWidget);
+      expect(find.textContaining('Reinicias pelea'), findsOneWidget);
+      expect(find.textContaining('Conservas máscaras'), findsOneWidget);
+      await tapButton(tester, '¡Cambiar!');
       final s = stateOf(c);
       expect(s.fightNumber, 1);
       expect(s.upgradeLevels, isEmpty);
       expect(s.belts.toDouble(), 2 + 3); // earned + "Nueva cara" achievement
-      expect(find.text('Ganarás 2 cinturones'), findsNothing); // dialog closed
+      expect(find.text('¡NUEVA MÁSCARA!'), findsNothing); // dialog closed
+      expect(find.text('Pelea 1'), findsOneWidget); // back to the fight
       await closeApp(tester);
     });
 
     testWidgets('prestige is refused until the run is worth a belt', (tester) async {
       final c = await pumpApp(tester);
       await openTab(tester, 'Talentos');
-      await tester.tap(find.text('Cambiar de máscara'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Cambiar de máscara');
       expect(find.text('Aún no ganas cinturones'), findsOneWidget);
-      await tester.tap(find.text('¡Cambiar!'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.tap(find.widgetWithText(PixelButton, '¡Cambiar!').first);
+      await tester.pump(_short);
       expect(stateOf(c).stat('prestiges'), 0);
-      await tester.tap(find.text('Volver'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Volver');
       expect(find.text('Aún no ganas cinturones'), findsNothing);
       await closeApp(tester);
     });
 
-    testWidgets('the Android back button closes a pop-up', (tester) async {
+    testWidgets('the Android back button closes a pop-up, then leaves the view', (tester) async {
       await pumpApp(tester);
       await openTab(tester, 'Talentos');
-      await tester.tap(find.text('Cambiar de máscara'));
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('Aún no ganas cinturones'), findsOneWidget);
+      await tapButton(tester, 'Cambiar de máscara');
       await tester.binding.handlePopRoute();
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pump(_short);
       expect(find.text('Aún no ganas cinturones'), findsNothing);
+      expect(find.text('TALENTOS'), findsOneWidget); // still in the view
+      await tester.binding.handlePopRoute();
+      await tester.pump(_short);
+      expect(find.text('TALENTOS'), findsNothing);
+      expect(find.text('Pelea 1'), findsOneWidget);
       await closeApp(tester);
     });
   });
 
   group('boss fight', () {
-    testWidgets('shows the boss, its countdown, and failing drops one fight', (tester) async {
+    testWidgets('the intro waits for "¡A PELEAR!" and then the countdown runs', (tester) async {
       final c = await pumpApp(tester, save: saveFrom((e) => e.debugGoToBoss()));
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('¡JEFE!'), findsOneWidget);
+      expect(find.text('Liga 1 · Pelea 10'), findsOneWidget);
       expect(find.text('El Mariachi Furioso'), findsOneWidget);
-      expect(find.textContaining('JEFE'), findsOneWidget);
+      expect(find.text('Tienes 30 s para vencerlo'), findsOneWidget);
+      expect(stateOf(c).bossTimeLeft, isNull); // the clock has not started
+      await tapButton(tester, '¡A PELEAR!');
+      expect(find.text('¡JEFE!'), findsNothing);
       expect(stateOf(c).bossTimeLeft, isNotNull);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('El Mariachi Furioso'), findsOneWidget); // now at the top of the arena
+      expect(find.textContaining('0:2'), findsOneWidget); // countdown as m:ss
+      await closeApp(tester);
+    });
+
+    testWidgets('failing drops one fight and says so', (tester) async {
+      final c = await pumpApp(tester, save: saveFrom((e) => e.debugGoToBoss()));
+      await tapButton(tester, '¡A PELEAR!');
       for (var i = 0; i < 40 && stateOf(c).fightNumber == 10; i++) {
         await elapse(tester, 1);
       }
@@ -314,6 +469,14 @@ void main() {
       expect(find.text('¡Se acabó el tiempo!'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3)); // the notice goes away
       expect(find.text('¡Se acabó el tiempo!'), findsNothing);
+      await closeApp(tester);
+    });
+
+    testWidgets('the back button does not skip the boss intro', (tester) async {
+      await pumpApp(tester, save: saveFrom((e) => e.debugGoToBoss()));
+      await tester.binding.handlePopRoute();
+      await tester.pump(_short);
+      expect(find.text('¡JEFE!'), findsOneWidget);
       await closeApp(tester);
     });
   });
@@ -324,17 +487,22 @@ void main() {
           e.buyTrainer('don_chuy', const BuyAmount.fixed(1));
         }, edit: fastTrainer, ago: ago);
 
-    testWidgets('appears on a cold start and "Cobrar" pays the base amount', (tester) async {
-      final save = awaySave();
-      final c = await pumpApp(tester, edit: fastTrainer, save: save);
-      expect(find.text('Ganancias sin conexión'), findsOneWidget);
-      expect(find.textContaining('Estuviste fuera 2 h 0 min'), findsOneWidget);
+    testWidgets('appears on a cold start and "Recoger" pays the base amount', (tester) async {
+      final c = await pumpApp(tester, edit: fastTrainer, save: awaySave());
+      expect(find.text('¡BIENVENIDO!'), findsOneWidget);
+      expect(find.text('Estuviste fuera'), findsOneWidget);
+      expect(find.text('2 h 0 min'), findsOneWidget);
       final pending = stateOf(c).pendingOffline!.coinsEarned;
       final before = stateOf(c).coins;
-      await tester.tap(find.text('Cobrar'));
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('Ganancias sin conexión'), findsNothing);
+      await tapButton(tester, 'Recoger');
+      expect(find.text('¡BIENVENIDO!'), findsNothing);
       expect(stateOf(c).coins, before + pending);
+      await closeApp(tester);
+    });
+
+    testWidgets('it says when the cap was reached', (tester) async {
+      await pumpApp(tester, edit: fastTrainer, save: awaySave(ago: const Duration(hours: 9)));
+      expect(find.text('Tope: 4 h. Alárgalo en Talentos.'), findsOneWidget);
       await closeApp(tester);
     });
 
@@ -343,11 +511,11 @@ void main() {
       final c = await pumpApp(tester, edit: fastTrainer, save: awaySave(), ads: ads);
       final pending = stateOf(c).pendingOffline!.coinsEarned;
       final before = stateOf(c).coins;
-      await tester.tap(find.text('Duplicar (ver anuncio)'));
+      await tapButton(tester, 'x2 Ver anuncio');
       await tester.pump(const Duration(milliseconds: 300));
       expect(ads.shown, ['offline_double']);
       expect(stateOf(c).coins, before + pending.mulDouble(2));
-      expect(find.text('Ganancias sin conexión'), findsNothing);
+      expect(find.text('¡BIENVENIDO!'), findsNothing);
       await closeApp(tester);
     });
 
@@ -356,12 +524,11 @@ void main() {
       final c = await pumpApp(tester, edit: fastTrainer, save: awaySave(), ads: ads);
       final pending = stateOf(c).pendingOffline!.coinsEarned;
       final before = stateOf(c).coins;
-      await tester.tap(find.text('Duplicar (ver anuncio)'));
+      await tapButton(tester, 'x2 Ver anuncio');
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('No hay anuncio disponible. Puedes cobrar normal.'), findsOneWidget);
       expect(stateOf(c).coins, before); // nothing paid yet
-      await tester.tap(find.text('Cobrar'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Recoger');
       expect(stateOf(c).coins, before + pending);
       await closeApp(tester);
     });
@@ -371,22 +538,21 @@ void main() {
       final pending = stateOf(c).pendingOffline!.coinsEarned;
       final before = stateOf(c).coins;
       await tester.binding.handlePopRoute();
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pump(_short);
       expect(stateOf(c).coins, before + pending);
       await closeApp(tester);
     });
 
     testWidgets('a very short absence is paid silently with no pop-up', (tester) async {
-      final c = await pumpApp(tester,
-          edit: fastTrainer, save: awaySave(ago: const Duration(seconds: 20)));
-      expect(find.text('Ganancias sin conexión'), findsNothing);
+      final c = await pumpApp(tester, edit: fastTrainer, save: awaySave(ago: const Duration(seconds: 20)));
+      expect(find.text('¡BIENVENIDO!'), findsNothing);
       expect(stateOf(c).pendingOffline, isNull);
       await closeApp(tester);
     });
 
     testWidgets('no pop-up on a brand new game', (tester) async {
       await pumpApp(tester);
-      expect(find.text('Ganancias sin conexión'), findsNothing);
+      expect(find.text('¡BIENVENIDO!'), findsNothing);
       await closeApp(tester);
     });
 
@@ -396,14 +562,197 @@ void main() {
         fastTrainer(f);
       });
       await scrollPanel(tester, -200);
-      await tester.tap(find.text('50')); // hire Don Chuy
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('Ganancias sin conexión'), findsNothing);
+      await tapButton(tester, '50'); // hire Don Chuy
+      expect(find.text('¡BIENVENIDO!'), findsNothing);
       await backgroundFor(tester, const Duration(minutes: 10));
-      expect(find.text('Ganancias sin conexión'), findsOneWidget);
+      expect(find.text('¡BIENVENIDO!'), findsOneWidget);
       expect(stateOf(c).pendingOffline, isNotNull);
-      // The game did not tick while away: the earnings are the offline kind.
-      expect(find.textContaining('Estuviste fuera 10 min'), findsOneWidget);
+      expect(find.text('10 min'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
+  group('shop', () {
+    testWidgets('lists every offer with a placeholder price', (tester) async {
+      await pumpApp(tester);
+      await openTab(tester, 'Tienda');
+      await tester.pump(const Duration(milliseconds: 100)); // prices load
+      expect(find.text('TIENDA'), findsOneWidget);
+      for (final section in ['PARA SIEMPRE', 'CINTURONES', 'GRATIS (ANUNCIO)']) {
+        expect(find.text(section), findsOneWidget);
+      }
+      for (final item in ['Más descanso', 'Doble moneda', 'Puñado', 'Montón', 'Baúl', 'Doble 2 min']) {
+        expect(find.text(item), findsOneWidget, reason: item);
+      }
+      expect(find.text(r'$XX'), findsWidgets);
+      await scrollPanel(tester, -300);
+      expect(find.text('Cinturón'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('buying a permanent item through the store service', (tester) async {
+      final billing = FakeBillingService(placeholderPrice: r'$XX');
+      final c = await pumpApp(tester, billing: billing);
+      await openTab(tester, 'Tienda');
+      await tester.pump(const Duration(milliseconds: 100)); // prices load
+      await tester.tap(find.bySemanticsLabel('Comprar Más descanso'));
+      await tester.pump(_short);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(billing.bought, ['mas_descanso']);
+      expect(stateOf(c).purchases, contains('mas_descanso'));
+      expect(find.text('Tuyo'), findsOneWidget);
+      expect(find.text('¡Gracias!'), findsOneWidget);
+      expect(c.read(gameControllerProvider.notifier).engine.offlineCapHours, 6);
+      await closeApp(tester);
+    });
+
+    testWidgets('a cancelled purchase grants nothing', (tester) async {
+      final billing = FakeBillingService(placeholderPrice: r'$XX', succeeds: false);
+      final c = await pumpApp(tester, billing: billing);
+      await openTab(tester, 'Tienda');
+      await tester.pump(const Duration(milliseconds: 100)); // prices load
+      await tester.tap(find.bySemanticsLabel('Comprar Puñado'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(stateOf(c).belts, Big.zero);
+      expect(stateOf(c).purchases, isEmpty);
+      await closeApp(tester);
+    });
+
+    testWidgets('a belt pack adds spendable belts', (tester) async {
+      final c = await pumpApp(tester);
+      await openTab(tester, 'Tienda');
+      await tester.pump(const Duration(milliseconds: 100)); // prices load
+      await tester.tap(find.bySemanticsLabel('Comprar Montón'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(stateOf(c).belts.toDouble(), 100);
+      await closeApp(tester);
+    });
+
+    testWidgets('the 2-minute boost needs an ad and then cools down', (tester) async {
+      final ads = FakeAdService(delay: const Duration(milliseconds: 50));
+      final c = await pumpApp(tester, ads: ads);
+      await openTab(tester, 'Tienda');
+      await tester.tap(find.bySemanticsLabel('Ver Doble 2 min'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(ads.shown, ['shop_doble_2min']);
+      expect(stateOf(c).boostLeft, greaterThan(100));
+      expect(find.textContaining('Activo'), findsOneWidget);
+      expect(find.text('10:00'), findsOneWidget); // 10-minute cooldown from shop.json
+      // While cooling down the button does nothing.
+      await tester.tap(find.bySemanticsLabel('Ver Doble 2 min'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(ads.shown.length, 1);
+      await closeApp(tester);
+    });
+
+    testWidgets('no ad available: nothing is granted and the player is told', (tester) async {
+      final ads = FakeAdService(succeeds: false, delay: const Duration(milliseconds: 50));
+      final c = await pumpApp(tester, ads: ads);
+      await openTab(tester, 'Tienda');
+      await scrollPanel(tester, -300);
+      await tester.tap(find.bySemanticsLabel('Ver Cinturón'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(stateOf(c).belts, Big.zero);
+      expect(find.text('No hay anuncio disponible.'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
+  group('settings', () {
+    testWidgets('toggles are saved with the game', (tester) async {
+      final store = MemorySaveStore();
+      final c = await pumpApp(tester, store: store);
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      expect(c.read(settingsProvider).vibration, isFalse);
+      await tester.tap(find.bySemanticsLabel('Vibración: NO'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(c.read(settingsProvider).vibration, isTrue);
+      expect(find.bySemanticsLabel('Vibración: SÍ'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Sonido: SÍ'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(store.current!.settings, containsPair('sound', false));
+      expect(store.current!.settings, containsPair('vibration', true));
+      await closeApp(tester);
+    });
+
+    testWidgets('saved settings come back on the next start', (tester) async {
+      final save = SaveData(
+        saveVersion: 1,
+        lastSeen: clock.now().toUtc(),
+        rngState: 1,
+        state: GameEngine(content: loadTestContent()).state,
+        settings: {'sound': false, 'music': false, 'vibration': true, 'notices': true},
+      );
+      final c = await pumpApp(tester, save: save);
+      final s = c.read(settingsProvider);
+      expect([s.sound, s.music, s.vibration, s.notices], [false, false, true, true]);
+      await closeApp(tester);
+    });
+
+    testWidgets('credits come from credits.json and Volver returns to settings', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Créditos'));
+      await tester.pump(_short);
+      expect(find.text('CRÉDITOS'), findsOneWidget);
+      expect(find.text('Press Start 2P'), findsOneWidget);
+      expect(find.text('CodeMan38 · OFL'), findsOneWidget);
+      await tapButton(tester, 'Volver');
+      expect(find.text('AJUSTES'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('privacy shows its placeholder text', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Privacidad'));
+      await tester.pump(_short);
+      expect(find.textContaining('política de privacidad'), findsOneWidget);
+      await tapButton(tester, 'Cerrar');
+      expect(find.textContaining('política de privacidad'), findsNothing);
+      await closeApp(tester);
+    });
+
+    testWidgets('restore purchases brings back owned items', (tester) async {
+      final billing = FakeBillingService(placeholderPrice: r'$XX')..owned.add('doble_moneda');
+      final c = await pumpApp(tester, billing: billing);
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Restaurar'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(stateOf(c).purchases, contains('doble_moneda'));
+      expect(find.text('Compras restauradas.'), findsOneWidget);
+      await tester.tap(buttonLabelled('Restaurar'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('No hay compras que restaurar.'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('Borrar datos asks first, then starts a new game', (tester) async {
+      final store = MemorySaveStore();
+      final c = await pumpApp(tester, store: store, save: saveFrom((e) {
+        e.debugAddCoins(Big.fromInt(777));
+        e.debugSkipFights(5);
+      }));
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Borrar datos'));
+      await tester.pump(_short);
+      expect(find.text('¿Borrar datos?'), findsOneWidget);
+      // Backing out changes nothing.
+      await tapButton(tester, 'Volver');
+      expect(stateOf(c).fightNumber, 6);
+      await tester.tap(buttonLabelled('Borrar datos'));
+      await tester.pump(_short);
+      await tapButton(tester, 'Borrar');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(stateOf(c).fightNumber, 1);
+      expect(stateOf(c).coins, Big.zero);
+      expect(store.current, isNull);
+      expect(find.text('Pelea 1'), findsOneWidget);
       await closeApp(tester);
     });
   });
@@ -429,8 +778,8 @@ void main() {
 
     testWidgets('killing the app at a random moment loses at most 10 seconds', (tester) async {
       final store = MemorySaveStore();
-      final c = await pumpApp(tester,
-          store: store, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 3});
+      void edit(Map<String, Map<String, dynamic>> f) => f['balance.json']!['tap'] = {'baseDamage': 3};
+      final c = await pumpApp(tester, store: store, edit: edit);
       await tapArena(tester, 12); // a couple of fights won
       await elapse(tester, 17); // the last save happened at 10 s
       final progressAtKill = stateOf(c).stat('taps');
@@ -440,9 +789,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       expect(killedAt.difference(savedAt), lessThanOrEqualTo(const Duration(seconds: 10, milliseconds: 100)));
       // Reopen from what is on disk.
-      final c2 = await pumpApp(tester, store: store, save: store.current,
-          edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 3});
-      expect(stateOf(c2).stat('taps'), progressAtKill); // taps were before the save
+      final c2 = await pumpApp(tester, store: store, save: store.current, edit: edit);
+      expect(stateOf(c2).stat('taps'), progressAtKill); // the taps were before the save
       expect(stateOf(c2).fightNumber, greaterThan(1));
       await closeApp(tester);
     });
@@ -459,7 +807,8 @@ void main() {
       expect(stateOf(c).upgradeLevel('puno_duro'), 5);
       expect(stateOf(c).belts.toDouble(), 7);
       expect(stateOf(c).equippedMask, 'la_calaverita');
-      expect(find.textContaining('Puño duro  Nv. 5'), findsOneWidget);
+      expect(find.text('Nv 5'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget); // belts in the HUD
       await closeApp(tester);
     });
   });
@@ -467,20 +816,15 @@ void main() {
   group('debug panel', () {
     testWidgets('opens with a long press on the fight number', (tester) async {
       final c = await pumpApp(tester);
-      await tester.longPress(find.text('Pelea 1'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await openDebug(tester);
       expect(find.text('Depuración'), findsOneWidget);
-      await tester.tap(find.text('+1K monedas'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, '+1K');
       expect(stateOf(c).coins.toDouble(), 1000);
-      await tester.tap(find.text('Saltar pelea'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, '+1 pelea');
       expect(stateOf(c).fightNumber, 2);
-      await tester.tap(find.text('Ir al jefe'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Jefe');
       expect(stateOf(c).fightNumber, 10);
-      await tester.tap(find.text('Cerrar'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, 'Cerrar');
       expect(find.text('Depuración'), findsNothing);
       await closeApp(tester);
     });
@@ -491,12 +835,9 @@ void main() {
         fastTrainer(f);
       });
       await scrollPanel(tester, -200);
-      await tester.tap(find.text('50'));
-      await tester.pump(const Duration(milliseconds: 20));
-      await tester.longPress(find.text('Pelea 1'));
-      await tester.pump(const Duration(milliseconds: 20));
-      await tester.tap(find.text('Avanzar 1 min'));
-      await tester.pump(const Duration(milliseconds: 20));
+      await tapButton(tester, '50');
+      await openDebug(tester);
+      await tapButton(tester, '+1m');
       expect(stateOf(c).fightNumber, greaterThan(1));
       await closeApp(tester);
     });
@@ -507,13 +848,10 @@ void main() {
         fastTrainer(f);
       });
       await scrollPanel(tester, -200);
-      await tester.tap(find.text('50'));
-      await tester.pump(const Duration(milliseconds: 20));
-      await tester.longPress(find.text('Pelea 1'));
-      await tester.pump(const Duration(milliseconds: 20));
-      await tester.tap(find.text('Simular ausencia 4 h'));
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('Ganancias sin conexión'), findsOneWidget);
+      await tapButton(tester, '50');
+      await openDebug(tester);
+      await tapButton(tester, '4 h');
+      expect(find.text('¡BIENVENIDO!'), findsOneWidget);
       await closeApp(tester);
     });
   });

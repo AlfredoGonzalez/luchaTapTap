@@ -15,11 +15,16 @@ All in [`docs/`](docs/). The Technical Spec is the entry point for building; if 
 
 ## Status
 
-**M1 (core loop), M2 (systems) and M3 (save and offline) are built**, pending the designer's review and a run on a real Android device. Next: M4 (UI to the mockups). See the milestone list in the Technical Spec, section 9, and [`docs/DECISIONS.md`](docs/DECISIONS.md) for the choices made where the documents were silent.
+**M1 to M4 are built**, pending the designer's review and a run on a real Android device. Next: M5 (balance pass). See the milestone list in the Technical Spec, section 9, and [`docs/DECISIONS.md`](docs/DECISIONS.md) for the choices made where the documents were silent.
 
-- **M1:** `Big` number type, economy formulas, game engine, JSON content, placeholder fight screen.
+- **M1:** `Big` number type, economy formulas, game engine, JSON content.
 - **M2:** combo and finisher, 5 skills, bosses with a countdown, lucky pickups, prestige with Belts, talent tree, masks, achievements, endless leagues.
-- **M3:** save and load (atomic write, backup, migrations), offline earnings with the pop-up and a rewarded-ad double (fake ad service), debug panel.
+- **M3:** save and load (atomic write, backup, migrations), offline earnings with the pop-up and a rewarded-ad double, debug panel.
+- **M4:** the 14 screens of the UI mockups with the Press Start 2P font and pixel icons: studio splash, loading, fight, boss intro, upgrades, skills, masks, talents, prestige, offline pop-up, shop, settings and credits. Store purchases and ads run on fake services until M7/M8.
+
+## Play it in the browser
+
+Every push to `main` publishes a web build to GitHub Pages: <https://alfredogonzalez.github.io/luchaTapTap/>. It is only for testing (the game itself is Android); the save lives in the browser's local storage. One-time setup: **Settings > Pages > Build and deployment > Source: GitHub Actions**.
 
 ## Layout
 
@@ -52,6 +57,7 @@ flutter pub get
 flutter analyze
 flutter test
 flutter run            # on an Android device or emulator
+flutter run -d chrome  # in the browser (testing only)
 ```
 
 In a debug build, long-press the fight number to open the debug panel (add coins, skip fights, fast-forward time, simulate an absence).

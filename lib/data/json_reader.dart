@@ -18,7 +18,8 @@ class JsonReader {
     final value = _map[key];
     if (value is! T) {
       throw ContentException(
-          '${_where(key)} must be $typeName (found ${value.runtimeType})');
+        '${_where(key)} must be $typeName (found ${value.runtimeType})',
+      );
     }
     return value;
   }
@@ -51,7 +52,8 @@ class JsonReader {
     final value = _typed<num>(key, 'a number').toDouble();
     if (min != null && (minExclusive ? value <= min : value < min)) {
       throw ContentException(
-          '${_where(key)} must be ${minExclusive ? 'greater than' : 'at least'} $min');
+        '${_where(key)} must be ${minExclusive ? 'greater than' : 'at least'} $min',
+      );
     }
     return value;
   }
@@ -69,7 +71,9 @@ class JsonReader {
       if (item is! Map<String, dynamic>) {
         throw ContentException('${_where('$key[$i]')} must be an object');
       }
-      result.add(JsonReader(source, item, '${path.isEmpty ? '' : '$path.'}$key[$i]'));
+      result.add(
+        JsonReader(source, item, '${path.isEmpty ? '' : '$path.'}$key[$i]'),
+      );
     }
     return result;
   }
@@ -77,8 +81,7 @@ class JsonReader {
   List<int> integers(String key, {int? min}) {
     final value = _typed<List<dynamic>>(key, 'a list of whole numbers');
     return [
-      for (var i = 0; i < value.length; i++)
-        _intAt(value[i], '$key[$i]', min),
+      for (var i = 0; i < value.length; i++) _intAt(value[i], '$key[$i]', min),
     ];
   }
 
@@ -99,7 +102,8 @@ class JsonReader {
         value[i] is num && (min == null || (value[i] as num) >= min)
             ? (value[i] as num).toDouble()
             : throw ContentException(
-                '${_where('$key[$i]')} must be a number${min == null ? '' : ' of at least $min'}'),
+                '${_where('$key[$i]')} must be a number${min == null ? '' : ' of at least $min'}',
+              ),
     ];
   }
 
@@ -109,7 +113,9 @@ class JsonReader {
       for (final entry in value.entries)
         entry.key: entry.value is num
             ? (entry.value as num).toDouble()
-            : throw ContentException('${_where('$key.${entry.key}')} must be a number'),
+            : throw ContentException(
+                '${_where('$key.${entry.key}')} must be a number',
+              ),
     };
   }
 
@@ -129,7 +135,9 @@ class JsonReader {
       for (final entry in value.entries)
         entry.key: entry.value is String
             ? entry.value as String
-            : throw ContentException('${_where('$key.${entry.key}')} must be a string'),
+            : throw ContentException(
+                '${_where('$key.${entry.key}')} must be a string',
+              ),
     };
   }
 
@@ -138,7 +146,8 @@ class JsonReader {
     final found = integer('schemaVersion');
     if (found != expected) {
       throw ContentException(
-          '$source: schemaVersion is $found but this build supports $expected');
+        '$source: schemaVersion is $found but this build supports $expected',
+      );
     }
   }
 }

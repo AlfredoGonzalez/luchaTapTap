@@ -20,7 +20,11 @@ class DamageOutcome {
     this.luckySpawned = false,
   });
 
-  static const none = DamageOutcome(damageDealt: Big.zero, defeats: 0, coinsEarned: Big.zero);
+  static const none = DamageOutcome(
+    damageDealt: Big.zero,
+    defeats: 0,
+    coinsEarned: Big.zero,
+  );
 
   /// Damage that was applied (a tap's damage, or the idle damage of a tick).
   final Big damageDealt;
@@ -37,13 +41,13 @@ class DamageOutcome {
   final bool luckySpawned;
 
   DamageOutcome operator +(DamageOutcome other) => DamageOutcome(
-        damageDealt: damageDealt + other.damageDealt,
-        defeats: defeats + other.defeats,
-        coinsEarned: coinsEarned + other.coinsEarned,
-        isCrit: isCrit || other.isCrit,
-        bossTimedOut: bossTimedOut || other.bossTimedOut,
-        luckySpawned: luckySpawned || other.luckySpawned,
-      );
+    damageDealt: damageDealt + other.damageDealt,
+    defeats: defeats + other.defeats,
+    coinsEarned: coinsEarned + other.coinsEarned,
+    isCrit: isCrit || other.isCrit,
+    bossTimedOut: bossTimedOut || other.bossTimedOut,
+    luckySpawned: luckySpawned || other.luckySpawned,
+  );
 }
 
 enum BuyFailure {
@@ -58,7 +62,11 @@ enum BuyFailure {
 
 /// What a purchase would do (or did), for the button label and the result.
 class BuyQuote {
-  const BuyQuote({required this.count, required this.cost, required this.failure});
+  const BuyQuote({
+    required this.count,
+    required this.cost,
+    required this.failure,
+  });
 
   /// Levels bought. For MAX with nothing affordable this is 1 so the button
   /// can show the price of the next level.
@@ -71,7 +79,7 @@ class BuyQuote {
   bool get canBuy => failure == null;
 }
 
-enum SkillFailure { unknown, notLearned, cooldown, noBoss }
+enum SkillFailure { unknown, notLearned, cooldown, noBoss, waitingBoss }
 
 class SkillUseResult {
   const SkillUseResult({this.failure, this.outcome = DamageOutcome.none});
@@ -94,8 +102,8 @@ class PrestigePreview {
 /// methods; it never changes [state] directly.
 class GameEngine {
   GameEngine({required this.content, GameState? state, SeededRng? rng})
-      : formulas = Formulas(content.balance),
-        rng = rng ?? SeededRng(_defaultSeed) {
+    : formulas = Formulas(content.balance),
+      rng = rng ?? SeededRng(_defaultSeed) {
     _state = state ?? _initialState();
   }
 
@@ -134,12 +142,27 @@ class GameEngine {
   FightInfo get fightInfo => content.fightInfo(_state.fightNumber);
   OpponentDef get opponent => fightInfo.opponent;
   bool get isBossFight => fightInfo.isBoss;
+
+  /// True while a boss fight is showing its intro: the countdown has not
+  /// started, so nothing is damaged until [startBoss].
+  bool get awaitingBossStart => isBossFight && _state.bossTimeLeft == null;
+
+  /// "¡A PELEAR!": starts the boss countdown.
+  void startBoss() {
+    if (!awaitingBossStart) return;
+    _state = _state.copyWith(bossTimeLeft: _bossSeconds(fightInfo));
+  }
+
   Big get enemyMaxHp => _maxHpOf(_state.fightNumber);
 
   Big _maxHpOf(int fight) {
     final info = content.fightInfo(fight);
     final o = info.opponent;
-    var hp = formulas.opponentHp(fight, isBoss: info.isBoss, hpMultiplier: o.hpMultiplier);
+    var hp = formulas.opponentHp(
+      fight,
+      isBoss: info.isBoss,
+      hpMultiplier: o.hpMultiplier,
+    );
     if (info.loops > 0) {
       hp = hp * Big.powOf(info.league.loopScale, info.loops);
     }
@@ -159,7 +182,9 @@ class GameEngine {
   double _talentSum(TalentEffect effect) {
     var total = 0.0;
     for (final t in content.talents) {
-      if (t.effect == effect) total += t.valuePerLevel * _state.talentLevel(t.id);
+      if (t.effect == effect) {
+        total += t.valuePerLevel * _state.talentLevel(t.id);
+      }
     }
     return total;
   }
@@ -176,7 +201,8 @@ class GameEngine {
 
   /// Permanent damage factor from Belts earned: 1 + bonus * lifetime belts.
   Big get beltMultiplier =>
-      Big.one + _state.lifetimeBelts.mulDouble(_balance.prestige.beltDamageBonus);
+      Big.one +
+      _state.lifetimeBelts.mulDouble(_balance.prestige.beltDamageBonus);
 
   /// Value of the active skill with [effect], or null when none is active.
   double? _activeSkillValue(SkillEffect effect) {
@@ -196,7 +222,8 @@ class GameEngine {
         base += _state.upgradeLevel(u.id) * u.perLevelValue;
       }
     }
-    final factor = (1 + _talentSum(TalentEffect.tapDamageMultiplier)) *
+    final factor =
+        (1 + _talentSum(TalentEffect.tapDamageMultiplier)) *
         (1 + _maskBonus(MaskBonusType.tapDamageMultiplier)) *
         (_activeSkillValue(SkillEffect.tapMultiplier) ?? 1);
     return Big.fromDouble(base).mulDouble(factor) * beltMultiplier;
@@ -219,28 +246,52 @@ class GameEngine {
     var total = Big.zero;
     for (final trainer in content.trainers) {
       final level = _state.trainerLevel(trainer.id);
-      if (level > 0) total += Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble());
+      if (level > 0) {
+        total += Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble());
+      }
     }
     if (total.isZero) return total;
-    final factor = (1 + _talentSum(TalentEffect.trainerDamageMultiplier)) *
+    final factor =
+        (1 + _talentSum(TalentEffect.trainerDamageMultiplier)) *
         (1 + _maskBonus(MaskBonusType.trainerDamageMultiplier)) *
-        (withSkills ? (_activeSkillValue(SkillEffect.trainerMultiplier) ?? 1) : 1);
+        (withSkills
+            ? (_activeSkillValue(SkillEffect.trainerMultiplier) ?? 1)
+            : 1);
     return total.mulDouble(factor) * beltMultiplier;
   }
 
   Big get damagePerSecond => damagePerSecondOf(withSkills: true);
 
-  double get _coinMultiplier =>
+  /// Product of the permanent coin multipliers of owned store purchases.
+  double get _purchaseCoinMultiplier {
+    var factor = 1.0;
+    for (final id in _state.purchases) {
+      for (final item in content.shopItems) {
+        if (item.id == id) factor *= item.coinMultiplier;
+      }
+    }
+    return factor;
+  }
+
+  double get coinMultiplier =>
       (1 + _talentSum(TalentEffect.coinGainMultiplier)) *
-      (1 + _maskBonus(MaskBonusType.coinGainMultiplier));
+      (1 + _maskBonus(MaskBonusType.coinGainMultiplier)) *
+      _purchaseCoinMultiplier *
+      (_state.boostLeft > 0 ? _state.boostMultiplier : 1);
 
   Big _rewardOf(int fight) {
     final info = content.fightInfo(fight);
     var reward = formulas
-        .coinsReward(fight, isBoss: info.isBoss, coinMultiplier: info.opponent.coinMultiplier)
-        .mulDouble(_coinMultiplier);
+        .coinsReward(
+          fight,
+          isBoss: info.isBoss,
+          coinMultiplier: info.opponent.coinMultiplier,
+        )
+        .mulDouble(coinMultiplier);
     if (info.isBoss) {
-      reward = reward.mulDouble(1 + _maskBonus(MaskBonusType.bossCoinMultiplier));
+      reward = reward.mulDouble(
+        1 + _maskBonus(MaskBonusType.bossCoinMultiplier),
+      );
     }
     return reward;
   }
@@ -254,6 +305,7 @@ class GameEngine {
   /// One tap. Applied immediately, not on the tick. Damage beyond the current
   /// opponent's HP is not carried over to the next one.
   DamageOutcome tap() {
+    if (awaitingBossStart) return DamageOutcome.none;
     final chance = critChance;
     final isCrit = chance > 0 && rng.nextDouble() < chance;
     var damage = tapDamage;
@@ -286,7 +338,7 @@ class GameEngine {
   /// The finisher ("GOLPE"): one large hit, then the meter resets. Null when
   /// the meter is not full.
   DamageOutcome? finisher() {
-    if (!finisherReady) return null;
+    if (!finisherReady || awaitingBossStart) return null;
     final damage = tapDamage.mulDouble(_balance.combo.finisherMultiplier);
     _state = _state.copyWith(comboMeter: 0);
     final outcome = _applyDamage(damage, carryOver: false);
@@ -301,6 +353,8 @@ class GameEngine {
   /// One fixed simulation step of `1 / ticksPerSecond` seconds: idle damage,
   /// boss countdown, combo decay, skill timers and lucky events.
   DamageOutcome tick() {
+    // The boss intro is showing: the fight has not begun.
+    if (awaitingBossStart) return DamageOutcome.none;
     final dt = 1 / _balance.ticksPerSecond;
     var outcome = DamageOutcome.none;
 
@@ -308,7 +362,8 @@ class GameEngine {
     if (!dps.isZero) {
       final damage = dps.divDouble(_balance.ticksPerSecond.toDouble());
       final dealt = _applyDamage(damage, carryOver: true);
-      outcome = outcome +
+      outcome =
+          outcome +
           DamageOutcome(
             damageDealt: damage,
             defeats: dealt.defeats,
@@ -319,6 +374,7 @@ class GameEngine {
     final timedOut = _tickBossTimer(dt);
     _tickCombo(dt);
     _tickSkills(dt);
+    _tickBoost(dt);
     final spawned = _tickLucky(dt);
     if (defeatsHappened(outcome)) _awardAchievements();
 
@@ -336,15 +392,13 @@ class GameEngine {
 
   bool _tickBossTimer(double dt) {
     if (!isBossFight) {
-      if (_state.bossTimeLeft != null) _state = _state.copyWith(clearBossTimer: true);
+      if (_state.bossTimeLeft != null) {
+        _state = _state.copyWith(clearBossTimer: true);
+      }
       return false;
     }
     final left = _state.bossTimeLeft;
-    if (left == null) {
-      // The countdown starts on the first tick of the boss fight.
-      _state = _state.copyWith(bossTimeLeft: _bossSeconds(fightInfo));
-      return false;
-    }
+    if (left == null) return false; // waiting for startBoss
     final remaining = left - dt;
     if (remaining > 0) {
       _state = _state.copyWith(bossTimeLeft: remaining);
@@ -372,13 +426,21 @@ class GameEngine {
   void _tickSkills(double dt) {
     if (_state.skillCooldowns.isEmpty && _state.skillActive.isEmpty) return;
     Map<String, double> advance(Map<String, double> timers) => {
-          for (final e in timers.entries)
-            if (e.value - dt > 0) e.key: e.value - dt,
-        };
+      for (final e in timers.entries)
+        if (e.value - dt > 0) e.key: e.value - dt,
+    };
     _state = _state.copyWith(
       skillCooldowns: advance(_state.skillCooldowns),
       skillActive: advance(_state.skillActive),
     );
+  }
+
+  void _tickBoost(double dt) {
+    if (_state.boostLeft <= 0) return;
+    final left = _state.boostLeft - dt;
+    _state = left > 0
+        ? _state.copyWith(boostLeft: left)
+        : _state.copyWith(boostLeft: 0, boostMultiplier: 1);
   }
 
   bool _tickLucky(double dt) {
@@ -392,12 +454,17 @@ class GameEngine {
     }
     final lucky = _balance.lucky;
     if (lucky.spawnPerSecond <= 0) return false;
-    final rate = lucky.spawnPerSecond *
+    final rate =
+        lucky.spawnPerSecond *
         (1 + _talentSum(TalentEffect.luckyRateMultiplier)) *
         (_activeSkillValue(SkillEffect.luckBoost) ?? 1);
     if (rng.nextDouble() >= rate * dt) return false;
     _state = _state.copyWith(
-      lucky: LuckyEvent(x: rng.nextDouble(), y: rng.nextDouble(), lifeLeft: lucky.lifetimeSeconds),
+      lucky: LuckyEvent(
+        x: rng.nextDouble(),
+        y: rng.nextDouble(),
+        lifeLeft: lucky.lifetimeSeconds,
+      ),
     );
     return true;
   }
@@ -406,7 +473,8 @@ class GameEngine {
   /// there was nothing to collect.
   Big? collectLucky() {
     if (_state.lucky == null) return null;
-    final reward = _rewardOf(_state.fightNumber).mulDouble(_balance.lucky.rewardCoinMultiple);
+    final reward = _rewardOf(_state.fightNumber)
+        .mulDouble(_balance.lucky.rewardCoinMultiple);
     _state = _state.copyWith(
       coins: _state.coins + reward,
       totalCoinsEarned: _state.totalCoinsEarned + reward,
@@ -459,16 +527,24 @@ class GameEngine {
       clearBossTimer: defeats > 0,
     );
     if (defeats > 0) _unlockLeagueMasks();
-    return DamageOutcome(damageDealt: damage, defeats: defeats, coinsEarned: earned);
+    return DamageOutcome(
+      damageDealt: damage,
+      defeats: defeats,
+      coinsEarned: earned,
+    );
   }
 
-  Map<String, int> _bump(Map<String, int> stats, String key, int by) =>
-      {...stats, key: (stats[key] ?? 0) + by};
+  Map<String, int> _bump(Map<String, int> stats, String key, int by) => {
+    ...stats,
+    key: (stats[key] ?? 0) + by,
+  };
 
   void _unlockLeagueMasks() {
     var owned = _state.ownedMasks;
     for (final m in content.masks) {
-      if (m.unlockRule != MaskUnlockRule.league || owned.contains(m.id)) continue;
+      if (m.unlockRule != MaskUnlockRule.league || owned.contains(m.id)) {
+        continue;
+      }
       if (_state.bestFight > content.leagueEndFight(m.unlockValue.toInt())) {
         owned = {...owned, m.id};
       }
@@ -489,28 +565,42 @@ class GameEngine {
       lifetime += reward;
     }
     if (done != _state.achievements) {
-      _state = _state.copyWith(achievements: done, belts: belts, lifetimeBelts: lifetime);
+      _state = _state.copyWith(
+        achievements: done,
+        belts: belts,
+        lifetimeBelts: lifetime,
+      );
     }
   }
 
   // ---------------------------------------------------------------------------
   // Upgrades and trainers
 
-  bool isTrainerUnlocked(TrainerDef trainer) => _state.fightNumber >= trainer.unlockFight;
+  bool isTrainerUnlocked(TrainerDef trainer) =>
+      _state.fightNumber >= trainer.unlockFight;
 
   /// Price and feasibility of buying [amount] levels of upgrade [id].
   BuyQuote quoteUpgrade(String id, BuyAmount amount) {
     final def = _findUpgrade(id);
     if (def == null) return _failed(BuyFailure.unknownItem);
-    return _quote(def.baseCost, _state.upgradeLevel(id), amount, unlocked: true);
+    return _quote(
+      def.baseCost,
+      _state.upgradeLevel(id),
+      amount,
+      unlocked: true,
+    );
   }
 
   /// Price and feasibility of buying [amount] levels of trainer [id].
   BuyQuote quoteTrainer(String id, BuyAmount amount) {
     final def = _findTrainer(id);
     if (def == null) return _failed(BuyFailure.unknownItem);
-    return _quote(def.baseCost, _state.trainerLevel(id), amount,
-        unlocked: isTrainerUnlocked(def));
+    return _quote(
+      def.baseCost,
+      _state.trainerLevel(id),
+      amount,
+      unlocked: isTrainerUnlocked(def),
+    );
   }
 
   BuyQuote buyUpgrade(String id, BuyAmount amount) {
@@ -518,7 +608,10 @@ class GameEngine {
     if (!quote.canBuy) return quote;
     _state = _state.copyWith(
       coins: _state.coins - quote.cost,
-      upgradeLevels: {..._state.upgradeLevels, id: _state.upgradeLevel(id) + quote.count},
+      upgradeLevels: {
+        ..._state.upgradeLevels,
+        id: _state.upgradeLevel(id) + quote.count,
+      },
     );
     return quote;
   }
@@ -528,7 +621,10 @@ class GameEngine {
     if (!quote.canBuy) return quote;
     _state = _state.copyWith(
       coins: _state.coins - quote.cost,
-      trainerLevels: {..._state.trainerLevels, id: _state.trainerLevel(id) + quote.count},
+      trainerLevels: {
+        ..._state.trainerLevels,
+        id: _state.trainerLevel(id) + quote.count,
+      },
     );
     return quote;
   }
@@ -536,7 +632,12 @@ class GameEngine {
   BuyQuote _failed(BuyFailure failure) =>
       BuyQuote(count: 0, cost: Big.zero, failure: failure);
 
-  BuyQuote _quote(double baseCost, int owned, BuyAmount amount, {required bool unlocked}) {
+  BuyQuote _quote(
+    double baseCost,
+    int owned,
+    BuyAmount amount, {
+    required bool unlocked,
+  }) {
     final int count;
     if (amount.isMax) {
       final affordable = formulas.maxAffordable(_state.coins, baseCost, owned);
@@ -573,7 +674,8 @@ class GameEngine {
   // ---------------------------------------------------------------------------
   // Skills
 
-  bool isSkillUnlocked(SkillDef skill) => _state.fightNumber >= skill.unlockFight;
+  bool isSkillUnlocked(SkillDef skill) =>
+      _state.fightNumber >= skill.unlockFight;
 
   /// Cost and feasibility of learning or levelling up skill [id] (coins).
   BuyQuote quoteSkill(String id) {
@@ -617,7 +719,12 @@ class GameEngine {
     final def = _findSkill(id);
     if (def == null) return const SkillUseResult(failure: SkillFailure.unknown);
     final level = _state.skillLevel(id);
-    if (level == 0) return const SkillUseResult(failure: SkillFailure.notLearned);
+    if (level == 0) {
+      return const SkillUseResult(failure: SkillFailure.notLearned);
+    }
+    if (awaitingBossStart) {
+      return const SkillUseResult(failure: SkillFailure.waitingBoss);
+    }
     if (_state.skillCooldownLeft(id) > 0) {
       return const SkillUseResult(failure: SkillFailure.cooldown);
     }
@@ -628,16 +735,23 @@ class GameEngine {
         final damage = tapDamage.mulDouble(value);
         final dealt = _applyDamage(damage, carryOver: false);
         outcome = DamageOutcome(
-            damageDealt: damage, defeats: dealt.defeats, coinsEarned: dealt.coinsEarned);
+          damageDealt: damage,
+          defeats: dealt.defeats,
+          coinsEarned: dealt.coinsEarned,
+        );
         _awardAchievements();
       case SkillEffect.bossTimerExtend:
         final left = _state.bossTimeLeft;
-        if (left == null) return const SkillUseResult(failure: SkillFailure.noBoss);
+        if (left == null) {
+          return const SkillUseResult(failure: SkillFailure.noBoss);
+        }
         _state = _state.copyWith(bossTimeLeft: left + value);
       case SkillEffect.tapMultiplier:
       case SkillEffect.luckBoost:
       case SkillEffect.trainerMultiplier:
-        _state = _state.copyWith(skillActive: {..._state.skillActive, id: def.duration});
+        _state = _state.copyWith(
+          skillActive: {..._state.skillActive, id: def.duration},
+        );
     }
     _state = _state.copyWith(
       skillCooldowns: {..._state.skillCooldowns, id: cooldownOf(def)},
@@ -665,7 +779,11 @@ class GameEngine {
     }
     final level = _state.talentLevel(id);
     if (level >= def.maxLevel) {
-      return const BuyQuote(count: 0, cost: Big.zero, failure: BuyFailure.maxed);
+      return const BuyQuote(
+        count: 0,
+        cost: Big.zero,
+        failure: BuyFailure.maxed,
+      );
     }
     final cost = Big.fromDouble(def.costs[level]);
     final parent = def.parent;
@@ -704,10 +822,18 @@ class GameEngine {
       return _failed(BuyFailure.unknownItem);
     }
     if (ownsMask(id)) {
-      return const BuyQuote(count: 0, cost: Big.zero, failure: BuyFailure.alreadyOwned);
+      return const BuyQuote(
+        count: 0,
+        cost: Big.zero,
+        failure: BuyFailure.alreadyOwned,
+      );
     }
     if (def.unlockRule != MaskUnlockRule.belts) {
-      return const BuyQuote(count: 0, cost: Big.zero, failure: BuyFailure.notPurchasable);
+      return const BuyQuote(
+        count: 0,
+        cost: Big.zero,
+        failure: BuyFailure.notPurchasable,
+      );
     }
     final cost = Big.fromDouble(def.unlockValue);
     return BuyQuote(
@@ -742,8 +868,53 @@ class GameEngine {
 
   /// Records a store purchase (for example "mas_descanso").
   void grantPurchase(String id) {
+    content.shopItem(id); // throws on an unknown id
     _state = _state.copyWith(purchases: {..._state.purchases, id});
   }
+
+  bool ownsPurchase(String id) => _state.purchases.contains(id);
+
+  /// Adds the Belts of a belt pack bought with real money. They can be spent
+  /// but do not count as earned Belts for the permanent damage bonus.
+  void grantBeltPack(String id) {
+    final item = content.shopItem(id);
+    _state = _state.copyWith(belts: _state.belts + Big.fromInt(item.belts));
+  }
+
+  /// Seconds until the rewarded-ad offer [id] can be used again (0 when ready).
+  double adOfferWait(String id, int nowMs) {
+    final readyAt = _state.adReadyAt[id] ?? 0;
+    return readyAt > nowMs ? (readyAt - nowMs) / 1000 : 0;
+  }
+
+  /// Applies a rewarded-ad offer after the ad was watched and starts its
+  /// cooldown. Returns false if it is still cooling down.
+  bool claimAdOffer(String id, int nowMs) {
+    final item = content.shopItem(id);
+    if (adOfferWait(id, nowMs) > 0) return false;
+    switch (item.kind) {
+      case ShopKind.boost:
+        _state = _state.copyWith(
+          boostLeft: item.durationSeconds,
+          boostMultiplier: item.multiplier,
+        );
+      case ShopKind.adBelt:
+        _state = _state.copyWith(belts: _state.belts + Big.fromInt(item.belts));
+      case ShopKind.purchase:
+      case ShopKind.beltPack:
+        return false; // paid items, not ad offers
+    }
+    _state = _state.copyWith(
+      adReadyAt: {
+        ..._state.adReadyAt,
+        id: nowMs + (item.cooldownSeconds * 1000).round(),
+      },
+    );
+    return true;
+  }
+
+  /// Starts over with a brand new game (Borrar datos).
+  void resetAll() => _state = _initialState();
 
   // ---------------------------------------------------------------------------
   // Prestige ("Cambiar de máscara")
@@ -762,8 +933,8 @@ class GameEngine {
   bool prestige() {
     final preview = prestigePreview();
     if (!preview.canPrestige) return false;
-    final startCoins = _balance.startCoins +
-        _talentSum(TalentEffect.startingCoins);
+    final startCoins =
+        _balance.startCoins + _talentSum(TalentEffect.startingCoins);
     final fight = _balance.startFightNumber;
     _state = _state.copyWith(
       coins: Big.fromDouble(startCoins),
@@ -793,7 +964,8 @@ class GameEngine {
   /// the equipped mask and store purchases, never above the maximum.
   double get offlineCapHours {
     final cfg = _balance.offline;
-    var hours = cfg.baseCapHours +
+    var hours =
+        cfg.baseCapHours +
         _talentSum(TalentEffect.offlineCapHours) +
         _maskBonus(MaskBonusType.offlineCapHours);
     for (final id in _state.purchases) {
@@ -815,7 +987,9 @@ class GameEngine {
   /// Cost is bounded by the length of a league, not by the time away, so eight
   /// hours compute instantly.
   OfflineReport? applyOffline(Duration away) {
-    final awaySeconds = away.isNegative ? 0.0 : away.inMicroseconds / Duration.microsecondsPerSecond;
+    final awaySeconds = away.isNegative
+        ? 0.0
+        : away.inMicroseconds / Duration.microsecondsPerSecond;
     if (awaySeconds <= 0) return null;
     final capSeconds = offlineCapHours * 3600;
     final applied = math.min(awaySeconds, capSeconds);
@@ -899,7 +1073,9 @@ class GameEngine {
       equipped = content.masks.firstWhere((m) => owned.contains(m.id)).id;
     }
     _state = _state.copyWith(
-      enemyHp: _state.enemyHp > max ? max : (_state.enemyHp.isZero ? max : _state.enemyHp),
+      enemyHp: _state.enemyHp > max
+          ? max
+          : (_state.enemyHp.isZero ? max : _state.enemyHp),
       ownedMasks: owned,
       equippedMask: equipped,
     );
@@ -920,7 +1096,8 @@ class GameEngine {
   }
 
   /// Jumps [count] fights ahead without rewards.
-  void debugSkipFights(int count) => _debugGoToFight(_state.fightNumber + count);
+  void debugSkipFights(int count) =>
+      _debugGoToFight(_state.fightNumber + count);
 
   /// Jumps to the next boss fight.
   void debugGoToBoss() {

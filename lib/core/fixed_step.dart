@@ -3,8 +3,8 @@
 /// on the frame rate.
 class FixedStepper {
   FixedStepper({required int ticksPerSecond, required this.maxCatchUpTicks})
-      : assert(ticksPerSecond > 0),
-        _stepMicros = Duration.microsecondsPerSecond ~/ ticksPerSecond;
+    : assert(ticksPerSecond > 0),
+      _stepMicros = Duration.microsecondsPerSecond ~/ ticksPerSecond;
 
   /// After a long stall at most this many ticks run; the rest is dropped.
   final int maxCatchUpTicks;

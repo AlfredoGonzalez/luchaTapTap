@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "groups": [
+    {
+      "title": "JUEGO",
+      "lines": [
+        {
+          "text": "Alfredo González"
+        }
+      ]
+    },
+    {
+      "title": "MÚSICA",
+      "lines": [
+        {
+          "text": "[Pista] · [Autor]"
+        },
+        {
+          "text": "CC0 / CC-BY"
+        }
+      ]
+    },
+    {
+      "title": "EFECTOS",
+      "lines": [
+        {
+          "text": "[Paquete] · [Autor]"
+        },
+        {
+          "text": "CC0 / CC-BY"
+        }
+      ]
+    },
+    {
+      "title": "LETRA",
+      "lines": [
+        {
+          "text": "Press Start 2P"
+        },
+        {
+          "text": "CodeMan38 · OFL",
+          "source": "https://github.com/google/fonts/tree/main/ofl/pressstart2p",
+          "license": "OFL-1.1"
+        }
+      ]
+    },
+    {
+      "title": "ARTE",
+      "lines": [
+        {
+          "text": "Pixel art propio"
+        }
+      ]
+    }
+  ]
+}

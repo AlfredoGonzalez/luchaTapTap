@@ -11,7 +11,8 @@ class LuckyEvent {
   /// Seconds before it vanishes.
   final double lifeLeft;
 
-  LuckyEvent withLife(double seconds) => LuckyEvent(x: x, y: y, lifeLeft: seconds);
+  LuckyEvent withLife(double seconds) =>
+      LuckyEvent(x: x, y: y, lifeLeft: seconds);
 }
 
 /// What happened while the app was closed.
@@ -63,16 +64,20 @@ class GameState {
     Set<String> purchases = const {},
     this.pendingOffline,
     this.bestFight = 1,
-  })  : upgradeLevels = Map.unmodifiable(upgradeLevels),
-        trainerLevels = Map.unmodifiable(trainerLevels),
-        skillLevels = Map.unmodifiable(skillLevels),
-        skillCooldowns = Map.unmodifiable(skillCooldowns),
-        skillActive = Map.unmodifiable(skillActive),
-        talentLevels = Map.unmodifiable(talentLevels),
-        ownedMasks = Set.unmodifiable(ownedMasks),
-        stats = Map.unmodifiable(stats),
-        achievements = Set.unmodifiable(achievements),
-        purchases = Set.unmodifiable(purchases);
+    this.boostLeft = 0,
+    this.boostMultiplier = 1,
+    Map<String, int> adReadyAt = const {},
+  }) : upgradeLevels = Map.unmodifiable(upgradeLevels),
+       trainerLevels = Map.unmodifiable(trainerLevels),
+       skillLevels = Map.unmodifiable(skillLevels),
+       skillCooldowns = Map.unmodifiable(skillCooldowns),
+       skillActive = Map.unmodifiable(skillActive),
+       talentLevels = Map.unmodifiable(talentLevels),
+       ownedMasks = Set.unmodifiable(ownedMasks),
+       stats = Map.unmodifiable(stats),
+       achievements = Set.unmodifiable(achievements),
+       purchases = Set.unmodifiable(purchases),
+       adReadyAt = Map.unmodifiable(adReadyAt);
 
   final Big coins;
 
@@ -122,6 +127,14 @@ class GameState {
   /// Furthest fight ever reached (across prestiges).
   final int bestFight;
 
+  /// Seconds left of the rewarded-ad coin boost, and its multiplier.
+  final double boostLeft;
+  final double boostMultiplier;
+
+  /// Rewarded-ad offers: shop item id to the time (epoch milliseconds, UTC)
+  /// when it can be used again.
+  final Map<String, int> adReadyAt;
+
   int upgradeLevel(String id) => upgradeLevels[id] ?? 0;
   int trainerLevel(String id) => trainerLevels[id] ?? 0;
   int skillLevel(String id) => skillLevels[id] ?? 0;
@@ -161,30 +174,39 @@ class GameState {
     OfflineReport? pendingOffline,
     bool clearPendingOffline = false,
     int? bestFight,
-  }) =>
-      GameState(
-        coins: coins ?? this.coins,
-        totalCoinsEarned: totalCoinsEarned ?? this.totalCoinsEarned,
-        fightNumber: fightNumber ?? this.fightNumber,
-        enemyHp: enemyHp ?? this.enemyHp,
-        upgradeLevels: upgradeLevels ?? this.upgradeLevels,
-        trainerLevels: trainerLevels ?? this.trainerLevels,
-        belts: belts ?? this.belts,
-        lifetimeBelts: lifetimeBelts ?? this.lifetimeBelts,
-        comboMeter: comboMeter ?? this.comboMeter,
-        secondsSinceTap: secondsSinceTap ?? this.secondsSinceTap,
-        bossTimeLeft: clearBossTimer ? null : (bossTimeLeft ?? this.bossTimeLeft),
-        skillLevels: skillLevels ?? this.skillLevels,
-        skillCooldowns: skillCooldowns ?? this.skillCooldowns,
-        skillActive: skillActive ?? this.skillActive,
-        lucky: clearLucky ? null : (lucky ?? this.lucky),
-        talentLevels: talentLevels ?? this.talentLevels,
-        ownedMasks: ownedMasks ?? this.ownedMasks,
-        equippedMask: clearEquippedMask ? null : (equippedMask ?? this.equippedMask),
-        stats: stats ?? this.stats,
-        achievements: achievements ?? this.achievements,
-        purchases: purchases ?? this.purchases,
-        pendingOffline: clearPendingOffline ? null : (pendingOffline ?? this.pendingOffline),
-        bestFight: bestFight ?? this.bestFight,
-      );
+    double? boostLeft,
+    double? boostMultiplier,
+    Map<String, int>? adReadyAt,
+  }) => GameState(
+    coins: coins ?? this.coins,
+    totalCoinsEarned: totalCoinsEarned ?? this.totalCoinsEarned,
+    fightNumber: fightNumber ?? this.fightNumber,
+    enemyHp: enemyHp ?? this.enemyHp,
+    upgradeLevels: upgradeLevels ?? this.upgradeLevels,
+    trainerLevels: trainerLevels ?? this.trainerLevels,
+    belts: belts ?? this.belts,
+    lifetimeBelts: lifetimeBelts ?? this.lifetimeBelts,
+    comboMeter: comboMeter ?? this.comboMeter,
+    secondsSinceTap: secondsSinceTap ?? this.secondsSinceTap,
+    bossTimeLeft: clearBossTimer ? null : (bossTimeLeft ?? this.bossTimeLeft),
+    skillLevels: skillLevels ?? this.skillLevels,
+    skillCooldowns: skillCooldowns ?? this.skillCooldowns,
+    skillActive: skillActive ?? this.skillActive,
+    lucky: clearLucky ? null : (lucky ?? this.lucky),
+    talentLevels: talentLevels ?? this.talentLevels,
+    ownedMasks: ownedMasks ?? this.ownedMasks,
+    equippedMask: clearEquippedMask
+        ? null
+        : (equippedMask ?? this.equippedMask),
+    stats: stats ?? this.stats,
+    achievements: achievements ?? this.achievements,
+    purchases: purchases ?? this.purchases,
+    pendingOffline: clearPendingOffline
+        ? null
+        : (pendingOffline ?? this.pendingOffline),
+    bestFight: bestFight ?? this.bestFight,
+    boostLeft: boostLeft ?? this.boostLeft,
+    boostMultiplier: boostMultiplier ?? this.boostMultiplier,
+    adReadyAt: adReadyAt ?? this.adReadyAt,
+  );
 }

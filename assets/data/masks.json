@@ -16,7 +16,8 @@
         "burnt_orange",
         "marigold",
         "sun_yellow"
-      ]
+      ],
+      "icon": "mask_jaguar"
     },
     {
       "id": "la_calaverita",
@@ -34,7 +35,8 @@
         "dust",
         "bone",
         "white"
-      ]
+      ],
+      "icon": "mask_wolf"
     }
   ]
 }

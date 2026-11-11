@@ -89,5 +89,12 @@
       4,
       12
     ]
+  },
+  "ui": {
+    "splashSeconds": 2,
+    "loadingSeconds": 1.5,
+    "blinkSeconds": 0.5,
+    "purchaseFlashSeconds": 0.1,
+    "noticeSeconds": 2
   }
 }

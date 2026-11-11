@@ -49,7 +49,11 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
         _game.setPlayerMask(_maskColor(controller));
       }
       final lucky = next.lucky;
-      _game.setLucky(visible: lucky != null, x: lucky?.x ?? 0.5, y: lucky?.y ?? 0.5);
+      _game.setLucky(
+        visible: lucky != null,
+        x: lucky?.x ?? 0.5,
+        y: lucky?.y ?? 0.5,
+      );
     });
   }
 

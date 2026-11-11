@@ -13,7 +13,10 @@ abstract class AdService {
 
 /// Stand-in used by the prototype: "watches" an ad after a short pause.
 class FakeAdService implements AdService {
-  FakeAdService({this.succeeds = true, this.delay = const Duration(milliseconds: 600)});
+  FakeAdService({
+    this.succeeds = true,
+    this.delay = const Duration(milliseconds: 600),
+  });
 
   /// Whether the fake ad finishes (set false to test the no-fill path).
   bool succeeds;

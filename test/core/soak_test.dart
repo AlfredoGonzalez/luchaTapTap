@@ -39,6 +39,7 @@ void main() {
     for (var tick = 1; tick <= 3 * 3600 * tps; tick++) {
       // About 4 taps per second, a finisher whenever it is ready.
       if (tick % 3 == 0) engine.tap();
+      if (engine.awaitingBossStart) engine.startBoss();
       engine.finisher();
       final out = engine.tick();
       if (out.defeats > 0 && engine.state.stat('bosses') > bossesBeaten) {

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "mas_descanso",
+      "section": "permanent",
+      "kind": "purchase",
+      "name": "Más descanso",
+      "detail": "Tope 8 h",
+      "icon": "shop_rest"
+    },
+    {
+      "id": "doble_moneda",
+      "section": "permanent",
+      "kind": "purchase",
+      "name": "Doble moneda",
+      "detail": "Siempre",
+      "icon": "shop_double",
+      "coinMultiplier": 2
+    },
+    {
+      "id": "belts_20",
+      "section": "belts",
+      "kind": "beltPack",
+      "name": "Puñado",
+      "detail": "+20",
+      "icon": "belt",
+      "belts": 20
+    },
+    {
+      "id": "belts_100",
+      "section": "belts",
+      "kind": "beltPack",
+      "name": "Montón",
+      "detail": "+100",
+      "icon": "belt",
+      "belts": 100
+    },
+    {
+      "id": "belts_500",
+      "section": "belts",
+      "kind": "beltPack",
+      "name": "Baúl",
+      "detail": "+500",
+      "icon": "belt",
+      "belts": 500
+    },
+    {
+      "id": "doble_2min",
+      "section": "ads",
+      "kind": "boost",
+      "name": "Doble 2 min",
+      "detail": "Monedas x2",
+      "icon": "shop_timer",
+      "durationSeconds": 120,
+      "multiplier": 2,
+      "cooldownSeconds": 600
+    },
+    {
+      "id": "cinturon_gratis",
+      "section": "ads",
+      "kind": "adBelt",
+      "name": "Cinturón",
+      "detail": "+1",
+      "icon": "belt",
+      "belts": 1,
+      "cooldownSeconds": 1800
+    }
+  ]
+}

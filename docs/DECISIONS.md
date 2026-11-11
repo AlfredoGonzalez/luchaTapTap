@@ -33,9 +33,27 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | Rewarded ads | Behind an `AdService` interface with a fake that "watches" an ad; no SDK yet. A failed ad never blocks the base reward. | `ad_service.dart` |
 | Debug panel | Long-press the fight number. Only in debug builds. | `dialogs.dart` |
 
+## M4 decisions
+
+| Topic | What was done | Where |
+| --- | --- | --- |
+| Studio name | "AM Studios Play" (answered by the designer). The splash is a placeholder; the studio video replaces it when ready. | `strings_es.json`, `intro_screens.dart` |
+| Ad offer cooldowns | "Doble 2 min" every 10 min, free "Cinturón" every 30 min (answered by the designer). | `shop.json` |
+| Font | Press Start 2P, bundled (SIL OFL). Checked: it has every glyph of the spanish test string (ÁÉÍÓÚÜÑ áéíóúüñ ¡! ¿?). Digits are monospaced. | `assets/fonts/` |
+| Navigation | Mejoras is the fight screen; Habilidades, Máscaras, Talentos, Tienda replace the arena; the gear opens Ajustes (and Créditos). The fight stays mounted underneath, so the game keeps running. | `game_screen.dart` |
+| Boss intro | The countdown starts only when "¡A PELEAR!" is pressed; until then nothing is damaged. Android back does not skip it. | `GameEngine.awaitingBossStart` |
+| Mask grid | 3 x 4 slots; with only 2 masks in the data, the other 10 slots show a locked silhouette. | `masks_view.dart` |
+| Talents | Each branch is a column of nodes; unlock order follows `parent`. The "Cambiar de máscara" button lives at the top of Talentos. | `talents_view.dart` |
+| Shop | `shop.json` defines items; prices come from `BillingService` (fake: `$XX`) and the fake store grants purchases instantly, so it must never ship. Bought Belts are spendable but do not count for the permanent damage bonus. | `shop_view.dart`, `billing_service.dart` |
+| Settings | Sound, music, vibration and notices are saved with the game. Vibration works; sound and music toggles wait for the audio milestone; "Avisos" waits for notifications. | `AppSettings` |
+| Privacy | A placeholder text until the real policy and link exist (Play Store requirement). | `strings_es.json` |
+| Credits | Built from `credits.json`. The "JUEGO" line comes from the mockup (Alfredo González); music and effects are `[Pista] · [Autor]` placeholders. | `credits.json` |
+| App icon | Still Flutter's default (open question). | |
+| Pixel rules | Icons come from the mockups' own pixel art, drawn at whole-pixel scale; masks recolor their three reserved colors per mask. | `pixel_icons.dart` |
+| Web build | `web/` and a Pages workflow exist only for browser testing. The browser save uses local storage. | `pages.yml` |
+
 ## Still open (designer decides)
 
-- Pixel font and the Spanish glyph test. The tab label "Habilidades" is a tight fit in the placeholder font.
 - Mask slot colors for trunks and cape, app icon, store title, studio name, `applicationId` (currently `com.example.lucha_tap_tap`).
 - Price points, rewarded-ad cooldowns, music and SFX packs.
 - Tall-phone mockup (180 x 390) and whether the offline cap talent range should differ from the 8 h maximum.

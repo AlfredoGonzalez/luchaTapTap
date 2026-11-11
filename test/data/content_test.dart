@@ -144,11 +144,8 @@ void main() {
     final content = loadTestContent();
     final strings = content.strings;
 
-    test('every skill effect, mask bonus and talent effect has a text', () {
+    test('every mask bonus and talent effect has a text', () {
       // These keys are built from enum names, so the regex test above cannot see them.
-      for (final e in SkillEffect.values) {
-        expect(strings.containsKey('skill_${e.name}'), isTrue, reason: 'skill_${e.name}');
-      }
       for (final b in MaskBonusType.values) {
         expect(strings.containsKey('mask_bonus_${b.name}'), isTrue, reason: 'mask_bonus_${b.name}');
       }

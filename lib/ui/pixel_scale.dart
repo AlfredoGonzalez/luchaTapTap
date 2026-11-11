@@ -16,7 +16,12 @@ const int virtualMaxHeight = 390;
 /// Size of one virtual pixel on screen, always a whole number of logical
 /// pixels so every virtual pixel stays a sharp square.
 class PixelScale extends InheritedWidget {
-  const PixelScale({super.key, required this.scale, required this.virtualHeight, required super.child});
+  const PixelScale({
+    super.key,
+    required this.scale,
+    required this.virtualHeight,
+    required super.child,
+  });
 
   final int scale;
   final int virtualHeight;

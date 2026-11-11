@@ -11,7 +11,7 @@
     },
     {
       "id": "golpe_certero",
-      "name": "Golpe certero",
+      "name": "Ojo clínico",
       "icon": "up_golpe_certero",
       "baseCost": 150,
       "effect": "critChance",

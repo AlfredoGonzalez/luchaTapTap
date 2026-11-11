@@ -40,7 +40,9 @@ class SaveData {
 }
 
 /// Upgrades a decoded save from one version to the next.
-typedef SaveMigration = Map<String, dynamic> Function(Map<String, dynamic> json);
+typedef SaveMigration = Map<String, dynamic> Function(
+  Map<String, dynamic> json,
+);
 
 /// Turns [SaveData] into JSON text and back.
 ///
@@ -100,6 +102,9 @@ class SaveCodec {
                 'defeats': s.pendingOffline!.defeats,
               },
         'bestFight': s.bestFight,
+        'boostLeft': s.boostLeft,
+        'boostMultiplier': s.boostMultiplier,
+        'adReadyAt': s.adReadyAt,
       },
     });
   }
@@ -126,10 +131,13 @@ class SaveCodec {
     }
     var json = decoded;
     var version = _int(json, 'saveVersion', 0);
-    if (version <= 0) throw SaveFormatException('save has no valid saveVersion');
+    if (version <= 0) {
+      throw SaveFormatException('save has no valid saveVersion');
+    }
     if (version > currentVersion) {
       throw SaveFormatException(
-          'save version $version is newer than this build supports ($currentVersion)');
+        'save version $version is newer than this build supports ($currentVersion)',
+      );
     }
     while (version < currentVersion) {
       final migrate = migrations[version];
@@ -142,23 +150,26 @@ class SaveCodec {
     }
 
     final lastSeen = DateTime.tryParse(json['lastSeen'] as String? ?? '');
-    if (lastSeen == null) throw SaveFormatException('save has no valid lastSeen');
+    if (lastSeen == null) {
+      throw SaveFormatException('save has no valid lastSeen');
+    }
     final s = (json['state'] as Map?)?.cast<String, dynamic>() ?? const {};
     final b = content.balance;
 
     Map<String, int> levels(String key, bool Function(String) known) => {
-          for (final e in ((s[key] as Map?) ?? const {}).entries)
-            if (known(e.key as String) && (e.value as num) > 0) e.key as String: (e.value as num).toInt(),
-        };
+      for (final e in ((s[key] as Map?) ?? const {}).entries)
+        if (known(e.key as String) && (e.value as num) > 0)
+          e.key as String: (e.value as num).toInt(),
+    };
     Map<String, double> timers(String key, bool Function(String) known) => {
-          for (final e in ((s[key] as Map?) ?? const {}).entries)
-            if (known(e.key as String) && (e.value as num) > 0)
-              e.key as String: (e.value as num).toDouble(),
-        };
+      for (final e in ((s[key] as Map?) ?? const {}).entries)
+        if (known(e.key as String) && (e.value as num) > 0)
+          e.key as String: (e.value as num).toDouble(),
+    };
     Set<String> ids(String key, bool Function(String) known) => {
-          for (final v in (s[key] as List?) ?? const [])
-            if (known(v as String)) v,
-        };
+      for (final v in (s[key] as List?) ?? const [])
+        if (known(v as String)) v,
+    };
 
     final upgradeIds = content.upgrades.map((e) => e.id).toSet();
     final trainerIds = content.trainers.map((e) => e.id).toSet();
@@ -166,6 +177,7 @@ class SaveCodec {
     final talentIds = content.talents.map((e) => e.id).toSet();
     final maskIds = content.masks.map((e) => e.id).toSet();
     final achievementIds = content.achievements.map((e) => e.id).toSet();
+    final shopIds = content.shopItems.map((e) => e.id).toSet();
     const counters = {'taps', 'defeats', 'bosses', 'prestiges'};
 
     final lucky = s['lucky'] as Map?;
@@ -198,10 +210,14 @@ class SaveCodec {
             ),
       talentLevels: levels('talentLevels', talentIds.contains),
       ownedMasks: ids('ownedMasks', maskIds.contains),
-      equippedMask: equipped != null && maskIds.contains(equipped) ? equipped : null,
+      equippedMask: equipped != null && maskIds.contains(equipped)
+          ? equipped
+          : null,
       stats: levels('stats', counters.contains),
       achievements: ids('achievements', achievementIds.contains),
-      purchases: {for (final v in (s['purchases'] as List?) ?? const []) v as String},
+      purchases: {
+        for (final v in (s['purchases'] as List?) ?? const []) v as String,
+      },
       pendingOffline: pending == null
           ? null
           : OfflineReport(
@@ -212,13 +228,17 @@ class SaveCodec {
               defeats: (pending['defeats'] as num).toInt(),
             ),
       bestFight: _int(s, 'bestFight', fight),
+      boostLeft: _double(s, 'boostLeft', 0),
+      boostMultiplier: _double(s, 'boostMultiplier', 1),
+      adReadyAt: levels('adReadyAt', shopIds.contains),
     );
     return SaveData(
       saveVersion: currentVersion,
       lastSeen: lastSeen.toUtc(),
       rngState: _int(json, 'rng', 1),
       state: state,
-      settings: ((json['settings'] as Map?) ?? const {}).cast<String, dynamic>(),
+      settings: ((json['settings'] as Map?) ?? const {})
+          .cast<String, dynamic>(),
     );
   }
 

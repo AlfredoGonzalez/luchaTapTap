@@ -33,7 +33,10 @@ GameEngine richGame() {
   for (var i = 0; i < 6; i++) {
     e.tap();
   }
+  e.grantPurchase('doble_moneda');
+  e.claimAdOffer('doble_2min', 5000);
   e.debugGoToBoss();
+  e.startBoss();
   e.tick();
   return e;
 }
@@ -60,6 +63,9 @@ void expectSameState(GameState a, GameState b) {
   expect(b.achievements, a.achievements);
   expect(b.purchases, a.purchases);
   expect(b.bestFight, a.bestFight);
+  expect(b.boostLeft, a.boostLeft);
+  expect(b.boostMultiplier, a.boostMultiplier);
+  expect(b.adReadyAt, a.adReadyAt);
   expect(b.lucky?.x, a.lucky?.x);
   expect(b.pendingOffline?.coinsEarned, a.pendingOffline?.coinsEarned);
 }

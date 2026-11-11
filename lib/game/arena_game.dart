@@ -11,6 +11,7 @@ import '../core/palette.dart';
 import '../data/balance.dart';
 import '../data/content_models.dart';
 import '../ui/palette_color.dart';
+import 'fighter_shape.dart';
 
 /// Placeholder arena: flat rectangles in palette colors. Final sprites replace
 /// the fighters later without changing this game's API.
@@ -62,12 +63,12 @@ class ArenaGame extends FlameGame {
   }
 
   _Fighter _buildPlayer() => _Fighter(
-        bodyColor: Palette.luchaRed,
-        accentColor: playerMaskColor,
-        spriteSize: regularSpriteSize,
-        idleFps: fx.idleFps,
-        flashSeconds: fx.hitFlashSeconds,
-      )..position = Vector2(_sideMargin, _floorY - regularSpriteSize);
+    bodyColor: Palette.luchaRed,
+    accentColor: playerMaskColor,
+    spriteSize: regularSpriteSize,
+    idleFps: fx.idleFps,
+    flashSeconds: fx.hitFlashSeconds,
+  )..position = Vector2(_sideMargin, _floorY - regularSpriteSize);
 
   _Fighter _buildEnemy(OpponentDef o) {
     final size = o.size.toDouble();
@@ -126,24 +127,29 @@ class ArenaGame extends FlameGame {
     _enemy.flash();
     if (!isTap) return;
     final jitter = fx.damageNumberJitterPx;
-    final offset = jitter == 0 ? 0 : (_hitCount * 7) % (2 * jitter + 1) - jitter;
+    final offset = jitter == 0
+        ? 0
+        : (_hitCount * 7) % (2 * jitter + 1) - jitter;
     _hitCount++;
     final spawn = Vector2(
       _enemy.position.x + _enemy.size.x / 2 + offset,
       _enemy.position.y - 2,
     );
-    world.add(_DamageNumber(
-      text: damageText,
-      start: spawn,
-      risePx: fx.damageNumberRisePx.toDouble(),
-      seconds: fx.damageNumberSeconds,
-      big: isBig,
-    ));
+    world.add(
+      _DamageNumber(
+        text: damageText,
+        start: spawn,
+        risePx: fx.damageNumberRisePx.toDouble(),
+        seconds: fx.damageNumberSeconds,
+        big: isBig,
+      ),
+    );
   }
 }
 
 class _ArenaBackdrop extends PositionComponent {
-  _ArenaBackdrop({required Vector2 size, required this.floorY}) : super(size: size);
+  _ArenaBackdrop({required Vector2 size, required this.floorY})
+    : super(size: size);
 
   final double floorY;
 
@@ -151,14 +157,26 @@ class _ArenaBackdrop extends PositionComponent {
   void render(Canvas canvas) {
     final paint = Paint()..isAntiAlias = false;
     // Wall.
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, floorY), paint..color = Palette.navy.color);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, floorY),
+      paint..color = Palette.navy.color,
+    );
     // Ropes.
     for (final y in [floorY - 30, floorY - 20, floorY - 10]) {
-      canvas.drawRect(Rect.fromLTWH(0, y, size.x, 2), paint..color = Palette.luchaRed.color);
+      canvas.drawRect(
+        Rect.fromLTWH(0, y, size.x, 2),
+        paint..color = Palette.luchaRed.color,
+      );
     }
     // Floor.
-    canvas.drawRect(Rect.fromLTWH(0, floorY, size.x, size.y - floorY), paint..color = Palette.sand.color);
-    canvas.drawRect(Rect.fromLTWH(0, floorY, size.x, 1), paint..color = Palette.ink.color);
+    canvas.drawRect(
+      Rect.fromLTWH(0, floorY, size.x, size.y - floorY),
+      paint..color = Palette.sand.color,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, floorY, size.x, 1),
+      paint..color = Palette.ink.color,
+    );
   }
 }
 
@@ -196,25 +214,13 @@ class _Fighter extends PositionComponent {
   }
 
   @override
-  void render(Canvas canvas) {
-    final flashing = _flashLeft > 0;
-    final paint = Paint()..isAntiAlias = false;
-    final w = size.x;
-    final h = size.y;
-    final headSize = (w * 0.42).roundToDouble();
-    final bodyTop = headSize - 2;
-
-    void block(Rect rect, int color) {
-      canvas.drawRect(rect, paint..color = Palette.ink.color);
-      canvas.drawRect(rect.deflate(1), paint..color = (flashing ? Palette.white : color).color);
-    }
-
-    // Legs, torso, head (head uses the accent color: the mask).
-    block(Rect.fromLTWH(w * 0.22, h * 0.72, w * 0.22, h * 0.28), bodyColor);
-    block(Rect.fromLTWH(w * 0.56, h * 0.72, w * 0.22, h * 0.28), bodyColor);
-    block(Rect.fromLTWH(w * 0.16, bodyTop, w * 0.68, h * 0.72 - bodyTop), bodyColor);
-    block(Rect.fromLTWH((w - headSize) / 2, 0, headSize, headSize), accentColor);
-  }
+  void render(Canvas canvas) => paintFighter(
+    canvas,
+    Size(size.x, size.y),
+    bodyColor: bodyColor,
+    accentColor: accentColor,
+    flashing: _flashLeft > 0,
+  );
 }
 
 class _TapArea extends PositionComponent with TapCallbacks {
@@ -229,7 +235,7 @@ class _TapArea extends PositionComponent with TapCallbacks {
 /// A floating belt that pays coins when tapped quickly.
 class _LuckyPickup extends PositionComponent with TapCallbacks {
   _LuckyPickup({required this.onTap, required Vector2 position})
-      : super(position: position, size: spriteSize.clone(), priority: 20);
+    : super(position: position, size: spriteSize.clone(), priority: 20);
 
   static final Vector2 spriteSize = Vector2(14, 8);
 
@@ -238,10 +244,22 @@ class _LuckyPickup extends PositionComponent with TapCallbacks {
   @override
   void render(Canvas canvas) {
     final paint = Paint()..isAntiAlias = false;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), paint..color = Palette.ink.color);
-    canvas.drawRect(Rect.fromLTWH(1, 1, size.x - 2, size.y - 2), paint..color = Palette.marigold.color);
-    canvas.drawRect(Rect.fromLTWH(1, 1, size.x - 2, 2), paint..color = Palette.sunYellow.color);
-    canvas.drawRect(Rect.fromLTWH(size.x / 2 - 2, 2, 4, 4), paint..color = Palette.luchaRed.color);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      paint..color = Palette.ink.color,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(1, 1, size.x - 2, size.y - 2),
+      paint..color = Palette.marigold.color,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(1, 1, size.x - 2, 2),
+      paint..color = Palette.sunYellow.color,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(size.x / 2 - 2, 2, 4, 4),
+      paint..color = Palette.luchaRed.color,
+    );
   }
 
   @override
@@ -250,7 +268,10 @@ class _LuckyPickup extends PositionComponent with TapCallbacks {
   // A generous touch area: the sprite is small but touch targets are not.
   @override
   bool containsLocalPoint(Vector2 point) =>
-      point.x >= -8 && point.y >= -8 && point.x <= size.x + 8 && point.y <= size.y + 8;
+      point.x >= -8 &&
+      point.y >= -8 &&
+      point.x <= size.x + 8 &&
+      point.y <= size.y + 8;
 }
 
 class _DamageNumber extends TextComponent {
@@ -261,17 +282,19 @@ class _DamageNumber extends TextComponent {
     required this.seconds,
     this.big = false,
   }) : super(
-          text: text,
-          anchor: Anchor.bottomCenter,
-          textRenderer: TextPaint(
-            style: TextStyle(
-              color: (big ? Palette.sunYellow : Palette.bone).color,
-              fontSize: big ? 16 : 8,
-              height: 1,
-              shadows: [Shadow(color: Palette.ink.color, offset: const Offset(1, 1))],
-            ),
-          ),
-        );
+         text: text,
+         anchor: Anchor.bottomCenter,
+         textRenderer: TextPaint(
+           style: TextStyle(
+             color: (big ? Palette.sunYellow : Palette.bone).color,
+             fontSize: big ? 16 : 8,
+             height: 1,
+             shadows: [
+               Shadow(color: Palette.ink.color, offset: const Offset(1, 1)),
+             ],
+           ),
+         ),
+       );
 
   final Vector2 start;
   final double risePx;
@@ -294,6 +317,9 @@ class _DamageNumber extends TextComponent {
       removeFromParent();
       return;
     }
-    position = Vector2(start.x.roundToDouble(), (start.y - risePx * (_age / seconds)).roundToDouble());
+    position = Vector2(
+      start.x.roundToDouble(),
+      (start.y - risePx * (_age / seconds)).roundToDouble(),
+    );
   }
 }

@@ -27,7 +27,9 @@ class Formulas {
   /// fight (without the boss HP multiplier); bosses pay `bossCoinMultiplier`
   /// times that.
   Big coinsReward(int fight, {bool isBoss = false, double coinMultiplier = 1}) {
-    var coins = baseHp(fight).mulDouble(balance.coinsPerHpFraction).mulDouble(coinMultiplier);
+    var coins = baseHp(fight)
+        .mulDouble(balance.coinsPerHpFraction)
+        .mulDouble(coinMultiplier);
     if (isBoss) coins = coins.mulDouble(balance.bossCoinMultiplier);
     return coins;
   }
@@ -42,7 +44,9 @@ class Formulas {
   /// Exact sum of the cost of [count] consecutive levels starting at [owned]:
   /// the geometric series `Cost(k) * (r^count - 1) / (r - 1)`.
   Big bulkCost(double baseCost, int owned, int count) {
-    if (count < 0) throw ArgumentError.value(count, 'count', 'must not be negative');
+    if (count < 0) {
+      throw ArgumentError.value(count, 'count', 'must not be negative');
+    }
     if (count == 0) return Big.zero;
     final first = levelCost(baseCost, owned);
     if (count == 1) return first;
@@ -67,7 +71,8 @@ class Formulas {
     final ratio = coins.mulDouble(r - 1) / first + Big.one;
     final estimate = ratio.log10() / (math.log(r) / math.ln10);
     var m = math.max(1, math.min(estimate.floor(), balance.maxBulkLevels));
-    while (m < balance.maxBulkLevels && purchaseCost(baseCost, owned, m + 1) <= coins) {
+    while (m < balance.maxBulkLevels &&
+        purchaseCost(baseCost, owned, m + 1) <= coins) {
       m++;
     }
     while (m > 1 && purchaseCost(baseCost, owned, m) > coins) {
@@ -81,10 +86,14 @@ class Formulas {
       totalCoinsEarned.divDouble(balance.beltCoinDivisor).sqrt().floor();
 
   void _checkFight(int fight) {
-    if (fight < 1) throw ArgumentError.value(fight, 'fight', 'must be at least 1');
+    if (fight < 1) {
+      throw ArgumentError.value(fight, 'fight', 'must be at least 1');
+    }
   }
 
   void _checkOwned(int owned) {
-    if (owned < 0) throw ArgumentError.value(owned, 'owned', 'must not be negative');
+    if (owned < 0) {
+      throw ArgumentError.value(owned, 'owned', 'must not be negative');
+    }
   }
 }

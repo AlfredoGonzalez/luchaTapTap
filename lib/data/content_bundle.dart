@@ -14,6 +14,8 @@ abstract final class ContentFiles {
   static const talents = 'talents.json';
   static const masks = 'masks.json';
   static const achievements = 'achievements.json';
+  static const shop = 'shop.json';
+  static const credits = 'credits.json';
   static const strings = 'strings_es.json';
 
   static const all = [
@@ -26,6 +28,8 @@ abstract final class ContentFiles {
     talents,
     masks,
     achievements,
+    shop,
+    credits,
     strings,
   ];
 }
@@ -70,6 +74,8 @@ class ContentBundle {
     required this.talentBranches,
     required this.masks,
     required this.achievements,
+    required this.shopItems,
+    required this.credits,
     required this.strings,
   });
 
@@ -82,43 +88,54 @@ class ContentBundle {
 
     final balance = Balance.fromJson(file(ContentFiles.balance));
 
-    final opponentsReader = JsonReader(ContentFiles.opponents, file(ContentFiles.opponents))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final opponentsReader = JsonReader(
+      ContentFiles.opponents,
+      file(ContentFiles.opponents),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final opponents = _unique(
       ContentFiles.opponents,
       opponentsReader.objects('opponents').map(OpponentDef.fromReader),
       (o) => o.id,
     );
 
-    final leaguesReader = JsonReader(ContentFiles.leagues, file(ContentFiles.leagues))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final leaguesReader = JsonReader(
+      ContentFiles.leagues,
+      file(ContentFiles.leagues),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final leagues = _unique(
       ContentFiles.leagues,
       leaguesReader.objects('leagues').map(LeagueDef.fromReader),
       (l) => l.id,
     )..sort((a, b) => a.order.compareTo(b.order));
     if (leagues.isEmpty) {
-      throw ContentException('${ContentFiles.leagues}: at least one league is required');
+      throw ContentException(
+        '${ContentFiles.leagues}: at least one league is required',
+      );
     }
     final orders = leagues.map((l) => l.order).toSet();
     if (orders.length != leagues.length) {
-      throw ContentException('${ContentFiles.leagues}: league "order" values must be unique');
+      throw ContentException(
+        '${ContentFiles.leagues}: league "order" values must be unique',
+      );
     }
     final opponentById = {for (final o in opponents) o.id: o};
     for (final league in leagues) {
       if (league.opponentIds.isEmpty) {
         throw ContentException(
-            '${ContentFiles.leagues}: "${league.id}" needs at least one opponent');
+          '${ContentFiles.leagues}: "${league.id}" needs at least one opponent',
+        );
       }
       for (final id in league.opponentIds) {
         final opponent = opponentById[id];
         if (opponent == null) {
           throw ContentException(
-              '${ContentFiles.leagues}: "${league.id}" references unknown opponent "$id"');
+            '${ContentFiles.leagues}: "${league.id}" references unknown opponent "$id"',
+          );
         }
         if (opponent.isBoss) {
           throw ContentException(
-              '${ContentFiles.leagues}: "${league.id}" lists boss "$id" as a regular opponent');
+            '${ContentFiles.leagues}: "${league.id}" lists boss "$id" as a regular opponent',
+          );
         }
       }
       final bossId = league.bossId;
@@ -126,45 +143,59 @@ class ContentBundle {
         final boss = opponentById[bossId];
         if (boss == null || !boss.isBoss) {
           throw ContentException(
-              '${ContentFiles.leagues}: "${league.id}" bossId "$bossId" must be an opponent with isBoss true');
+            '${ContentFiles.leagues}: "${league.id}" bossId "$bossId" must be an opponent with isBoss true',
+          );
         }
       }
     }
 
-    final trainersReader = JsonReader(ContentFiles.trainers, file(ContentFiles.trainers))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final trainersReader = JsonReader(
+      ContentFiles.trainers,
+      file(ContentFiles.trainers),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final trainers = _unique(
       ContentFiles.trainers,
       trainersReader.objects('trainers').map(TrainerDef.fromReader),
       (t) => t.id,
     );
 
-    final upgradesReader = JsonReader(ContentFiles.upgrades, file(ContentFiles.upgrades))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final upgradesReader = JsonReader(
+      ContentFiles.upgrades,
+      file(ContentFiles.upgrades),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final upgrades = _unique(
       ContentFiles.upgrades,
       upgradesReader.objects('upgrades').map(UpgradeDef.fromReader),
       (u) => u.id,
     );
 
-    final skillsReader = JsonReader(ContentFiles.skills, file(ContentFiles.skills))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final skillsReader = JsonReader(
+      ContentFiles.skills,
+      file(ContentFiles.skills),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final skills = _unique(
       ContentFiles.skills,
       skillsReader.objects('skills').map(SkillDef.fromReader),
       (s) => s.id,
     );
 
-    final talentsReader = JsonReader(ContentFiles.talents, file(ContentFiles.talents))
-      ..expectSchemaVersion(_supportedSchemaVersion);
+    final talentsReader = JsonReader(
+      ContentFiles.talents,
+      file(ContentFiles.talents),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final branches = <TalentBranchDef>[];
     for (final branch in talentsReader.objects('branches')) {
       final branchId = branch.string('id');
-      branches.add(TalentBranchDef(
-        id: branchId,
-        name: branch.string('name'),
-        nodes: branch.objects('nodes').map((n) => TalentDef.fromReader(n, branchId)).toList(),
-      ));
+      branches.add(
+        TalentBranchDef(
+          id: branchId,
+          name: branch.string('name'),
+          nodes: branch
+              .objects('nodes')
+              .map((n) => TalentDef.fromReader(n, branchId))
+              .toList(),
+        ),
+      );
     }
     _unique(ContentFiles.talents, branches, (b) => b.id);
     final allTalents = _unique(
@@ -179,16 +210,19 @@ class ContentBundle {
       final p = talentById[parent];
       if (p == null) {
         throw ContentException(
-            '${ContentFiles.talents}: "${t.id}" has unknown parent "$parent"');
+          '${ContentFiles.talents}: "${t.id}" has unknown parent "$parent"',
+        );
       }
       if (p.branchId != t.branchId) {
         throw ContentException(
-            '${ContentFiles.talents}: "${t.id}" and its parent "$parent" must be in the same branch');
+          '${ContentFiles.talents}: "${t.id}" and its parent "$parent" must be in the same branch',
+        );
       }
       // Parents must come earlier in the file, which also rules out cycles.
       if (allTalents.indexOf(p) >= allTalents.indexOf(t)) {
         throw ContentException(
-            '${ContentFiles.talents}: parent "$parent" must be listed before "${t.id}"');
+          '${ContentFiles.talents}: parent "$parent" must be listed before "${t.id}"',
+        );
       }
     }
 
@@ -200,26 +234,68 @@ class ContentBundle {
       (m) => m.id,
     );
     if (!masks.any((m) => m.unlockRule == MaskUnlockRule.starter)) {
-      throw ContentException('${ContentFiles.masks}: at least one starter mask is required');
+      throw ContentException(
+        '${ContentFiles.masks}: at least one starter mask is required',
+      );
     }
     for (final m in masks) {
-      if (m.unlockRule == MaskUnlockRule.league && !orders.contains(m.unlockValue.toInt())) {
+      if (m.unlockRule == MaskUnlockRule.league &&
+          !orders.contains(m.unlockValue.toInt())) {
         throw ContentException(
-            '${ContentFiles.masks}: "${m.id}" unlocks with league ${m.unlockValue.toInt()}, which does not exist');
+          '${ContentFiles.masks}: "${m.id}" unlocks with league ${m.unlockValue.toInt()}, which does not exist',
+        );
       }
     }
 
-    final achievementsReader =
-        JsonReader(ContentFiles.achievements, file(ContentFiles.achievements))
-          ..expectSchemaVersion(_supportedSchemaVersion);
+    final achievementsReader = JsonReader(
+      ContentFiles.achievements,
+      file(ContentFiles.achievements),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final achievements = _unique(
       ContentFiles.achievements,
       achievementsReader.objects('achievements').map(AchievementDef.fromReader),
       (a) => a.id,
     );
 
-    final stringsReader = JsonReader(ContentFiles.strings, file(ContentFiles.strings))
+    final shopReader = JsonReader(ContentFiles.shop, file(ContentFiles.shop))
       ..expectSchemaVersion(_supportedSchemaVersion);
+    final shopItems = _unique(
+      ContentFiles.shop,
+      shopReader.objects('items').map(ShopItemDef.fromReader),
+      (i) => i.id,
+    );
+    for (final id in balance.offline.purchaseCapHours.keys) {
+      final item = shopItems.where((i) => i.id == id);
+      if (item.isEmpty || item.first.kind != ShopKind.purchase) {
+        throw ContentException(
+          '${ContentFiles.balance}: offline.purchaseCapHours "$id" is not a purchase in ${ContentFiles.shop}',
+        );
+      }
+    }
+
+    final creditsReader = JsonReader(
+      ContentFiles.credits,
+      file(ContentFiles.credits),
+    )..expectSchemaVersion(_supportedSchemaVersion);
+    final credits = [
+      for (final g in creditsReader.objects('groups'))
+        CreditGroup(
+          title: g.string('title'),
+          lines: [
+            for (final l in g.objects('lines'))
+              CreditLine(
+                text: l.string('text'),
+                source: l.optionalString('source'),
+                license: l.optionalString('license'),
+              ),
+          ],
+        ),
+    ];
+
+    final stringsReader = JsonReader(
+      ContentFiles.strings,
+      file(ContentFiles.strings),
+    )..expectSchemaVersion(_supportedSchemaVersion);
     final strings = stringsReader.stringMap('strings');
 
     return ContentBundle._(
@@ -232,11 +308,17 @@ class ContentBundle {
       talentBranches: List.unmodifiable(branches),
       masks: List.unmodifiable(masks),
       achievements: List.unmodifiable(achievements),
+      shopItems: List.unmodifiable(shopItems),
+      credits: List.unmodifiable(credits),
       strings: Map.unmodifiable(strings),
     );
   }
 
-  static List<T> _unique<T>(String source, Iterable<T> items, String Function(T) idOf) {
+  static List<T> _unique<T>(
+    String source,
+    Iterable<T> items,
+    String Function(T) idOf,
+  ) {
     final result = items.toList();
     final seen = <String>{};
     for (final item in result) {
@@ -257,18 +339,27 @@ class ContentBundle {
   final List<TalentBranchDef> talentBranches;
   final List<MaskDef> masks;
   final List<AchievementDef> achievements;
+  final List<ShopItemDef> shopItems;
+  final List<CreditGroup> credits;
   final Map<String, String> strings;
 
-  late final Map<String, OpponentDef> _opponentById = {for (final o in opponents) o.id: o};
+  late final Map<String, OpponentDef> _opponentById = {
+    for (final o in opponents) o.id: o,
+  };
 
   /// Fights in one league: its regular opponents, then the boss if any.
   static int leagueLength(LeagueDef league) =>
       league.opponentIds.length + (league.bossId == null ? 0 : 1);
 
-  late final int _cycleLength = leagues.fold(0, (sum, l) => sum + leagueLength(l));
+  late final int _cycleLength = leagues.fold(
+    0,
+    (sum, l) => sum + leagueLength(l),
+  );
 
   /// All talents of all branches, in file order.
-  late final List<TalentDef> talents = [for (final b in talentBranches) ...b.nodes];
+  late final List<TalentDef> talents = [
+    for (final b in talentBranches) ...b.nodes,
+  ];
 
   /// Structure of fight number [fight] (1-based). Leagues play in order and,
   /// after the last one, repeat forever (endless leagues).
@@ -310,27 +401,32 @@ class ContentBundle {
   }
 
   UpgradeDef upgrade(String id) => upgrades.firstWhere(
-        (u) => u.id == id,
-        orElse: () => throw ArgumentError.value(id, 'id', 'unknown upgrade'),
-      );
+    (u) => u.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown upgrade'),
+  );
 
   SkillDef skill(String id) => skills.firstWhere(
-        (s) => s.id == id,
-        orElse: () => throw ArgumentError.value(id, 'id', 'unknown skill'),
-      );
+    (s) => s.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown skill'),
+  );
 
   TalentDef talent(String id) => talents.firstWhere(
-        (t) => t.id == id,
-        orElse: () => throw ArgumentError.value(id, 'id', 'unknown talent'),
-      );
+    (t) => t.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown talent'),
+  );
+
+  ShopItemDef shopItem(String id) => shopItems.firstWhere(
+    (i) => i.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown shop item'),
+  );
 
   MaskDef mask(String id) => masks.firstWhere(
-        (m) => m.id == id,
-        orElse: () => throw ArgumentError.value(id, 'id', 'unknown mask'),
-      );
+    (m) => m.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown mask'),
+  );
 
   TrainerDef trainer(String id) => trainers.firstWhere(
-        (t) => t.id == id,
-        orElse: () => throw ArgumentError.value(id, 'id', 'unknown trainer'),
-      );
+    (t) => t.id == id,
+    orElse: () => throw ArgumentError.value(id, 'id', 'unknown trainer'),
+  );
 }

@@ -46,3 +46,17 @@ String _truncate(double value, int decimals) {
   if (cut == cut.floorToDouble()) return cut.toInt().toString();
   return cut.toStringAsFixed(decimals);
 }
+
+/// Like [formatBig] but never longer than 5 characters before the suffix
+/// (`123K`, `12.3K`), so it fits narrow HUD slots.
+String formatBigShort(Big value) {
+  final text = formatBig(value);
+  final dot = text.indexOf('.');
+  if (dot == -1 || dot < 3) return text;
+  // Three digits before the point: drop the decimal (123.4K -> 123K).
+  var end = dot + 1;
+  while (end < text.length && int.tryParse(text[end]) != null) {
+    end++;
+  }
+  return text.substring(0, dot) + text.substring(end);
+}

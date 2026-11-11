@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,7 +13,9 @@ import '../core/game_state.dart';
 import '../core/rng.dart';
 import '../core/save_codec.dart';
 import '../data/content_bundle.dart';
+import '../data/content_models.dart';
 import 'ad_service.dart';
+import 'billing_service.dart';
 import 'save_store.dart';
 import 'strings.dart';
 
@@ -39,6 +42,93 @@ final initialSaveProvider = Provider<SaveData?>((ref) => null);
 
 final adServiceProvider = Provider<AdService>((ref) => FakeAdService());
 
+final billingServiceProvider = Provider<BillingService>(
+  (ref) => FakeBillingService(
+    placeholderPrice:
+        ref.watch(contentProvider).strings['shop_price_placeholder'] ?? '',
+  ),
+);
+
+/// Player settings, saved with the game.
+class AppSettings {
+  const AppSettings({
+    this.sound = true,
+    this.music = true,
+    this.vibration = false,
+    this.notices = false,
+  });
+
+  factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
+    sound: map['sound'] as bool? ?? true,
+    music: map['music'] as bool? ?? true,
+    vibration: map['vibration'] as bool? ?? false,
+    notices: map['notices'] as bool? ?? false,
+  );
+
+  final bool sound;
+  final bool music;
+  final bool vibration;
+
+  /// "Avisos": tell the player when the offline cap is full (the
+  /// notifications themselves arrive in a later milestone).
+  final bool notices;
+
+  Map<String, dynamic> toMap() => {
+    'sound': sound,
+    'music': music,
+    'vibration': vibration,
+    'notices': notices,
+  };
+
+  AppSettings toggled(String name) => switch (name) {
+    'sound' => AppSettings(
+      sound: !sound,
+      music: music,
+      vibration: vibration,
+      notices: notices,
+    ),
+    'music' => AppSettings(
+      sound: sound,
+      music: !music,
+      vibration: vibration,
+      notices: notices,
+    ),
+    'vibration' => AppSettings(
+      sound: sound,
+      music: music,
+      vibration: !vibration,
+      notices: notices,
+    ),
+    'notices' => AppSettings(
+      sound: sound,
+      music: music,
+      vibration: vibration,
+      notices: !notices,
+    ),
+    _ => throw ArgumentError.value(name, 'name', 'unknown setting'),
+  };
+}
+
+final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(
+  SettingsNotifier.new,
+);
+
+class SettingsNotifier extends Notifier<AppSettings> {
+  @override
+  AppSettings build() =>
+      AppSettings.fromMap(ref.read(initialSaveProvider)?.settings ?? const {});
+
+  void toggle(String name) {
+    state = state.toggled(name);
+    ref.read(gameControllerProvider.notifier).saveNow();
+  }
+
+  void reset() => state = const AppSettings();
+}
+
+/// Result of using a store item.
+enum ShopResult { done, cancelled, cooldown, noAd }
+
 /// Selected buy quantity (x1, x10, x100, MAX).
 final buyAmountProvider = NotifierProvider<BuyAmountNotifier, BuyAmount>(
   BuyAmountNotifier.new,
@@ -46,16 +136,18 @@ final buyAmountProvider = NotifierProvider<BuyAmountNotifier, BuyAmount>(
 
 class BuyAmountNotifier extends Notifier<BuyAmount> {
   @override
-  BuyAmount build() => BuyAmount.fixed(ref.read(contentProvider).balance.buyFixedAmounts.first);
+  BuyAmount build() =>
+      BuyAmount.fixed(ref.read(contentProvider).balance.buyFixedAmounts.first);
 
   void select(BuyAmount amount) => state = amount;
 }
 
 /// A short message shown over the arena (string key), or null.
-final noticeProvider = NotifierProvider<NoticeNotifier, String?>(NoticeNotifier.new);
+final noticeProvider = NotifierProvider<NoticeNotifier, String?>(
+  NoticeNotifier.new,
+);
 
 class NoticeNotifier extends Notifier<String?> {
-  static const Duration _visible = Duration(seconds: 2);
   Timer? _timer;
 
   @override
@@ -67,7 +159,13 @@ class NoticeNotifier extends Notifier<String?> {
   void show(String key) {
     _timer?.cancel();
     state = key;
-    _timer = Timer(_visible, () => state = null);
+    final seconds = ref.read(contentProvider).balance.ui.noticeSeconds;
+    _timer = Timer(
+      Duration(
+        microseconds: (seconds * Duration.microsecondsPerSecond).round(),
+      ),
+      () => state = null,
+    );
   }
 }
 
@@ -107,14 +205,14 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // `clock.stopwatch()` is the real clock in the app and the fake clock in
   // widget tests, so progress can be tested without waiting.
   final Stopwatch _clock = clock.stopwatch();
-  final StreamController<HitEvent> _hits = StreamController<HitEvent>.broadcast();
+  final StreamController<HitEvent> _hits =
+      StreamController<HitEvent>.broadcast();
   Duration _lastElapsed = Duration.zero;
   Duration _lastSaveElapsed = Duration.zero;
   Timer? _timer;
   DateTime? _backgroundAt;
   bool _active = true;
   Future<void> _pendingSave = Future.value();
-  Map<String, dynamic> _settings = const {};
 
   GameEngine get engine => _engine;
 
@@ -133,7 +231,6 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       state: save?.state,
       rng: save == null ? null : SeededRng(save.rngState),
     )..repair();
-    _settings = save?.settings ?? const {};
     if (save != null) {
       // Cold start: everything since the last save counts as time away.
       _engine.applyOffline(clock.now().toUtc().difference(save.lastSeen));
@@ -238,9 +335,11 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       lastSeen: clock.now().toUtc(),
       rngState: _engine.rng.state,
       state: _engine.state,
-      settings: _settings,
+      settings: ref.read(settingsProvider).toMap(),
     );
-    _pendingSave = _pendingSave.then((_) => _store.save(data)).catchError((Object e) {
+    _pendingSave = _pendingSave.then((_) => _store.save(data)).catchError((
+      Object e,
+    ) {
       debugPrint('Could not save the game: $e');
     });
     return _pendingSave;
@@ -249,27 +348,38 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   // Player actions
 
+  void _haptic() {
+    if (ref.read(settingsProvider).vibration) HapticFeedback.lightImpact();
+  }
+
   void tap() {
     final outcome = _engine.tap();
+    if (outcome.damageDealt.isZero) return; // the boss intro is showing
+    _haptic();
     _publish();
-    _hits.add(HitEvent(
-      damage: outcome.damageDealt,
-      isTap: true,
-      defeated: outcome.defeats > 0,
-      isBig: outcome.isCrit,
-    ));
+    _hits.add(
+      HitEvent(
+        damage: outcome.damageDealt,
+        isTap: true,
+        defeated: outcome.defeats > 0,
+        isBig: outcome.isCrit,
+      ),
+    );
   }
 
   void finisher() {
     final outcome = _engine.finisher();
     if (outcome == null) return;
+    _haptic();
     _publish();
-    _hits.add(HitEvent(
-      damage: outcome.damageDealt,
-      isTap: true,
-      defeated: outcome.defeats > 0,
-      isBig: true,
-    ));
+    _hits.add(
+      HitEvent(
+        damage: outcome.damageDealt,
+        isTap: true,
+        defeated: outcome.defeats > 0,
+        isBig: true,
+      ),
+    );
   }
 
   BuyQuote buyUpgrade(String id) {
@@ -295,13 +405,21 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     if (!result.ok) return;
     _publish();
     if (result.outcome.damageDealt > Big.zero) {
-      _hits.add(HitEvent(
-        damage: result.outcome.damageDealt,
-        isTap: true,
-        defeated: result.outcome.defeats > 0,
-        isBig: true,
-      ));
+      _hits.add(
+        HitEvent(
+          damage: result.outcome.damageDealt,
+          isTap: true,
+          defeated: result.outcome.defeats > 0,
+          isBig: true,
+        ),
+      );
     }
+  }
+
+  /// "¡A PELEAR!": the boss intro is over, the countdown starts.
+  void startBoss() {
+    _engine.startBoss();
+    _publish();
   }
 
   void collectLucky() {
@@ -340,7 +458,9 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   Future<bool> collectOffline({bool watchAd = false}) async {
     var multiplier = 1.0;
     if (watchAd) {
-      final ok = await ref.read(adServiceProvider).showRewarded('offline_double');
+      final ok = await ref
+          .read(adServiceProvider)
+          .showRewarded('offline_double');
       if (!ok) return false;
       multiplier = ref.read(contentProvider).balance.offline.adMultiplier;
     }
@@ -348,6 +468,72 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _publish();
     saveNow();
     return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shop and settings
+
+  int get _nowMs => clock.now().toUtc().millisecondsSinceEpoch;
+
+  /// Uses a shop item: real-money items go through the billing service, the
+  /// free offers through a rewarded ad (and a cooldown from the data).
+  Future<ShopResult> buyShopItem(String id) async {
+    final item = _engine.content.shopItem(id);
+    switch (item.kind) {
+      case ShopKind.purchase:
+      case ShopKind.beltPack:
+        final paid = await ref.read(billingServiceProvider).buy(item);
+        if (!paid) return ShopResult.cancelled;
+        if (item.kind == ShopKind.purchase) {
+          _engine.grantPurchase(id);
+        } else {
+          _engine.grantBeltPack(id);
+        }
+      case ShopKind.boost:
+      case ShopKind.adBelt:
+        if (_engine.adOfferWait(id, _nowMs) > 0) return ShopResult.cooldown;
+        final watched = await ref
+            .read(adServiceProvider)
+            .showRewarded('shop_$id');
+        if (!watched) return ShopResult.noAd;
+        if (!_engine.claimAdOffer(id, _nowMs)) return ShopResult.cooldown;
+    }
+    _publish();
+    saveNow();
+    return ShopResult.done;
+  }
+
+  /// Asks the store for the one-time purchases the player owns and grants them
+  /// again. Returns how many were restored.
+  Future<int> restorePurchases() async {
+    final owned = await ref.read(billingServiceProvider).restore();
+    var restored = 0;
+    for (final id in owned) {
+      final known = _engine.content.shopItems.any(
+        (i) => i.id == id && i.kind == ShopKind.purchase,
+      );
+      if (known && !_engine.ownsPurchase(id)) {
+        _engine.grantPurchase(id);
+        restored++;
+      }
+    }
+    if (restored > 0) {
+      _publish();
+      saveNow();
+    }
+    return restored;
+  }
+
+  /// Seconds until the rewarded-ad offer [id] is ready again (0 when ready).
+  double adOfferWait(String id) => _engine.adOfferWait(id, _nowMs);
+
+  /// Deletes the whole save and starts a new game ("Borrar datos").
+  Future<void> deleteAllData() async {
+    await _pendingSave;
+    await _store.delete();
+    _engine.resetAll();
+    ref.read(settingsProvider.notifier).reset();
+    _publish();
   }
 
   // ---------------------------------------------------------------------------
@@ -370,7 +556,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   /// Runs [minutes] of normal play time at once (all systems tick).
   void debugFastForward(int minutes) {
-    final ticks = minutes * 60 * ref.read(contentProvider).balance.ticksPerSecond;
+    final ticks =
+        minutes * 60 * ref.read(contentProvider).balance.ticksPerSecond;
     for (var i = 0; i < ticks; i++) {
       _engine.tick();
     }

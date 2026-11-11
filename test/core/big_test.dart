@@ -147,4 +147,27 @@ void main() {
       expect(formatBig(Big.powOf(10, 3 * (5 + 26 * 26) + 1)), endsWith('e${3 * (5 + 26 * 26) + 1}'));
     });
   });
+
+  group('formatBigShort', () {
+    test('keeps short values as they are', () {
+      expect(formatBigShort(b(7)), '7');
+      expect(formatBigShort(b(1234)), '1.2K');
+      expect(formatBigShort(b(12345)), '12.3K');
+    });
+
+    test('drops the decimal when three digits come before the point', () {
+      expect(formatBigShort(b(123456)), '123K');
+      expect(formatBigShort(b(999999)), '999K');
+      expect(formatBigShort(b(5.4e8)), '540M');
+      expect(formatBigShort(b(1.5e15)), '1.5aa');
+      expect(formatBigShort(b(150e15)), '150aa');
+    });
+
+    test('never longer than 5 characters for named tiers', () {
+      for (var e = 0; e < 15; e++) {
+        final text = formatBigShort(Big.powOf(10, e).mulDouble(9.87));
+        expect(text.replaceAll(RegExp(r'[A-Za-z]'), '').length, lessThanOrEqualTo(5), reason: text);
+      }
+    });
+  });
 }

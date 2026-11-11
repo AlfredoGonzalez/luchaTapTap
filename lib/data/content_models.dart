@@ -26,15 +26,18 @@ class OpponentDef {
     final id = r.string('id');
     if (size != (isBoss ? bossSpriteSize : regularSpriteSize)) {
       throw ContentException(
-          'opponents.json: "$id" has size $size but ${isBoss ? 'bosses' : 'regular opponents'} must be ${isBoss ? bossSpriteSize : regularSpriteSize}');
+        'opponents.json: "$id" has size $size but ${isBoss ? 'bosses' : 'regular opponents'} must be ${isBoss ? bossSpriteSize : regularSpriteSize}',
+      );
     }
     if (!Palette.byId.containsKey(color)) {
       throw ContentException(
-          'opponents.json: "$id" placeholderColor "$color" is not in the palette');
+        'opponents.json: "$id" placeholderColor "$color" is not in the palette',
+      );
     }
     if (Palette.maskReservedIds.contains(color)) {
       throw ContentException(
-          'opponents.json: "$id" placeholderColor "$color" is reserved for masks');
+        'opponents.json: "$id" placeholderColor "$color" is reserved for masks',
+      );
     }
     return OpponentDef(
       id: id,
@@ -46,8 +49,9 @@ class OpponentDef {
       hpMultiplier: r.number('hpMultiplier', min: 0, minExclusive: true),
       coinMultiplier: r.number('coinMultiplier', min: 0, minExclusive: true),
       flavor: r.string('flavor'),
-      bossTimerSeconds:
-          r.has('bossTimerSeconds') ? r.number('bossTimerSeconds', min: 0, minExclusive: true) : null,
+      bossTimerSeconds: r.has('bossTimerSeconds')
+          ? r.number('bossTimerSeconds', min: 0, minExclusive: true)
+          : null,
     );
   }
 
@@ -78,13 +82,13 @@ class LeagueDef {
   });
 
   factory LeagueDef.fromReader(JsonReader r) => LeagueDef(
-        id: r.string('id'),
-        name: r.string('name'),
-        order: r.integer('order', min: 1),
-        opponentIds: r.strings('opponentIds'),
-        bossId: r.optionalString('bossId'),
-        loopScale: r.number('loopScale', min: 0, minExclusive: true),
-      );
+    id: r.string('id'),
+    name: r.string('name'),
+    order: r.integer('order', min: 1),
+    opponentIds: r.strings('opponentIds'),
+    bossId: r.optionalString('bossId'),
+    loopScale: r.number('loopScale', min: 0, minExclusive: true),
+  );
 
   final String id;
   final String name;
@@ -109,13 +113,13 @@ class TrainerDef {
   });
 
   factory TrainerDef.fromReader(JsonReader r) => TrainerDef(
-        id: r.string('id'),
-        name: r.string('name'),
-        portrait: r.string('portrait'),
-        baseCost: r.number('baseCost', min: 0, minExclusive: true),
-        baseDps: r.number('baseDps', min: 0, minExclusive: true),
-        unlockFight: r.integer('unlockFight', min: 1),
-      );
+    id: r.string('id'),
+    name: r.string('name'),
+    portrait: r.string('portrait'),
+    baseCost: r.number('baseCost', min: 0, minExclusive: true),
+    baseDps: r.number('baseDps', min: 0, minExclusive: true),
+    unlockFight: r.integer('unlockFight', min: 1),
+  );
 
   final String id;
   final String name;
@@ -138,7 +142,8 @@ enum UpgradeEffect {
       if (value.name == name) return value;
     }
     throw ContentException(
-        '$source: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      '$source: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -195,7 +200,8 @@ enum SkillEffect {
       if (v.name == name) return v;
     }
     throw ContentException(
-        'skills.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      'skills.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -213,6 +219,7 @@ class SkillDef {
     required this.unlockFight,
     required this.baseCost,
     required this.maxLevel,
+    required this.description,
   });
 
   factory SkillDef.fromReader(JsonReader r) {
@@ -223,7 +230,9 @@ class SkillDef {
         (effect == SkillEffect.tapMultiplier ||
             effect == SkillEffect.luckBoost ||
             effect == SkillEffect.trainerMultiplier)) {
-      throw ContentException('skills.json: "$id" (${effect.name}) needs a duration above 0');
+      throw ContentException(
+        'skills.json: "$id" (${effect.name}) needs a duration above 0',
+      );
     }
     return SkillDef(
       id: id,
@@ -238,11 +247,15 @@ class SkillDef {
       unlockFight: r.integer('unlockFight', min: 1),
       baseCost: r.number('baseCost', min: 0, minExclusive: true),
       maxLevel: r.integer('maxLevel', min: 1),
+      description: r.string('description'),
     );
   }
 
   final String id;
   final String name;
+
+  /// What the skill does, with `{n}` (value) and `{d}` (duration) placeholders.
+  final String description;
 
   /// Three-letter label for the skill button until icons exist.
   final String shortName;
@@ -277,7 +290,8 @@ enum TalentEffect {
       if (v.name == name) return v;
     }
     throw ContentException(
-        'talents.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      'talents.json: "$id" has unknown effect "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -300,7 +314,8 @@ class TalentDef {
     final costs = r.numbers('costs', min: 1);
     if (costs.length != maxLevel) {
       throw ContentException(
-          'talents.json: "$id" needs exactly $maxLevel costs (one per level), found ${costs.length}');
+        'talents.json: "$id" needs exactly $maxLevel costs (one per level), found ${costs.length}',
+      );
     }
     return TalentDef(
       id: id,
@@ -331,7 +346,11 @@ class TalentDef {
 }
 
 class TalentBranchDef {
-  const TalentBranchDef({required this.id, required this.name, required this.nodes});
+  const TalentBranchDef({
+    required this.id,
+    required this.name,
+    required this.nodes,
+  });
 
   final String id;
   final String name;
@@ -350,7 +369,8 @@ enum MaskBonusType {
       if (v.name == name) return v;
     }
     throw ContentException(
-        'masks.json: "$id" has unknown bonus "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      'masks.json: "$id" has unknown bonus "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -372,7 +392,8 @@ enum MaskUnlockRule {
       if (v.name == name) return v;
     }
     throw ContentException(
-        'masks.json: "$id" has unknown unlock rule "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      'masks.json: "$id" has unknown unlock rule "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -386,6 +407,7 @@ class MaskDef {
     required this.unlockRule,
     required this.unlockValue,
     required this.slotColors,
+    required this.icon,
   });
 
   factory MaskDef.fromReader(JsonReader r) {
@@ -393,14 +415,19 @@ class MaskDef {
     final bonus = r.object('bonus');
     final unlock = r.object('unlock');
     final rule = MaskUnlockRule.parse(id, unlock.string('rule'));
-    final needsValue = rule == MaskUnlockRule.belts || rule == MaskUnlockRule.league;
+    final needsValue =
+        rule == MaskUnlockRule.belts || rule == MaskUnlockRule.league;
     final slots = r.strings('slotColors');
     if (slots.length != 3) {
-      throw ContentException('masks.json: "$id" slotColors needs exactly 3 palette colors');
+      throw ContentException(
+        'masks.json: "$id" slotColors needs exactly 3 palette colors',
+      );
     }
     for (final c in slots) {
       if (!Palette.byId.containsKey(c)) {
-        throw ContentException('masks.json: "$id" slot color "$c" is not in the palette');
+        throw ContentException(
+          'masks.json: "$id" slot color "$c" is not in the palette',
+        );
       }
     }
     return MaskDef(
@@ -412,12 +439,16 @@ class MaskDef {
       unlockRule: rule,
       unlockValue: needsValue ? unlock.number('value', min: 1) : 0,
       slotColors: slots,
+      icon: r.string('icon'),
     );
   }
 
   final String id;
   final String name;
   final String rarity;
+
+  /// Icon art key (see `PixelIcons.byKey`).
+  final String icon;
   final MaskBonusType bonusType;
   final double bonusValue;
   final MaskUnlockRule unlockRule;
@@ -441,7 +472,8 @@ enum AchievementCounter {
       if (v.name == name) return v;
     }
     throw ContentException(
-        'achievements.json: "$id" has unknown counter "$name" (known: ${values.map((e) => e.name).join(', ')})');
+      'achievements.json: "$id" has unknown counter "$name" (known: ${values.map((e) => e.name).join(', ')})',
+    );
   }
 }
 
@@ -470,4 +502,135 @@ class AchievementDef {
   final AchievementCounter counter;
   final int target;
   final int rewardBelts;
+}
+
+enum ShopSection { permanent, belts, ads }
+
+enum ShopKind {
+  /// Bought once for real money; stays forever (non-consumable).
+  purchase,
+
+  /// Bought for real money; adds Belts (consumable).
+  beltPack,
+
+  /// Free with a rewarded ad: temporary coin multiplier.
+  boost,
+
+  /// Free with a rewarded ad: a Belt.
+  adBelt,
+}
+
+class ShopItemDef {
+  const ShopItemDef({
+    required this.id,
+    required this.section,
+    required this.kind,
+    required this.name,
+    required this.detail,
+    required this.icon,
+    this.coinMultiplier = 1,
+    this.belts = 0,
+    this.durationSeconds = 0,
+    this.multiplier = 1,
+    this.cooldownSeconds = 0,
+  });
+
+  factory ShopItemDef.fromReader(JsonReader r) {
+    final id = r.string('id');
+    final kindName = r.string('kind');
+    final kind = ShopKind.values.firstWhere(
+      (k) => k.name == kindName,
+      orElse: () => throw ContentException(
+        'shop.json: "$id" has unknown kind "$kindName" (known: ${ShopKind.values.map((e) => e.name).join(', ')})',
+      ),
+    );
+    final sectionName = r.string('section');
+    final section = ShopSection.values.firstWhere(
+      (s) => s.name == sectionName,
+      orElse: () => throw ContentException(
+        'shop.json: "$id" has unknown section "$sectionName" (known: ${ShopSection.values.map((e) => e.name).join(', ')})',
+      ),
+    );
+    final expectedSection = switch (kind) {
+      ShopKind.purchase => ShopSection.permanent,
+      ShopKind.beltPack => ShopSection.belts,
+      ShopKind.boost || ShopKind.adBelt => ShopSection.ads,
+    };
+    if (section != expectedSection) {
+      throw ContentException(
+        'shop.json: "$id" is a ${kind.name}, so its section must be ${expectedSection.name}',
+      );
+    }
+    final belts = r.has('belts') ? r.integer('belts', min: 1) : 0;
+    if ((kind == ShopKind.beltPack || kind == ShopKind.adBelt) && belts == 0) {
+      throw ContentException('shop.json: "$id" needs "belts"');
+    }
+    final duration = r.has('durationSeconds')
+        ? r.number('durationSeconds', min: 0, minExclusive: true)
+        : 0.0;
+    final multiplier = r.has('multiplier')
+        ? r.number('multiplier', min: 1)
+        : 1.0;
+    if (kind == ShopKind.boost && (duration == 0 || multiplier <= 1)) {
+      throw ContentException(
+        'shop.json: "$id" needs durationSeconds and a multiplier above 1',
+      );
+    }
+    final cooldown = r.has('cooldownSeconds')
+        ? r.number('cooldownSeconds', min: 0)
+        : 0.0;
+    if ((kind == ShopKind.boost || kind == ShopKind.adBelt) && cooldown == 0) {
+      throw ContentException('shop.json: "$id" needs cooldownSeconds');
+    }
+    return ShopItemDef(
+      id: id,
+      section: section,
+      kind: kind,
+      name: r.string('name'),
+      detail: r.string('detail'),
+      icon: r.string('icon'),
+      coinMultiplier: r.has('coinMultiplier')
+          ? r.number('coinMultiplier', min: 1)
+          : 1,
+      belts: belts,
+      durationSeconds: duration,
+      multiplier: multiplier,
+      cooldownSeconds: cooldown,
+    );
+  }
+
+  final String id;
+  final ShopSection section;
+  final ShopKind kind;
+  final String name;
+  final String detail;
+  final String icon;
+
+  /// Permanent coin multiplier of a `purchase` (1 when it has none).
+  final double coinMultiplier;
+
+  /// Belts given by a `beltPack` or an `adBelt`.
+  final int belts;
+
+  /// Seconds a `boost` lasts and the coin multiplier it gives.
+  final double durationSeconds;
+  final double multiplier;
+
+  /// Wait between two uses of a rewarded-ad offer.
+  final double cooldownSeconds;
+}
+
+class CreditLine {
+  const CreditLine({required this.text, this.source, this.license});
+
+  final String text;
+  final String? source;
+  final String? license;
+}
+
+class CreditGroup {
+  const CreditGroup({required this.title, required this.lines});
+
+  final String title;
+  final List<CreditLine> lines;
 }

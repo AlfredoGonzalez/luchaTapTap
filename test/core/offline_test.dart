@@ -56,9 +56,9 @@ void main() {
       expect(e.offlineCapHours, lessThanOrEqualTo(8));
     });
 
-    test('an unknown purchase adds nothing', () {
+    test('a purchase without cap hours adds nothing', () {
       final e = hired();
-      e.grantPurchase('something_else');
+      e.grantPurchase('doble_moneda');
       expect(e.offlineCapHours, 4);
     });
 
