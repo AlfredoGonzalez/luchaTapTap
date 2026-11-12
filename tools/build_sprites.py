@@ -81,6 +81,14 @@ def snap(rgb, allow_mask):
     return table[d.argmin(axis=1)].reshape(rgb.shape).astype(np.uint8)
 
 
+def edge_mask(alpha):
+    """Opaque pixels that touch a transparent one (the outline)."""
+    opaque = alpha == 255
+    pad = np.pad(opaque, 1)
+    near_empty = ~pad[:-2, 1:-1] | ~pad[2:, 1:-1] | ~pad[1:-1, :-2] | ~pad[1:-1, 2:]
+    return opaque & near_empty
+
+
 def to_cell(img, size, allow_mask):
     bbox = img.getchannel("A").point(lambda v: 255 if v > 0 else 0).getbbox()
     fig = img.crop(bbox)
@@ -91,9 +99,10 @@ def to_cell(img, size, allow_mask):
     a = np.array(fig)
     alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
     rgb = snap(a[:, :, :3], allow_mask)
-    # Dark outline pixels all become Ink (no wine/purple fringes).
+    # Dark pixels on the outline become Ink (no wine/purple fringes); dark
+    # clothing inside the figure keeps its own palette color.
     dark = a[:, :, :3].astype(int).sum(axis=2) < 200
-    rgb[dark] = PALETTE["ink"]
+    rgb[dark & edge_mask(alpha)] = PALETTE["ink"]
     rgb[alpha == 0] = 0
     canvas = np.zeros((size, size, 4), np.uint8)
     x, y = (size - w) // 2, size - margin_bottom - h
@@ -200,7 +209,7 @@ def build_from_grids(key, files):
             a = np.array(small)
             alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
             rgb = snap(a[:, :, :3], allow_mask)
-            rgb[a[:, :, :3].astype(int).sum(axis=2) < 200] = PALETTE["ink"]
+            rgb[(a[:, :, :3].astype(int).sum(axis=2) < 200) & edge_mask(alpha)] = PALETTE["ink"]
             rgb[alpha == 0] = 0
             frame = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
             # Same anchor as idle (feet on the bottom, body centered); lying or

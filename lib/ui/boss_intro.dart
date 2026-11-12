@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/palette.dart';
 import '../game/fighter_shape.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import 'palette_color.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
+import 'ui_state.dart';
 
 /// Bands of the striped background, in virtual pixels.
 const int _stripe = 8;
@@ -37,18 +39,35 @@ class _StripePainter extends CustomPainter {
 }
 
 class _BossFigure extends CustomPainter {
-  _BossFigure({required this.body, required this.accent});
+  _BossFigure({required this.body, required this.accent, this.sheet});
 
   final int body;
   final int accent;
 
+  /// The boss's sprite sheet; null draws the placeholder rectangles.
+  final SpriteSheet? sheet;
+
   @override
-  void paint(Canvas canvas, Size size) =>
+  void paint(Canvas canvas, Size size) {
+    final sheet = this.sheet;
+    if (sheet == null) {
       paintFighter(canvas, size, bodyColor: body, accentColor: accent);
+      return;
+    }
+    // First frame of the idle clip, at exactly the size asked for (2x).
+    canvas.drawImageRect(
+      sheet.image,
+      sheet.frameRect('idle', 0),
+      Offset.zero & size,
+      Paint()
+        ..isAntiAlias = false
+        ..filterQuality = FilterQuality.none,
+    );
+  }
 
   @override
   bool shouldRepaint(_BossFigure old) =>
-      old.body != body || old.accent != accent;
+      old.body != body || old.accent != accent || old.sheet != sheet;
 }
 
 /// Full-screen reveal before a boss: the boss at exactly 2x, its name, the time
@@ -76,87 +95,93 @@ class BossIntro extends ConsumerWidget {
         CustomPaint(painter: _StripePainter(scale.scale), size: Size.infinite),
         Positioned.fill(
           child: Column(
-          children: [
-            SizedBox(height: scale.px(12)),
-            PixelText(
-              strings.t('boss_intro_title'),
-              size: 16,
-              color: Palette.marigold.color,
-              shadow: Palette.ink.color,
-            ),
-            SizedBox(height: scale.px(4)),
-            PixelText(
-              strings.t('boss_intro_where', {
-                'l': info.league.order,
-                'n': info.fight,
-              }),
-              shadow: Palette.ink.color,
-            ),
-            SizedBox(height: scale.px(6)),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Palette.ink.color,
-                border: Border.all(
-                  color: Palette.slate.color,
-                  width: scale.px(1),
-                ),
+            children: [
+              SizedBox(height: scale.px(12)),
+              PixelText(
+                strings.t('boss_intro_title'),
+                size: 16,
+                color: Palette.marigold.color,
+                shadow: Palette.ink.color,
               ),
-              child: Padding(
-                padding: EdgeInsets.all(scale.px(6)),
-                child: CustomPaint(
-                  size: Size(scale.px(figure), scale.px(figure)),
-                  painter: _BossFigure(body: color, accent: color),
-                ),
+              SizedBox(height: scale.px(4)),
+              PixelText(
+                strings.t('boss_intro_where', {
+                  'l': info.league.order,
+                  'n': info.fight,
+                }),
+                shadow: Palette.ink.color,
               ),
-            ),
-            SizedBox(height: scale.px(6)),
-            SizedBox(
-              width: double.infinity,
-              height: scale.px(20),
-              child: DecoratedBox(
+              SizedBox(height: scale.px(6)),
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: Palette.ink.color,
-                  border: Border.symmetric(
-                    horizontal: BorderSide(
-                      color: Palette.marigold.color,
-                      width: scale.px(1),
+                  border: Border.all(
+                    color: Palette.slate.color,
+                    width: scale.px(1),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(scale.px(6)),
+                  child: CustomPaint(
+                    size: Size(scale.px(figure), scale.px(figure)),
+                    painter: _BossFigure(
+                      body: color,
+                      accent: color,
+                      sheet: ref
+                          .watch(spriteLibraryProvider)
+                          .opponent(boss.sprite),
                     ),
                   ),
                 ),
-                child: Center(
-                  child: PixelText(
-                    boss.name,
-                    color: Palette.sunYellow.color,
-                    align: TextAlign.center,
+              ),
+              SizedBox(height: scale.px(6)),
+              SizedBox(
+                width: double.infinity,
+                height: scale.px(20),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Palette.ink.color,
+                    border: Border.symmetric(
+                      horizontal: BorderSide(
+                        color: Palette.marigold.color,
+                        width: scale.px(1),
+                      ),
+                    ),
+                  ),
+                  child: Center(
+                    child: PixelText(
+                      boss.name,
+                      color: Palette.sunYellow.color,
+                      align: TextAlign.center,
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: scale.px(4)),
-            PixelText(
-              strings.t('boss_intro_time', {'s': seconds}),
-              align: TextAlign.center,
-              wrap: true,
-              shadow: Palette.ink.color,
-            ),
-            const Spacer(),
-            PixelButton(
-              label: strings.t('boss_intro_go'),
-              style: PixelButtonStyle.gold,
-              width: 120,
-              height: 28,
-              onPressed: controller.startBoss,
-            ),
-            SizedBox(height: scale.px(4)),
-            PixelButton(
-              label: strings.t('dialog_back'),
-              style: PixelButtonStyle.secondary,
-              width: 120,
-              onPressed: controller.abandonBoss,
-            ),
-            SizedBox(height: scale.px(6)),
-          ],
-        ),
+              SizedBox(height: scale.px(4)),
+              PixelText(
+                strings.t('boss_intro_time', {'s': seconds}),
+                align: TextAlign.center,
+                wrap: true,
+                shadow: Palette.ink.color,
+              ),
+              const Spacer(),
+              PixelButton(
+                label: strings.t('boss_intro_go'),
+                style: PixelButtonStyle.gold,
+                width: 120,
+                height: 28,
+                onPressed: controller.startBoss,
+              ),
+              SizedBox(height: scale.px(4)),
+              PixelButton(
+                label: strings.t('dialog_back'),
+                style: PixelButtonStyle.secondary,
+                width: 120,
+                onPressed: controller.abandonBoss,
+              ),
+              SizedBox(height: scale.px(6)),
+            ],
+          ),
         ),
       ],
     );
