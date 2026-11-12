@@ -77,6 +77,27 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 - Upgrade and trainer rows show a 1-pixel yellow bar with the progress to the next milestone level; upgrade rows also say the level ("Nv 12 > 25"). Milestone levels and multiplier stay in `balance.json`.
 - Talents saturated (8 talents of 5 levels cost ~80 belts, one run pays dozens and later thousands). Now 10 levels each (siesta 6), with a two-phase cost curve in `talents.json`: ~x1.8 per level up to level 5, then x4 per level (last level ~10k-21k belts). Early game pacing is unchanged or slightly faster; the deep levels are the long-term belt sink.
 
+## M6: vertical slice (what was built, what is still a stand-in)
+
+**Audio.** `tools/make_placeholder_audio.py` synthesizes every effect and two music loops (main, boss) from scratch (square/triangle/noise), so they are original and CC0; the credits screen says "provisionales". Files are `assets/audio/sfx_<name>.ogg` and `music_<main|boss>.ogg`; replace any of them with the final pick (CC0 or CC-BY only, plus a `credits.json` entry) and nothing else changes. Playback goes through `AudioService` (`flame_audio`), silent in tests. Master, music and effects levels are in `balance.json` (`audio`); the player's switches stay the Sonido / Música toggles of the mockup (the spec also mentions volume sliders: **open question**, the settings mockup has none). Music pauses when the app loses focus; in a browser it starts on the first tap (autoplay rules).
+
+**Haptics.** Which event vibrates, and how hard, is data (`balance.json` `haptics`: tap, crit, finisher, buy, bossIntro, victory). The Vibración switch still turns it all off.
+
+**Sprites.** A sheet is `<key>.png`, one row per animation in the order of `balance.json` `animations.order` (idle 4 frames at 6 fps loop, attack 3 at 12, hit 2 at 12, defeated 3 at 10, victory 2 at 4 loop), one cell per frame (48x48, 64x64 for bosses). Opponent keys are the `sprite` field of `opponents.json`; the player's key is **`player`** (the spec names none: my choice). The game loads `assets/sprites/<key>.png` and falls back to `assets/sprites/placeholder/<key>.png`; with neither, the old rectangles are drawn. The player sheet is palette-swapped once per mask (Night Purple / Violet / Lilac -> the mask's three slot colors, in that order). `tools/validate_sprite.py` checks size, 32-color palette, alpha 0/255, mask-only colors and empty unused cells; `tools/pixelize.py` converts one image into one cell and assembles cells into a sheet. The placeholder sheets are drawn by `tools/make_placeholder_sprites.py` so the pipeline is tested end to end; they are not final art and the art style test is the designer's to do.
+
+**Ads and store.** `PlayAdService` (AdMob rewarded only, never forced) and `PlayBillingService` (Play Billing) implement the existing interfaces; browsers and tests keep the fakes (`platform_services*.dart` pick by platform). Non-release builds use Google's test ad unit; a release build has **no ads** until `balance.json` `monetization.rewardedUnitId` is set. The Play product id of each item is its shop id (`mas_descanso`, `belts_20`, ...). A payment that completes while the app is closed is granted the next time the store reports it. **Not verified on a device:** there is no Android SDK in my environment, only analysis, unit tests with a fake store and a web build.
+
+**Before release (checklist):** replace the sample AdMob app id in `AndroidManifest.xml` and set the real unit id; create the five Play products; real `applicationId`, signing and app icon; privacy policy text.
+
+## M7: launch content
+
+- **Roster:** 3 leagues (Arena del Barrio, Mercado Bravo, Estadio Monumental), 6 opponents plus a boss each (21 characters). New names and flavor lines are mine; none refers to real wrestlers or brands. Fights per league stay at 10 (the earlier decision): the 6 opponents appear in order and the last three repeat, then the boss. Arena colors (wall, ropes, floor) per league are in `leagues.json` (`theme`).
+- **Endless leagues:** `loopScale` is 3 for every league (each pass through the 3 leagues makes opponents 3x tougher on top of the normal growth). With more trainers the economy no longer stalls by itself, so this is what keeps depth bounded. The designer may prefer other numbers; see `docs/BALANCE.md`.
+- **Trainers (6):** Don Chuy, Chema Pesas, La Licenciada, Las Porras, Tortillería El Puño, Doctor Vendajes (names from the GDD, the last one is new). **All six only deal damage**, because the spec's trainer schema has no special effects; the GDD's special trainers (coin gain, damage that grows with the combo, late coin multiplier) would need an engine feature: **open question.**
+- **Masks (12):** the four named in the GDD (Jaguar Dorado, La Calaverita, Taco Supremo, Luchador Nopal) plus eight with the motifs of the Art Prompt Book (Águila, Toro, Rayo, Cobra, Fénix, Tigre, Oso, Diablo). **The documents disagree on names and motifs** (the prompt book's list has Lobo, Sol and Hielo, which are not here), and its mask size is 24x24 against 16x16 in the style guide; my list is a proposal. Unlock: one starter, seven priced in Belts (3 to 2000), one per league boss. Every bonus kind appears at least twice. Icons for the new masks fall back to the jaguar shape recolored with the mask's own colors until art exists.
+- **Skills (5) and talents (one tree of 8)** were already complete.
+- **Not done:** final art, final audio, the Sol and Hielo masks, shop-unlocked masks, mask-versus-hair special fights.
+
 ## Ideas for later (not built)
 
 - **One gesture per wrestler or mask, harder gesture = more damage** (designer idea after playtesting M4). Today every finisher is the same two circles for 20x tap damage. The recognizer is already pure Dart and its tolerances live in `balance.json`, so the natural step is to describe each gesture as data (a list of loops or shapes, each with a direction) and give each one a damage multiplier, tied to the equipped mask or the player's wrestler.
@@ -84,7 +105,8 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 
 ## Still open (designer decides)
 
-- Mask slot colors for trunks and cape, app icon, store title, studio name, `applicationId` (currently `com.example.lucha_tap_tap`).
+- Mask slot colors for trunks and cape, app icon, store title, `applicationId` (currently `com.example.lucha_tap_tap`).
+- Mask names and the 24x24 vs 16x16 icon size; whether to add volume sliders; special trainers.
 - Price points, rewarded-ad cooldowns, music and SFX packs.
 - Tall-phone mockup (180 x 390) and whether the offline cap talent range should differ from the 8 h maximum.
 

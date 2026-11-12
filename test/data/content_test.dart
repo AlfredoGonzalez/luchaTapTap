@@ -18,13 +18,53 @@ void expectInvalid(void Function(Map<String, Map<String, dynamic>>) edit, String
 void main() {
   test('the shipped data files load and validate', () {
     final c = loadShippedContent();
-    expect(c.opponents.length, 4);
-    expect(c.trainers.length, 2);
     expect(c.upgrades.length, 2);
     expect(c.skills.length, 5);
-    expect(c.masks.length, 2);
     expect(c.talents.length, 8);
-    expect(c.leagues.first.opponentIds.length, 9);
+  });
+
+  test('the launch content is all there: 3 leagues, 6 opponents and a boss each, 12 masks, 6 trainers', () {
+    final c = loadShippedContent();
+    OpponentDef opp(String id) => c.opponents.firstWhere((o) => o.id == id);
+    expect(c.leagues.length, 3);
+    for (final league in c.leagues) {
+      expect(league.opponentIds.toSet().length, 6, reason: '${league.id} needs 6 different opponents');
+      expect(league.bossId, isNotNull, reason: league.id);
+      expect(opp(league.bossId!).isBoss, isTrue);
+      expect(opp(league.bossId!).size, 64);
+      for (final id in league.opponentIds) {
+        expect(opp(id).isBoss, isFalse);
+        expect(opp(id).size, 48);
+      }
+    }
+    expect(c.opponents.length, 21);
+    expect(c.masks.length, 12);
+    expect(c.trainers.length, 6);
+    // Every sprite key is used once, so one sheet per opponent.
+    expect(c.opponents.map((o) => o.sprite).toSet().length, c.opponents.length);
+  });
+
+  test('masks: exactly one starter, every league boss unlocks a mask, bonuses differ in kind', () {
+    final c = loadShippedContent();
+    expect(c.masks.where((m) => m.unlockRule == MaskUnlockRule.starter).length, 1);
+    for (final league in c.leagues) {
+      expect(
+        c.masks.where((m) => m.unlockRule == MaskUnlockRule.league && m.unlockValue == league.order).length,
+        1,
+        reason: 'league ${league.order}',
+      );
+    }
+    expect(c.masks.map((m) => m.bonusType).toSet().length, MaskBonusType.values.length);
+    expect(c.masks.map((m) => m.id).toSet().length, 12);
+  });
+
+  test('trainers get more expensive and stronger tier by tier, and unlock later', () {
+    final t = loadShippedContent().trainers;
+    for (var i = 1; i < t.length; i++) {
+      expect(t[i].baseCost, greaterThan(t[i - 1].baseCost));
+      expect(t[i].baseDps, greaterThan(t[i - 1].baseDps));
+      expect(t[i].unlockFight, greaterThan(t[i - 1].unlockFight));
+    }
   });
 
   test('every data file has a schemaVersion', () {

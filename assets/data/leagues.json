@@ -9,15 +9,66 @@
         "mr_aguacate",
         "el_tamal_mortal",
         "el_taquero_cosmico",
-        "mr_aguacate",
-        "el_tamal_mortal",
-        "el_taquero_cosmico",
-        "mr_aguacate",
-        "el_tamal_mortal",
-        "el_taquero_cosmico"
+        "la_abuela_fantasma",
+        "dona_chela_tornado",
+        "el_churro_veloz",
+        "la_abuela_fantasma",
+        "dona_chela_tornado",
+        "el_churro_veloz"
       ],
       "bossId": "el_mariachi_furioso",
-      "loopScale": 1.0
+      "loopScale": 3.0,
+      "theme": {
+        "wall": "navy",
+        "rope": "lucha_red",
+        "floor": "sand"
+      }
+    },
+    {
+      "id": "league_2",
+      "name": "Mercado Bravo",
+      "order": 2,
+      "opponentIds": [
+        "don_pinata",
+        "la_marchanta_loca",
+        "el_nopal_gigante",
+        "el_chicharron_crujiente",
+        "la_senora_gelatina",
+        "el_tianguista_turbo",
+        "el_chicharron_crujiente",
+        "la_senora_gelatina",
+        "el_tianguista_turbo"
+      ],
+      "bossId": "el_rey_del_tianguis",
+      "loopScale": 3.0,
+      "theme": {
+        "wall": "forest",
+        "rope": "marigold",
+        "floor": "skin_deep"
+      }
+    },
+    {
+      "id": "league_3",
+      "name": "Estadio Monumental",
+      "order": 3,
+      "opponentIds": [
+        "el_astronauta_azteca",
+        "la_catrina_electrica",
+        "el_robot_luchador",
+        "el_dragon_de_papel",
+        "el_gallo_de_oro",
+        "la_sirena_del_ring",
+        "el_dragon_de_papel",
+        "el_gallo_de_oro",
+        "la_sirena_del_ring"
+      ],
+      "bossId": "el_emperador_obsidiana",
+      "loopScale": 3.0,
+      "theme": {
+        "wall": "ink",
+        "rope": "coral",
+        "floor": "slate"
+      }
     }
   ]
 }

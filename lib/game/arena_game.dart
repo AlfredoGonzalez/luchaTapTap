@@ -27,12 +27,16 @@ class ArenaGame extends FlameGame {
     required this.onLuckyTap,
     required this.opponent,
     required this.animations,
+    required this.theme,
     SpriteLibrary? sprites,
     this.playerMaskId,
     this.playerMaskColor = Palette.violet,
   }) : sprites = sprites ?? SpriteLibrary.empty();
 
   final AnimationConfig animations;
+
+  /// Arena colors of the current league (see [setTheme]).
+  ArenaTheme theme;
 
   /// Sprite sheets; fighters without one are drawn as placeholder rectangles.
   final SpriteLibrary sprites;
@@ -51,6 +55,7 @@ class ArenaGame extends FlameGame {
   /// Opponent currently shown (updated by [showOpponent]).
   OpponentDef opponent;
   late _Fighter _player;
+  late _ArenaBackdrop _backdrop;
   _LuckyPickup? _lucky;
   late _Fighter _enemy;
   int _hitCount = 0;
@@ -69,7 +74,8 @@ class ArenaGame extends FlameGame {
     camera.viewfinder.anchor = Anchor.topLeft;
     camera.viewfinder.position = Vector2.zero();
 
-    world.add(_ArenaBackdrop(size: virtualSize, floorY: _floorY));
+    _backdrop = _ArenaBackdrop(size: virtualSize, floorY: _floorY, theme: theme);
+    world.add(_backdrop);
     _player = _buildPlayer();
     _enemy = _buildEnemy(opponent);
     world.addAll([_player, _enemy, _TapArea(size: virtualSize, onTap: onTap)]);
@@ -131,6 +137,12 @@ class ArenaGame extends FlameGame {
     world.add(_player);
   }
 
+  /// A new league: the arena changes colors.
+  void setTheme(ArenaTheme next) {
+    theme = next;
+    if (isLoaded) _backdrop.theme = next;
+  }
+
   /// The player throws a punch.
   void playerAttack() {
     if (isLoaded) _player.punch();
@@ -190,10 +202,14 @@ class ArenaGame extends FlameGame {
 }
 
 class _ArenaBackdrop extends PositionComponent {
-  _ArenaBackdrop({required Vector2 size, required this.floorY})
-    : super(size: size);
+  _ArenaBackdrop({
+    required Vector2 size,
+    required this.floorY,
+    required this.theme,
+  }) : super(size: size);
 
   final double floorY;
+  ArenaTheme theme;
 
   @override
   void render(Canvas canvas) {
@@ -201,19 +217,19 @@ class _ArenaBackdrop extends PositionComponent {
     // Wall.
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.x, floorY),
-      paint..color = Palette.navy.color,
+      paint..color = theme.wall.color,
     );
     // Ropes.
     for (final y in [floorY - 30, floorY - 20, floorY - 10]) {
       canvas.drawRect(
         Rect.fromLTWH(0, y, size.x, 2),
-        paint..color = Palette.luchaRed.color,
+        paint..color = theme.rope.color,
       );
     }
     // Floor.
     canvas.drawRect(
       Rect.fromLTWH(0, floorY, size.x, size.y - floorY),
-      paint..color = Palette.sand.color,
+      paint..color = theme.floor.color,
     );
     canvas.drawRect(
       Rect.fromLTWH(0, floorY, size.x, 1),

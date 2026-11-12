@@ -39,7 +39,7 @@ void main() {
 
     test('there is no permanent wall: the best fight keeps growing over hours', () {
       int bestAt(double m) => r.snapshots.lastWhere((s) => s.minute <= m + 0.5).bestFight;
-      expect(bestAt(60), greaterThanOrEqualTo(40));
+      expect(bestAt(60), greaterThanOrEqualTo(35));
       expect(bestAt(120), greaterThan(bestAt(60)));
       expect(r.snapshots.last.bestFight, greaterThanOrEqualTo(60));
     });

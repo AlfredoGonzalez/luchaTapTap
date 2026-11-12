@@ -71,6 +71,38 @@ class OpponentDef {
   final double? bossTimerSeconds;
 }
 
+/// Palette colors of an arena (wall, ropes, floor), from `leagues.json`.
+class ArenaTheme {
+  const ArenaTheme({
+    required this.wall,
+    required this.rope,
+    required this.floor,
+  });
+
+  factory ArenaTheme.fromReader(JsonReader r, String leagueId) {
+    int color(String key) {
+      final id = r.string(key);
+      final value = Palette.byId[id];
+      if (value == null) {
+        throw ContentException(
+          'leagues.json: "$leagueId" theme.$key "$id" is not in the palette',
+        );
+      }
+      return value;
+    }
+
+    return ArenaTheme(
+      wall: color('wall'),
+      rope: color('rope'),
+      floor: color('floor'),
+    );
+  }
+
+  final int wall;
+  final int rope;
+  final int floor;
+}
+
 class LeagueDef {
   const LeagueDef({
     required this.id,
@@ -79,6 +111,7 @@ class LeagueDef {
     required this.opponentIds,
     required this.bossId,
     required this.loopScale,
+    required this.theme,
   });
 
   factory LeagueDef.fromReader(JsonReader r) => LeagueDef(
@@ -88,7 +121,11 @@ class LeagueDef {
     opponentIds: r.strings('opponentIds'),
     bossId: r.optionalString('bossId'),
     loopScale: r.number('loopScale', min: 0, minExclusive: true),
+    theme: ArenaTheme.fromReader(r.object('theme'), r.string('id')),
   );
+
+  /// Colors of this league's arena.
+  final ArenaTheme theme;
 
   final String id;
   final String name;

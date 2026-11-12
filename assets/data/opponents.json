@@ -35,6 +35,39 @@
       "flavor": "Su salsa pica hasta en otra galaxia."
     },
     {
+      "id": "la_abuela_fantasma",
+      "name": "La Abuela Fantasma",
+      "sprite": "opp_la_abuela_fantasma",
+      "placeholderColor": "fog",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Sus abrazos te quitan las ganas de pelear."
+    },
+    {
+      "id": "dona_chela_tornado",
+      "name": "Doña Chela Tornado",
+      "sprite": "opp_dona_chela_tornado",
+      "placeholderColor": "pink",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Gira tan rápido que nadie sabe dónde está."
+    },
+    {
+      "id": "el_churro_veloz",
+      "name": "El Churro Veloz",
+      "sprite": "opp_el_churro_veloz",
+      "placeholderColor": "marigold",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Llega azucarado y sin frenos."
+    },
+    {
       "id": "el_mariachi_furioso",
       "name": "El Mariachi Furioso",
       "sprite": "opp_el_mariachi_furioso",
@@ -44,6 +77,160 @@
       "hpMultiplier": 1.0,
       "coinMultiplier": 1.0,
       "flavor": "Toca una canción que acelera el reloj."
+    },
+    {
+      "id": "don_pinata",
+      "name": "Don Piñata",
+      "sprite": "opp_don_pinata",
+      "placeholderColor": "coral",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Nadie le pega sin que le salgan dulces."
+    },
+    {
+      "id": "la_marchanta_loca",
+      "name": "La Marchanta Loca",
+      "sprite": "opp_la_marchanta_loca",
+      "placeholderColor": "teal",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Regatea hasta los golpes."
+    },
+    {
+      "id": "el_nopal_gigante",
+      "name": "El Nopal Gigante",
+      "sprite": "opp_el_nopal_gigante",
+      "placeholderColor": "forest",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Abraza con espinas, ¡cuidado!"
+    },
+    {
+      "id": "el_chicharron_crujiente",
+      "name": "El Chicharrón Crujiente",
+      "sprite": "opp_el_chicharron_crujiente",
+      "placeholderColor": "skin_deep",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Se rompe, pero te rompe primero."
+    },
+    {
+      "id": "la_senora_gelatina",
+      "name": "La Señora Gelatina",
+      "sprite": "opp_la_senora_gelatina",
+      "placeholderColor": "aqua",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Tiembla de risa y rebota de coraje."
+    },
+    {
+      "id": "el_tianguista_turbo",
+      "name": "El Tianguista Turbo",
+      "sprite": "opp_el_tianguista_turbo",
+      "placeholderColor": "royal",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Vende rápido y pega más rápido."
+    },
+    {
+      "id": "el_rey_del_tianguis",
+      "name": "El Rey del Tianguis",
+      "sprite": "opp_el_rey_del_tianguis",
+      "placeholderColor": "wine",
+      "size": 64,
+      "isBoss": true,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Cobra piso en todo el mercado."
+    },
+    {
+      "id": "el_astronauta_azteca",
+      "name": "El Astronauta Azteca",
+      "sprite": "opp_el_astronauta_azteca",
+      "placeholderColor": "sky",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Vuelve de la luna con ganas de revancha."
+    },
+    {
+      "id": "la_catrina_electrica",
+      "name": "La Catrina Eléctrica",
+      "sprite": "opp_la_catrina_electrica",
+      "placeholderColor": "magenta",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Su sombrero suelta chispas."
+    },
+    {
+      "id": "el_robot_luchador",
+      "name": "El Robot Luchador",
+      "sprite": "opp_el_robot_luchador",
+      "placeholderColor": "dust",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Calcula tus golpes antes de que los tires."
+    },
+    {
+      "id": "el_dragon_de_papel",
+      "name": "El Dragón de Papel",
+      "sprite": "opp_el_dragon_de_papel",
+      "placeholderColor": "lucha_red",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Arde fácil, pero respira fuego."
+    },
+    {
+      "id": "el_gallo_de_oro",
+      "name": "El Gallo de Oro",
+      "sprite": "opp_el_gallo_de_oro",
+      "placeholderColor": "sun_yellow",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Canta a las cuatro y te despierta a golpes."
+    },
+    {
+      "id": "la_sirena_del_ring",
+      "name": "La Sirena del Ring",
+      "sprite": "opp_la_sirena_del_ring",
+      "placeholderColor": "navy",
+      "size": 48,
+      "isBoss": false,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Te atrapa con su canto y te hunde."
+    },
+    {
+      "id": "el_emperador_obsidiana",
+      "name": "El Emperador Obsidiana",
+      "sprite": "opp_el_emperador_obsidiana",
+      "placeholderColor": "ink",
+      "size": 64,
+      "isBoss": true,
+      "hpMultiplier": 1.0,
+      "coinMultiplier": 1.0,
+      "flavor": "Dueño del estadio y de la última palabra."
     }
   ]
 }

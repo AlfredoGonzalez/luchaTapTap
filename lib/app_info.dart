@@ -1,2 +1,2 @@
 /// Version shown in the settings screen.
-const String appVersion = '0.4';
+const String appVersion = '0.7';

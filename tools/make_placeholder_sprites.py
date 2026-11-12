@@ -156,6 +156,36 @@ THEMES = {
 }
 
 
+def look(skin, body, belly, trunks, boots, glove, head, hat=None, size=48, extra=None):
+    return dict(size=size, skin=skin, body=body, belly=belly, trunks=trunks, boots=boots, glove=glove,
+                head=head, hat=hat, extra=extra)
+
+
+# Placeholder looks for the rest of the launch roster. Opponents never use the
+# mask-only colors (Night Purple, Violet, Lilac).
+THEMES.update({
+    "opp_la_abuela_fantasma": look("fog", "white", "bone", "dust", "slate", "fog", ("dust", "fog", "white")),
+    "opp_dona_chela_tornado": look("skin_mid", "pink", "blush", "magenta", "wine", "pink", ("wine", "pink", "blush")),
+    "opp_el_churro_veloz": look("skin_light", "marigold", "sun_yellow", "chocolate", "burnt_orange", "sand", ("burnt_orange", "marigold", "sun_yellow")),
+    "opp_don_pinata": look("skin_mid", "coral", "sun_yellow", "royal", "teal", "sun_yellow", ("wine", "coral", "pink")),
+    "opp_la_marchanta_loca": look("skin_deep", "teal", "aqua", "chocolate", "forest", "aqua", ("forest", "teal", "aqua")),
+    "opp_el_nopal_gigante": look("nopal", "nopal", "mint", "forest", "chocolate", "lime", ("forest", "nopal", "lime")),
+    "opp_el_chicharron_crujiente": look("skin_deep", "skin_deep", "sand", "chocolate", "chocolate", "sand", ("chocolate", "skin_deep", "sand")),
+    "opp_la_senora_gelatina": look("aqua", "aqua", "white", "teal", "sky", "white", ("teal", "aqua", "white")),
+    "opp_el_tianguista_turbo": look("skin_mid", "royal", "sky", "navy", "white", "sky", ("navy", "royal", "sky")),
+    "opp_el_rey_del_tianguis": look("skin_deep", "wine", "marigold", "ink", "chocolate", "marigold", ("chocolate", "skin_deep", "skin_mid"), hat="marigold", size=64),
+    "opp_el_astronauta_azteca": look("skin_mid", "white", "fog", "royal", "dust", "sky", ("dust", "white", "sky")),
+    "opp_la_catrina_electrica": look("bone", "magenta", "pink", "ink", "wine", "bone", ("ink", "bone", "white"), hat="ink"),
+    "opp_el_robot_luchador": look("dust", "dust", "fog", "slate", "ink", "fog", ("slate", "dust", "fog")),
+    "opp_el_dragon_de_papel": look("lucha_red", "lucha_red", "sun_yellow", "wine", "wine", "coral", ("wine", "lucha_red", "coral")),
+    "opp_el_gallo_de_oro": look("marigold", "marigold", "sun_yellow", "burnt_orange", "burnt_orange", "sun_yellow", ("burnt_orange", "marigold", "sun_yellow")),
+    "opp_la_sirena_del_ring": look("teal", "navy", "sky", "teal", "aqua", "aqua", ("navy", "teal", "aqua")),
+    "opp_el_emperador_obsidiana": look("slate", "ink", "dust", "wine", "ink", "dust", ("ink", "slate", "dust"), hat="wine", size=64),
+})
+
+
+
+
 def sheet(key, theme):
     size = theme["size"]
     cells = Image.new("RGBA", (size * COLUMNS, size * len(ANIMS)), (0, 0, 0, 0))

@@ -150,7 +150,7 @@ class _TrainerRow extends ConsumerWidget {
     return FlashOnIncrease(
       value: level,
       child: ListRow(
-        icon: PixelIcons.byKey(trainer.portrait),
+        icon: PixelIcons.byKey(trainer.portrait) ?? PixelIcons.trainer,
         title: trainer.name,
         subtitle: level == 0
             ? strings.t('row_level_short', {'n': level})

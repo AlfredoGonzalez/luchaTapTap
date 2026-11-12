@@ -17,7 +17,12 @@
         "el_taquero_cosmico"
       ],
       "bossId": "el_mariachi_furioso",
-      "loopScale": 1.0
+      "loopScale": 1.0,
+      "theme": {
+        "wall": "navy",
+        "rope": "lucha_red",
+        "floor": "sand"
+      }
     }
   ]
 }

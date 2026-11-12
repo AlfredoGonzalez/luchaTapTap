@@ -16,6 +16,38 @@
       "baseCost": 10000,
       "baseDps": 85,
       "unlockFight": 4
+    },
+    {
+      "id": "la_licenciada",
+      "name": "La Licenciada",
+      "portrait": "tr_la_licenciada",
+      "baseCost": 100000000,
+      "baseDps": 600000,
+      "unlockFight": 32
+    },
+    {
+      "id": "las_porras",
+      "name": "Las Porras",
+      "portrait": "tr_las_porras",
+      "baseCost": 10000000000,
+      "baseDps": 50000000,
+      "unlockFight": 48
+    },
+    {
+      "id": "tortilleria_el_puno",
+      "name": "Tortillería El Puño",
+      "portrait": "tr_tortilleria_el_puno",
+      "baseCost": 1000000000000,
+      "baseDps": 4000000000,
+      "unlockFight": 64
+    },
+    {
+      "id": "doctor_vendajes",
+      "name": "Doctor Vendajes",
+      "portrait": "tr_doctor_vendajes",
+      "baseCost": 100000000000000,
+      "baseDps": 300000000000,
+      "unlockFight": 80
     }
   ]
 }

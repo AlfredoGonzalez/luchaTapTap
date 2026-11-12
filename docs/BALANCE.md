@@ -87,9 +87,29 @@ The pacing does not depend on one exact player: tap rate, gesture skill and when
 ## Limits: read before trusting these numbers
 
 - **It is a bot.** Real players are slower to decide, forget skills, misdraw gestures and take breaks. The targets are for an attentive player; the casual rows show a calmer one.
-- **Prototype content only:** 2 upgrades, 2 trainers, 5 skills, 2 masks, 8 talents, 1 league. The launch content (M7: 6 trainers, 12 masks, 3 leagues) will change the curve and this pass must be repeated then. The tools are meant for that.
+- **The M5 numbers above were measured with the prototype content** (2 trainers, 2 masks, 1 league). They are kept as history; the launch content changed the curve, see the M7 section.
 - **The wall is the boss.** Every tenth fight has 10 times the HP, so progress comes in steps; players will feel it and the "¡JEFE!" button is where they decide.
 - **Casual play is slow** (first prestige at about 1 hour 30 for 5 minutes every half hour). Offline earnings help but the 4 hour cap and trainers-only damage limit them. A designer call: is that the desired pace for a casual player?
-- **The UI does not show milestones yet:** a trainer's damage jumps at level 10, 25, 50... and nothing on screen says so.
-- **Talents saturate:** all 8 talents cost about 80 Belts in total and one run now pays dozens, so later Belts only add the flat +2%. More or costlier talents belong to the content milestone.
+- **Milestones are now visible:** a yellow bar under each upgrade and trainer row shows progress to the next milestone level.
+- **Talents no longer saturate:** 10 levels each with a steep tail (see DECISIONS.md).
 - **The prestige policy is a guess** (change mask after 5 minutes without a new fight). The simulator accepts any rule; see the "prestigia tras" rows.
+
+## M7: launch content (3 leagues, 6 trainers, 12 masks)
+
+What happened when the launch content went in, measured with the same simulator (active player, 4 taps per second, never catches a lucky pickup):
+
+| | Before M7 (prototype content) | After |
+| --- | --- | --- |
+| Fight 20 / 30 | 11 / 29 min | 11 / 27 min |
+| 1st / 2nd / 3rd / 4th prestige | 24 / 40 / 48 / 55 min | 23 / 36 / 45 / 53 min |
+| Best fight at 1 h / 2 h / 3 h | 49 / 59 / 69 | 39 / 110 / 199 |
+
+The first hour is untouched (the new trainers cost 10^8 and up). What changed is the depth: with only two trainers the economy hit a wall around fight 70; with six, each new tier lets the player escape the cost growth of the old ones, and the Belts bonus (+2% per Belt, Belts grow with the square root of coins) feeds back, so progress no longer stalls. Left alone it reached fight 270 in three hours with 10^16 Belts, which burns through three 10-fight leagues dozens of times.
+
+What I did about it, in order of how much it mattered:
+
+1. **`loopScale` 3** on every league (data): each full pass through the three leagues multiplies opponent HP by 3. The first 30 fights are unaffected. This brought the second prestige back to 36 minutes.
+2. **Trainers 3 to 6 are expensive and late** (cost 10^8, 10^10, 10^12, 10^14; unlock at fights 32, 48, 64, 80). I tried cheaper and earlier tiers: they made the second prestige 10 minutes faster and the best fight at one hour 109.
+3. **Masks:** the extra bonuses (+20% tap, +30% trainers...) also shorten the second run by a few minutes; I left them.
+
+Open: how deep should three hours go? Nothing in the GDD says. The pacing test now requires the best fight to be at least 35 after an hour (it was 40) and growing after that. A bigger `loopScale` makes the loop steeper, a smaller one lets it run away. **Not re-run after M7:** the full sensitivity table (tap rate, gesture, prestige policy); only the headline profiles above.

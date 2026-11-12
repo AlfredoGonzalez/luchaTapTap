@@ -37,6 +37,196 @@
         "white"
       ],
       "icon": "mask_wolf"
+    },
+    {
+      "id": "taco_supremo",
+      "name": "Taco Supremo",
+      "rarity": "rare",
+      "bonus": {
+        "type": "trainerDamageMultiplier",
+        "value": 0.2
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 8
+      },
+      "slotColors": [
+        "wine",
+        "lucha_red",
+        "coral"
+      ],
+      "icon": "mask_bull"
+    },
+    {
+      "id": "luchador_nopal",
+      "name": "Luchador Nopal",
+      "rarity": "rare",
+      "bonus": {
+        "type": "offlineCapHours",
+        "value": 0.5
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 20
+      },
+      "slotColors": [
+        "forest",
+        "nopal",
+        "lime"
+      ],
+      "icon": "mask_bolt"
+    },
+    {
+      "id": "aguila_real",
+      "name": "Águila Real",
+      "rarity": "common",
+      "bonus": {
+        "type": "tapDamageMultiplier",
+        "value": 0.2
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 50
+      },
+      "slotColors": [
+        "navy",
+        "royal",
+        "sky"
+      ],
+      "icon": "mask_aguila"
+    },
+    {
+      "id": "toro_bravo",
+      "name": "Toro Bravo",
+      "rarity": "common",
+      "bonus": {
+        "type": "coinGainMultiplier",
+        "value": 0.1
+      },
+      "unlock": {
+        "rule": "league",
+        "value": 1
+      },
+      "slotColors": [
+        "chocolate",
+        "skin_deep",
+        "skin_light"
+      ],
+      "icon": "mask_toro"
+    },
+    {
+      "id": "rayo_azul",
+      "name": "Rayo Azul",
+      "rarity": "rare",
+      "bonus": {
+        "type": "trainerDamageMultiplier",
+        "value": 0.3
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 120
+      },
+      "slotColors": [
+        "navy",
+        "sky",
+        "aqua"
+      ],
+      "icon": "mask_rayo"
+    },
+    {
+      "id": "cobra_verde",
+      "name": "Cobra Verde",
+      "rarity": "rare",
+      "bonus": {
+        "type": "bossCoinMultiplier",
+        "value": 1.0
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 300
+      },
+      "slotColors": [
+        "forest",
+        "teal",
+        "aqua"
+      ],
+      "icon": "mask_cobra"
+    },
+    {
+      "id": "fenix_de_fuego",
+      "name": "Fénix de Fuego",
+      "rarity": "epic",
+      "bonus": {
+        "type": "tapDamageMultiplier",
+        "value": 0.4
+      },
+      "unlock": {
+        "rule": "league",
+        "value": 2
+      },
+      "slotColors": [
+        "wine",
+        "burnt_orange",
+        "sun_yellow"
+      ],
+      "icon": "mask_fenix"
+    },
+    {
+      "id": "tigre_rayado",
+      "name": "Tigre Rayado",
+      "rarity": "epic",
+      "bonus": {
+        "type": "coinGainMultiplier",
+        "value": 0.2
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 800
+      },
+      "slotColors": [
+        "chocolate",
+        "marigold",
+        "sand"
+      ],
+      "icon": "mask_tigre"
+    },
+    {
+      "id": "oso_polar",
+      "name": "Oso Polar",
+      "rarity": "epic",
+      "bonus": {
+        "type": "offlineCapHours",
+        "value": 1.0
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 2000
+      },
+      "slotColors": [
+        "dust",
+        "fog",
+        "white"
+      ],
+      "icon": "mask_oso"
+    },
+    {
+      "id": "diablillo",
+      "name": "Diablillo",
+      "rarity": "legendary",
+      "bonus": {
+        "type": "trainerDamageMultiplier",
+        "value": 0.6
+      },
+      "unlock": {
+        "rule": "league",
+        "value": 3
+      },
+      "slotColors": [
+        "wine",
+        "coral",
+        "blush"
+      ],
+      "icon": "mask_diablo"
     }
   ]
 }
