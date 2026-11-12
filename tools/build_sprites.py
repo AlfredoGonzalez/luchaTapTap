@@ -131,6 +131,97 @@ def frames_for(cell):
     }
 
 
+# ---- animation sheets: one 5 x 5 grid file per animation ----------------------
+# Files whose name has an animation word (idle, punch/attack, hurt/hit,
+# defeated, victory) and the character key (e.g. "player ... idle ... .png")
+# are used instead of the single pose. Each is a 5 x 5 grid of frames; these
+# frames are picked from each grid (data below), shrunk with one common scale
+# so the character keeps its size, and put in the game's sheet layout.
+ANIM_WORDS = {"idle": "idle", "punch": "attack", "attack": "attack", "hurt": "hit", "hit": "hit",
+              "defeated": "defeated", "victory": "victory"}
+PICK = {"idle": [0, 6, 12, 18], "attack": [6, 12, 19], "hit": [8, 12], "defeated": [10, 17, 22],
+        "victory": [4, 16]}
+GRID = 5
+
+
+def anim_of(path):
+    stem = path.stem.lower()
+    for word, anim in ANIM_WORDS.items():
+        if word in stem:
+            return anim
+    return None
+
+
+def sheet_key(path):
+    stem = path.stem.lower()
+    if "player" in stem:
+        return "player"
+    for word in ANIM_WORDS:
+        stem = stem.replace(word, "")
+    stem = re.sub(r"photoroom|v\d+", "", stem)
+    stem = re.sub(r"[^a-z0-9]+", "_", stem).strip("_")
+    return stem if stem.startswith("opp_") else "opp_" + stem
+
+
+def grid_cell(img, index):
+    cw = img.width // GRID
+    r, c = divmod(index, GRID)
+    return img.crop((c * cw, r * cw, (c + 1) * cw, (r + 1) * cw)).convert("RGBA")
+
+
+def bbox_of(img):
+    return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
+
+
+def build_from_grids(key, files):
+    size = SIZES[key]
+    allow_mask = key == "player"
+    grids = {anim_of(f): Image.open(f) for f in files}
+    missing = [a for a in ORDER if a not in grids]
+    if missing:
+        print(f"SKIP {key}: missing animation files for {', '.join(missing)}")
+        return False
+    # Common scale and anchor from the standing (idle) frames.
+    boxes = [bbox_of(grid_cell(grids["idle"], i)) for i in PICK["idle"]]
+    height = max(b[3] - b[1] for b in boxes)
+    cx = sum((b[0] + b[2]) / 2 for b in boxes) / len(boxes)
+    bottom = max(b[3] for b in boxes)
+    scale = (size - 4) / height
+    out = Image.new("RGBA", (size * COLUMNS, size * len(ORDER)), (0, 0, 0, 0))
+    for row, anim in enumerate(ORDER):
+        for col, index in enumerate(PICK[anim]):
+            cell = grid_cell(grids[anim], index)
+            f = scale
+            box = bbox_of(cell)
+            # A frame wider or taller than the cell (lying down) shrinks to fit.
+            f = min(f, (size - 2) / (box[2] - box[0]), (size - 2) / (box[3] - box[1]))
+            w, h = max(1, round(cell.width * f)), max(1, round(cell.height * f))
+            small = cell.resize((w, h), Image.BOX)
+            a = np.array(small)
+            alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
+            rgb = snap(a[:, :, :3], allow_mask)
+            rgb[a[:, :, :3].astype(int).sum(axis=2) < 200] = PALETTE["ink"]
+            rgb[alpha == 0] = 0
+            frame = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+            # Same anchor as idle (feet on the bottom, body centered); lying or
+            # shrunk frames are bottom-aligned and kept inside the cell.
+            ox = round(size / 2 - cx * f)
+            oy = round(size - 1 - bottom * f)
+            if f != scale or anim == "defeated":
+                nb = bbox_of(frame)
+                ox = round((size - (nb[2] - nb[0])) / 2 - nb[0])
+                oy = size - 1 - nb[3]
+            nb = bbox_of(frame)
+            ox = min(max(ox, -nb[0]), size - nb[2])
+            oy = min(max(oy, -nb[1]), size - nb[3])
+            out.paste(frame, (col * size + ox, row * size + oy), frame)
+    OUT.mkdir(parents=True, exist_ok=True)
+    dest = OUT / f"{key}.png"
+    out.save(dest)
+    print(f"{key}: {len(files)} animation sheets -> {dest.relative_to(ROOT)} ({size}x{size} cells)")
+    return True
+
+
 def build(path):
     key = key_of(path)
     if key not in SIZES:
@@ -153,12 +244,24 @@ def build(path):
 
 def main(names):
     files = sorted(p for p in INPUT.iterdir() if p.suffix.lower() in (".png", ".webp", ".jpg", ".jpeg"))
-    if names:
-        files = [p for p in files if p.stem in names or key_of(p) in names]
-    built = [p for p in files if build(p)]
-    if built:
+    # Animation grids first: any file with an animation word in its name.
+    grids = {}
+    for p in files:
+        if anim_of(p) and not p.stem.lower().startswith(("loading", "background", "logo")):
+            grids.setdefault(sheet_key(p), []).append(p)
+    built_keys = []
+    for key, fs in grids.items():
+        if names and key not in names:
+            continue
+        if key in SIZES and build_from_grids(key, fs):
+            built_keys.append(key)
+    skip = {p for fs in grids.values() for p in fs}
+    singles = [p for p in files if p not in skip and (not names or p.stem in names or key_of(p) in names)]
+    singles = [p for p in singles if key_of(p) not in built_keys]
+    built_keys += [key_of(p) for p in singles if build(p)]
+    if built_keys:
         subprocess.run([sys.executable, str(Path(__file__).parent / "validate_sprite.py"),
-                        *[str(OUT / f"{key_of(p)}.png") for p in built]])
+                        *[str(OUT / f"{k}.png") for k in built_keys]])
 
 
 if __name__ == "__main__":
