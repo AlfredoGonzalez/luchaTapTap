@@ -3,8 +3,8 @@
 
   LoadingBack.png    -> assets/backgrounds/loading_<0..3>.png (270 x 480, animated:
                         the crowd jumps, the spotlights blink)
-  Background_Arena1  -> assets/backgrounds/arena_1_180.png and arena_1_270.png
-                        (the fight arena; the 270 one is for wide screens)
+  Background_Arena<N> -> assets/backgrounds/arena_<N>_180.png and arena_<N>_270.png
+                        (the fight arena of league N; the 270 one is for wide screens)
   logov2.webp        -> assets/ui/logo.png (transparent, palette colors)
 
 All colors are snapped to the 32-color palette. Backgrounds may use the mask
@@ -104,18 +104,23 @@ def loading_frames(src):
 
 # ------------------------------------------------------------------ arena
 
-def arena(src):
-    # Crop: wall top to a little below the ring floor, as in the mockup.
-    crop = src.crop((0, 295, 572, 640)).convert("RGB")
+# Where to cut each league's source picture (left, top, right, bottom): from
+# the wall down to a little below the ropes, as in the mockup. The width fixes
+# the scale, so a taller cut only adds scenery above the ring.
+ARENA_CROPS = {1: (0, 295, 572, 640), 2: (0, 200, 572, 777), 3: (0, 150, 572, 760)}
+
+
+def arena(src, order):
+    crop = src.crop(ARENA_CROPS[order]).convert("RGB")
     for width in (180, 270):
         h = round(crop.height * width / crop.width)
         idx = resize_q(crop, (width, h))
         # Pad the top with the wall color so tall canvases never stretch pixels.
         wall = np.bincount(idx[0]).argmax()
-        pad = np.full((ARENA_HEIGHT - h, width), wall, dtype=idx.dtype)
-        idx = np.vstack([pad, idx])
-        Image.fromarray(to_rgb(idx), "RGB").save(BG / f"arena_1_{width}.png")
-        print(f"arena_1_{width}.png {width}x{idx.shape[0]}")
+        pad = np.full((max(0, ARENA_HEIGHT - h), width), wall, dtype=idx.dtype)
+        idx = np.vstack([pad, idx])[-ARENA_HEIGHT:]
+        Image.fromarray(to_rgb(idx), "RGB").save(BG / f"arena_{order}_{width}.png")
+        print(f"arena_{order}_{width}.png {width}x{idx.shape[0]}")
 
 
 # ------------------------------------------------------------------- logo
@@ -159,10 +164,12 @@ def main():
         for i, idx in enumerate(loading_frames(Image.open(src))):
             Image.fromarray(to_rgb(idx), "RGB").save(BG / f"loading_{i}.png")
         print("loading_0..3.png 270x480")
-    for name in ("Background_Arena1.webp", "Background_Arena1.png"):
-        if (INPUT / name).exists():
-            arena(Image.open(INPUT / name))
-            break
+    for order in ARENA_CROPS:
+        for ext in ("webp", "png"):
+            path = INPUT / f"Background_Arena{order}.{ext}"
+            if path.exists():
+                arena(Image.open(path), order)
+                break
     for name in ("logov2.webp", "logov2.png"):
         if (INPUT / name).exists():
             logo(Image.open(INPUT / name))

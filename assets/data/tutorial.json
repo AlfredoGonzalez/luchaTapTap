@@ -3,7 +3,9 @@
   "coach": {
     "name": "El Profe",
     "bodyColor": "royal",
-    "accentColor": "marigold"
+    "accentColor": "marigold",
+    "charsPerSecond": 28,
+    "mouthEveryChars": 2
   },
   "steps": [
     {

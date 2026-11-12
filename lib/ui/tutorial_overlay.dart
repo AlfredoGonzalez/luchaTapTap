@@ -44,21 +44,26 @@ class TutorialOverlay extends ConsumerStatefulWidget {
 
 class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
   Rect? _hole;
-  bool _blinkOn = true;
-  Timer? _blink;
+  Timer? _timer;
+
+  /// Time since the overlay appeared (the frame blinks) and since the current
+  /// step began (the coach's text types out).
+  final Stopwatch _clock = Stopwatch()..start();
+  final Stopwatch _talk = Stopwatch()..start();
+  String? _talkStep;
 
   @override
   void initState() {
     super.initState();
-    _blink = Timer.periodic(const Duration(milliseconds: 400), (_) {
-      if (mounted) setState(() => _blinkOn = !_blinkOn);
+    _timer = Timer.periodic(const Duration(milliseconds: 60), (_) {
+      if (mounted) setState(() {});
     });
     _track();
   }
 
   @override
   void dispose() {
-    _blink?.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -107,6 +112,20 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
     );
     final isOk = step.advance == TutorialAdvance.ok;
     final coach = content.tutorial;
+    final blinkOn = (_clock.elapsedMilliseconds ~/ 400).isEven;
+
+    // The coach types the text out, with the mouth moving while it does.
+    if (_talkStep != step.id) {
+      _talkStep = step.id;
+      _talk
+        ..reset()
+        ..start();
+    }
+    final text = strings.t(step.textKey);
+    final typed = (_talk.elapsedMilliseconds * coach.charsPerSecond / 1000)
+        .floor();
+    final talking = typed < text.length;
+    final mouthOpen = talking && (typed ~/ coach.mouthEveryChars).isOdd;
 
     return LayoutBuilder(
       builder: (context, box) {
@@ -131,7 +150,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
                   painter: _DimPainter(
                     lit: lit,
                     frame: scale.px(1),
-                    frameColor: _blinkOn
+                    frameColor: blinkOn
                         ? Palette.marigold.color
                         : Palette.sunYellow.color,
                   ),
@@ -160,6 +179,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
                         _CoachPortrait(
                           body: Palette.byId[coach.coachBodyColor]!,
                           accent: Palette.byId[coach.coachAccentColor]!,
+                          mouthOpen: mouthOpen,
                         ),
                         SizedBox(width: scale.px(5)),
                         Expanded(
@@ -171,7 +191,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
                                 color: Palette.sunYellow.color,
                               ),
                               SizedBox(height: scale.px(3)),
-                              PixelText(strings.t(step.textKey), wrap: true),
+                              PixelText(text, wrap: true, visibleChars: typed),
                             ],
                           ),
                         ),
@@ -210,19 +230,37 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
 void _nothing() {}
 void _nothingDown(DragDownDetails _) {}
 
-/// The coach's portrait: `assets/ui/coach.png` when the art exists, otherwise a
-/// placeholder wrestler.
+/// The coach's portrait: `assets/ui/coach_0.png` (mouth closed) and
+/// `coach_1.png` (mouth open) when the art exists, otherwise a placeholder
+/// wrestler.
 class _CoachPortrait extends StatelessWidget {
-  const _CoachPortrait({required this.body, required this.accent});
+  const _CoachPortrait({
+    required this.body,
+    required this.accent,
+    required this.mouthOpen,
+  });
 
   final int body;
   final int accent;
+  final bool mouthOpen;
 
-  static const double _size = 28;
+  /// 40 x 40 picture plus the 1-pixel frame.
+  static const double _size = 42;
+
+  Widget _frame(String name, Widget Function() fallback) => Image.asset(
+    'assets/ui/$name.png',
+    fit: BoxFit.fill,
+    filterQuality: FilterQuality.none,
+    isAntiAlias: false,
+    gaplessPlayback: true,
+    errorBuilder: (_, _, _) => fallback(),
+  );
 
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
+    Widget placeholder() =>
+        CustomPaint(painter: _PlaceholderCoach(body, accent));
     return SizedBox(
       width: scale.px(_size),
       height: scale.px(_size),
@@ -231,13 +269,19 @@ class _CoachPortrait extends StatelessWidget {
           color: Palette.ink.color,
           border: Border.all(color: Palette.slate.color, width: scale.px(1)),
         ),
-        child: Image.asset(
-          'assets/ui/coach.png',
-          fit: BoxFit.fill,
-          filterQuality: FilterQuality.none,
-          isAntiAlias: false,
-          errorBuilder: (_, _, _) =>
-              CustomPaint(painter: _PlaceholderCoach(body, accent)),
+        // Both frames stay in the tree so the swap never shows a blank.
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _frame('coach_0', placeholder),
+            Visibility(
+              visible: mouthOpen,
+              maintainState: true,
+              maintainSize: true,
+              maintainAnimation: true,
+              child: _frame('coach_1', () => const SizedBox.shrink()),
+            ),
+          ],
         ),
       ),
     );

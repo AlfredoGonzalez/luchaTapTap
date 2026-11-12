@@ -27,6 +27,7 @@ class PixelText extends StatelessWidget {
     this.maxLines = 1,
     this.wrap = false,
     this.shadow,
+    this.visibleChars,
   });
 
   final String text;
@@ -41,33 +42,52 @@ class PixelText extends StatelessWidget {
   /// Color of a 1-pixel drop shadow to the bottom right (titles).
   final Color? shadow;
 
+  /// Typewriter effect: only this many characters show; the rest takes its
+  /// place invisibly so the lines do not move while it types.
+  final int? visibleChars;
+
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
-    final label = Text(
-      text,
+    final shown = visibleChars;
+    final style = TextStyle(
+      color: color ?? Palette.bone.color,
+      fontFamily: pixelFontFamily,
+      fontSize: scale.px(size),
+      // One text line is exactly `size` virtual pixels tall; wrapped text
+      // gets a 2-pixel gap between lines (at the 8-pixel size).
+      height: wrap ? 1.25 : 1.0,
+      letterSpacing: 0,
+      decoration: TextDecoration.none,
+      shadows: shadow == null
+          ? null
+          : [
+              Shadow(
+                color: shadow!,
+                offset: Offset(scale.px(1), scale.px(1)),
+              ),
+            ],
+    );
+    final label = Text.rich(
+      shown == null || shown >= text.length
+          ? TextSpan(text: text)
+          : TextSpan(
+              text: text.substring(0, shown),
+              children: [
+                TextSpan(
+                  text: text.substring(shown),
+                  style: const TextStyle(
+                    color: Color(0x00000000),
+                    shadows: <Shadow>[],
+                  ),
+                ),
+              ],
+            ),
       textAlign: align,
       maxLines: wrap ? null : maxLines,
       overflow: TextOverflow.clip,
       softWrap: wrap,
-      style: TextStyle(
-        color: color ?? Palette.bone.color,
-        fontFamily: pixelFontFamily,
-        fontSize: scale.px(size),
-        // One text line is exactly `size` virtual pixels tall; wrapped text
-        // gets a 2-pixel gap between lines (at the 8-pixel size).
-        height: wrap ? 1.25 : 1.0,
-        letterSpacing: 0,
-        decoration: TextDecoration.none,
-        shadows: shadow == null
-            ? null
-            : [
-                Shadow(
-                  color: shadow!,
-                  offset: Offset(scale.px(1), scale.px(1)),
-                ),
-              ],
-      ),
+      style: style,
     );
     // One line is exactly `size` virtual pixels tall. At scales that are not
     // whole logical pixels, font metrics round up and would overflow a row

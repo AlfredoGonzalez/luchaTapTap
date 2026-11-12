@@ -74,6 +74,8 @@ class TutorialDef {
     required this.coachName,
     required this.coachBodyColor,
     required this.coachAccentColor,
+    required this.charsPerSecond,
+    required this.mouthEveryChars,
     required this.steps,
   });
 
@@ -95,6 +97,8 @@ class TutorialDef {
       coachName: coach.string('name'),
       coachBodyColor: coach.string('bodyColor'),
       coachAccentColor: coach.string('accentColor'),
+      charsPerSecond: coach.number('charsPerSecond', min: 0, minExclusive: true),
+      mouthEveryChars: coach.integer('mouthEveryChars', min: 1),
       steps: List.unmodifiable(steps),
     );
   }
@@ -102,5 +106,10 @@ class TutorialDef {
   final String coachName;
   final String coachBodyColor;
   final String coachAccentColor;
+
+  /// The coach's text types out at this speed, and the mouth opens and
+  /// closes every [mouthEveryChars] characters while it does.
+  final double charsPerSecond;
+  final int mouthEveryChars;
   final List<TutorialStep> steps;
 }
