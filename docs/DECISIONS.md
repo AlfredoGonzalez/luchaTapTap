@@ -62,6 +62,11 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 
 **Interpretation to confirm:** "de izquierda a derecha y de derecha a izquierda" was read as clockwise first, then counterclockwise (both go over the top, which makes a figure eight when drawn without lifting). To swap the order, set `gesture.firstDirection` to `counterclockwise` in `balance.json`. The size, roundness and time tolerances are in the same block.
 
+## Ideas for later (not built)
+
+- **One gesture per wrestler or mask, harder gesture = more damage** (designer idea after playtesting M4). Today every finisher is the same two circles for 20x tap damage. The recognizer is already pure Dart and its tolerances live in `balance.json`, so the natural step is to describe each gesture as data (a list of loops or shapes, each with a direction) and give each one a damage multiplier, tied to the equipped mask or the player's wrestler.
+- Questions to settle before building it: which shapes exist besides circles (zigzag, triangle, swipes?), how difficulty is measured (number of shapes, tighter tolerances, shorter time), whether the gesture belongs to the mask, to the wrestler or to both, and how the on-screen guide shows a harder gesture.
+
 ## Still open (designer decides)
 
 - Mask slot colors for trunks and cape, app icon, store title, studio name, `applicationId` (currently `com.example.lucha_tap_tap`).
