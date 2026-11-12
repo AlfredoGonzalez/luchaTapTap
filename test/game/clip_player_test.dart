@@ -7,7 +7,7 @@ void main() {
   final anim = loadTestContent().balance.animations;
 
   test('the sheet layout comes from the data: one row per clip', () {
-    expect(anim.order, ['idle', 'attack', 'hit', 'defeated', 'victory']);
+    expect(anim.order, ['idle', 'attack', 'hit', 'defeated', 'victory', 'kick']);
     expect(anim.columns, anim.clips.values.map((c) => c.frames).reduce((a, b) => a > b ? a : b));
     expect(anim.rowOf('hit'), 2);
   });

@@ -227,6 +227,28 @@ class MonetizationConfig {
       release ? rewardedUnitId : testRewardedUnitId;
 }
 
+/// A skill animation: a single row of [frames] cells of cellWidth x cellHeight.
+class SkillClipConfig {
+  const SkillClipConfig({
+    required this.frames,
+    required this.fps,
+    required this.cellWidth,
+    required this.cellHeight,
+    required this.travelFrames,
+  });
+
+  final int frames;
+  final double fps;
+  final int cellWidth;
+  final int cellHeight;
+
+  /// The first this many frames carry the fighter across the arena to the
+  /// opponent (the rest play where it landed).
+  final int travelFrames;
+
+  double get seconds => frames / fps;
+}
+
 /// One animation clip of a fighter sprite sheet.
 class ClipConfig {
   const ClipConfig({
@@ -247,6 +269,7 @@ class ClipConfig {
 class AnimationConfig {
   const AnimationConfig({
     required this.order,
+    required this.skillClips,
     required this.clips,
     required this.victorySeconds,
     required this.defeatedHoldSeconds,
@@ -272,8 +295,23 @@ class AnimationConfig {
         );
       }
     }
+    final skillReader = r.has('skillClips') ? r.object('skillClips') : null;
+    final skillClips = <String, SkillClipConfig>{};
+    if (skillReader != null) {
+      for (final name in skillReader.keys) {
+        final c = skillReader.object(name);
+        skillClips[name] = SkillClipConfig(
+          frames: c.integer('frames', min: 1),
+          fps: c.number('fps', min: 0, minExclusive: true),
+          cellWidth: c.integer('cellWidth', min: 16),
+          cellHeight: c.integer('cellHeight', min: 16),
+          travelFrames: c.integer('travelFrames', min: 1),
+        );
+      }
+    }
     return AnimationConfig(
       order: order,
+      skillClips: skillClips,
       clips: clips,
       victorySeconds: r.number('victorySeconds', min: 0),
       defeatedHoldSeconds: r.number('defeatedHoldSeconds', min: 0),
@@ -290,8 +328,13 @@ class AnimationConfig {
     'victory',
   ];
 
-  /// Clip names from the top row of a sheet down.
+  /// Clip names from the top row of a sheet down. The first five are
+  /// required; the rest (kick) are optional rows only some sheets have.
   final List<String> order;
+
+  /// Skill animations drawn from their own strip `player_<name>.png` (the
+  /// plancha flying across the arena).
+  final Map<String, SkillClipConfig> skillClips;
   final Map<String, ClipConfig> clips;
 
   /// How long the player celebrates after a boss falls.

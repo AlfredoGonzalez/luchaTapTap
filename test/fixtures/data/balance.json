@@ -123,7 +123,8 @@
       "attack",
       "hit",
       "defeated",
-      "victory"
+      "victory",
+      "kick"
     ],
     "clips": {
       "idle": {
@@ -150,11 +151,25 @@
         "frames": 2,
         "fps": 4,
         "loop": true
+      },
+      "kick": {
+        "frames": 4,
+        "fps": 12,
+        "loop": false
       }
     },
     "victorySeconds": 1.5,
     "defeatedHoldSeconds": 0.2,
-    "playerDownSeconds": 1.2
+    "playerDownSeconds": 1.2,
+    "skillClips": {
+      "plancha": {
+        "frames": 8,
+        "fps": 12,
+        "cellWidth": 72,
+        "cellHeight": 48,
+        "travelFrames": 5
+      }
+    }
   },
   "monetization": {
     "adLoadTimeoutSeconds": 10,

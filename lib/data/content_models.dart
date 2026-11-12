@@ -267,6 +267,7 @@ class SkillDef {
     required this.baseCost,
     required this.maxLevel,
     required this.description,
+    this.animation,
   });
 
   factory SkillDef.fromReader(JsonReader r) {
@@ -295,8 +296,13 @@ class SkillDef {
       baseCost: r.number('baseCost', min: 0, minExclusive: true),
       maxLevel: r.integer('maxLevel', min: 1),
       description: r.string('description'),
+      animation: r.optionalString('animation'),
     );
   }
+
+  /// Name of a skill animation (`balance.json` `animations.skillClips`) that
+  /// plays when the skill is used; null for none.
+  final String? animation;
 
   final String id;
   final String name;

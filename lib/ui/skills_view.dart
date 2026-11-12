@@ -7,6 +7,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -123,6 +124,7 @@ class _SkillRow extends ConsumerWidget {
     final locked = level == 0 && quote.failure == BuyFailure.locked;
     final maxed = quote.failure == BuyFailure.maxed;
     final cooldown = _number(engine.cooldownOf(skill));
+    final art = ref.watch(spriteLibraryProvider).icon(skill.icon);
     return FlashOnIncrease(
       value: level,
       child: ListRow(
@@ -131,6 +133,7 @@ class _SkillRow extends ConsumerWidget {
         icon: locked
             ? PixelIcons.locked
             : (PixelIcons.byKey(skill.icon) ?? PixelIcons.skillBolt),
+        iconWidget: art == null || locked ? null : ArtIcon(art),
         title: locked ? strings.t('skill_locked') : skill.name,
         subtitle: locked
             ? strings.t('row_unlock_short', {'n': skill.unlockFight})

@@ -32,10 +32,20 @@ void main() {
     expect(aguacate, isNotNull);
     expect(aguacate!.cell, 48);
     expect(aguacate.image.width, 48 * content.balance.animations.columns);
-    expect(aguacate.image.height, 48 * content.balance.animations.order.length);
+    // Five required rows; the kick row is optional (the player's sheet has it).
+    expect(aguacate.image.height, 48 * 5);
+    expect(aguacate.has('kick'), isFalse);
     expect(library.opponent('opp_el_mariachi_furioso')!.cell, 64);
     // One recolored sheet per mask plus the one with the colors as drawn.
     expect(library.player(null), isNotNull);
+    expect(library.player(null)!.has('kick'), isTrue, reason: 'the player kicks');
+    // The plancha strip (with and without a mask) and the skill icon.
+    final strip = library.skillStrip('plancha', null)!;
+    final cfg = content.balance.animations.skillClips['plancha']!;
+    expect(strip.image.width, cfg.cellWidth * cfg.frames);
+    expect(strip.image.height, cfg.cellHeight);
+    expect(library.skillStrip('plancha', content.masks.first.id), isNotNull);
+    expect(library.icon('sk_plancha'), isNotNull);
     for (final mask in content.masks) {
       expect(library.player(mask.id), isNotNull, reason: mask.id);
     }

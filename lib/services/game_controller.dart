@@ -190,6 +190,7 @@ class HitEvent {
     required this.isTap,
     required this.defeated,
     this.isBig = false,
+    this.isKick = false,
   });
 
   final Big damage;
@@ -198,6 +199,9 @@ class HitEvent {
 
   /// Critical hits and finishers use the large yellow number.
   final bool isBig;
+
+  /// The finisher: the player kicks instead of punching.
+  final bool isKick;
 }
 
 final gameControllerProvider = NotifierProvider<GameController, GameState>(
@@ -220,6 +224,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // `clock.stopwatch()` is the real clock in the app and the fake clock in
   // widget tests, so progress can be tested without waiting.
   final Stopwatch _clock = clock.stopwatch();
+  final StreamController<String> _skillUsed =
+      StreamController<String>.broadcast();
   final StreamController<void> _bossLost = StreamController<void>.broadcast();
   final StreamController<HitEvent> _hits =
       StreamController<HitEvent>.broadcast();
@@ -237,6 +243,9 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   /// Circles of the finisher gesture already done (0 to 2).
   final ValueNotifier<int> gestureCircles = ValueNotifier(0);
+
+  /// A skill was used (its id), for its animation.
+  Stream<String> get skillUsed => _skillUsed.stream;
 
   /// The boss timer ran out (the player lost the fight).
   Stream<void> get bossLost => _bossLost.stream;
@@ -274,6 +283,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       _timer?.cancel();
       _hits.close();
       _bossLost.close();
+      _skillUsed.close();
       gestureTrail.dispose();
       gestureCircles.dispose();
     });
@@ -548,6 +558,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
         isTap: true,
         defeated: outcome.defeats > 0,
         isBig: true,
+        isKick: true,
       ),
     );
   }
@@ -585,6 +596,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     final result = _engine.useSkill(id);
     if (!result.ok) return;
     _sfx(Sfx.crit);
+    _skillUsed.add(id);
     if (result.outcome.defeats > 0) _afterDefeat(wasBoss: wasBoss);
     _publish();
     if (result.outcome.damageDealt > Big.zero) {

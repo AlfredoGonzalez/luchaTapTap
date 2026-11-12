@@ -42,9 +42,32 @@ def load_rules():
     return order, frames, sizes
 
 
+def validate_strip(path, key, cfg):
+    """A skill animation strip: one row of cellWidth x cellHeight frames."""
+    img = Image.open(path).convert("RGBA")
+    a = np.array(img)
+    errors = []
+    expected = (cfg["cellWidth"] * cfg["frames"], cfg["cellHeight"])
+    if (img.width, img.height) != expected:
+        return [f"{path.name}: size is {img.width}x{img.height}, expected {expected[0]}x{expected[1]}"]
+    alpha = a[:, :, 3]
+    if np.count_nonzero((alpha != 0) & (alpha != 255)):
+        errors.append("partial transparency (alpha must be 0 or 255)")
+    palette = {(r << 16) | (g << 8) | b for r, g, b in PALETTE.values()}
+    packed = (a[:, :, 0].astype(np.int64) << 16) | (a[:, :, 1].astype(np.int64) << 8) | a[:, :, 2]
+    off = [int(v) for v in np.unique(packed[alpha == 255]) if int(v) not in palette]
+    if off:
+        errors.append(f"{len(off)} colors are not in the palette")
+    return [f"{path.name}: {e}" for e in errors]
+
+
 def validate(path, order, frames, sizes):
     errors = []
     key = path.stem
+    clips = json.loads((DATA / "balance.json").read_text())["animations"].get("skillClips", {})
+    skill = next((n for n in clips if key == f"{PLAYER_KEY}_{n}"), None)
+    if skill:
+        return validate_strip(path, key, clips[skill])
     if key not in sizes:
         return [f"{path.name}: no sprite key '{key}' in the data (opponents.json) and it is not '{PLAYER_KEY}'"]
     cell = sizes[key]
@@ -53,13 +76,16 @@ def validate(path, order, frames, sizes):
         img = img.convert("RGBA")
         errors.append("the PNG is not RGBA (convert it: transparent background needs an alpha channel)")
     a = np.array(img)
-    expected = (cell * max(frames), cell * len(order))
-    if (img.width, img.height) != expected:
+    rows = img.height // cell
+    # Five required rows; the optional ones (kick) may follow.
+    if img.width != cell * max(frames) or img.height != cell * rows or not 5 <= rows <= len(order):
         errors.append(
-            f"size is {img.width}x{img.height}, expected {expected[0]}x{expected[1]} "
-            f"({max(frames)} columns x {len(order)} rows of {cell}x{cell} cells)"
+            f"size is {img.width}x{img.height}, expected {cell * max(frames)} wide and "
+            f"5 to {len(order)} rows of {cell}x{cell} cells"
         )
         return [f"{path.name}: {e}" for e in errors]
+    order = order[:rows]
+    frames = frames[:rows]
     alpha = a[:, :, 3]
     soft = np.count_nonzero((alpha != 0) & (alpha != 255))
     if soft:

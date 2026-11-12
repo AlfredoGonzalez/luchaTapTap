@@ -27,6 +27,8 @@ INPUT = ROOT / "art" / "input"
 OUT = ROOT / "assets" / "sprites"
 BALANCE = json.loads((ROOT / "assets/data/balance.json").read_text())["animations"]
 ORDER = BALANCE["order"]
+REQUIRED = ORDER[:5]  # idle, attack, hit, defeated, victory (kick is optional)
+SKILL_CLIPS = BALANCE.get("skillClips", {})
 COLUMNS = max(BALANCE["clips"][a]["frames"] for a in ORDER)
 SIZES = {"player": 48}
 for o in json.loads((ROOT / "assets/data/opponents.json").read_text())["opponents"]:
@@ -147,9 +149,10 @@ def frames_for(cell):
 # frames are picked from each grid (data below), shrunk with one common scale
 # so the character keeps its size, and put in the game's sheet layout.
 ANIM_WORDS = {"idle": "idle", "punch": "attack", "attack": "attack", "hurt": "hit", "hit": "hit",
-              "defeated": "defeated", "victory": "victory"}
+              "defeated": "defeated", "victory": "victory", "kick": "kick", "plancha": "plancha"}
 PICK = {"idle": [0, 6, 12, 18], "attack": [6, 12, 19], "hit": [8, 12], "defeated": [10, 17, 22],
-        "victory": [4, 16]}
+        "victory": [4, 16], "kick": [6, 9, 12, 17],
+        "plancha": [3, 6, 8, 11, 13, 14, 18, 23]}
 GRID = 5
 
 
@@ -182,11 +185,47 @@ def bbox_of(img):
     return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
 
 
+def build_skill_clip(key, name, grid, scale, ref_cell):
+    """One row of frames for a skill animation (the player flying across the
+    arena for the plancha), in cells of cellWidth x cellHeight from
+    balance.json. The grid may be padded (a bigger cell than the other
+    sheets): the scale is corrected by comparing its first (ready stance)
+    frame with the same stance in a normal sheet."""
+    cfg = SKILL_CLIPS[name]
+    cw, ch = cfg["cellWidth"], cfg["cellHeight"]
+    first = bbox_of(grid_cell(grid, 0))
+    ref = bbox_of(ref_cell)
+    f = scale * (ref[3] - ref[1]) / (first[3] - first[1])
+    ground = first[3]
+    out = Image.new("RGBA", (cw * cfg["frames"], ch), (0, 0, 0, 0))
+    for col, index in enumerate(PICK[name][: cfg["frames"]]):
+        cell = grid_cell(grid, index)
+        box = bbox_of(cell)
+        ff = min(f, (cw - 2) / (box[2] - box[0]), (ch - 2) / (box[3] - box[1]))
+        small = cell.resize((max(1, round(cell.width * ff)), max(1, round(cell.height * ff))), Image.BOX)
+        a = np.array(small)
+        alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
+        rgb = snap(a[:, :, :3], True)
+        rgb[(a[:, :, :3].astype(int).sum(axis=2) < 200) & edge_mask(alpha)] = PALETTE["ink"]
+        rgb[alpha == 0] = 0
+        frame = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+        nb = bbox_of(frame)
+        ox = round((cw - (nb[2] - nb[0])) / 2 - nb[0])
+        # Feet stay where they were relative to the ready stance, so jumps rise.
+        oy = round((ch - 1) - (ground - box[3]) * ff - nb[3] + (box[3] * ff - nb[3]) * 0)
+        oy = min(max(oy - (small.height - nb[3]) * 0, -nb[1]), ch - nb[3])
+        out.paste(frame, (col * cw + ox, oy), frame)
+    OUT.mkdir(parents=True, exist_ok=True)
+    dest = OUT / f"{key}_{name}.png"
+    out.save(dest)
+    print(f"{key}: {name} -> {dest.relative_to(ROOT)} ({cfg['frames']} frames of {cw}x{ch})")
+
+
 def build_from_grids(key, files):
     size = SIZES[key]
     allow_mask = key == "player"
     grids = {anim_of(f): Image.open(f) for f in files}
-    missing = [a for a in ORDER if a not in grids]
+    missing = [a for a in REQUIRED if a not in grids]
     if missing:
         print(f"SKIP {key}: missing animation files for {', '.join(missing)}")
         return False
@@ -196,8 +235,12 @@ def build_from_grids(key, files):
     cx = sum((b[0] + b[2]) / 2 for b in boxes) / len(boxes)
     bottom = max(b[3] for b in boxes)
     scale = (size - 4) / height
-    out = Image.new("RGBA", (size * COLUMNS, size * len(ORDER)), (0, 0, 0, 0))
-    for row, anim in enumerate(ORDER):
+    # Rows: the five required clips, then the optional ones that have art.
+    anims = REQUIRED + [a for a in ORDER[5:] if a in grids]
+    out = Image.new("RGBA", (size * COLUMNS, size * len(anims)), (0, 0, 0, 0))
+    if "plancha" in grids and key == "player":
+        build_skill_clip(key, "plancha", grids["plancha"], scale, grid_cell(grids["punch" if "punch" in grids else "attack"], 0))
+    for row, anim in enumerate(anims):
         for col, index in enumerate(PICK[anim]):
             cell = grid_cell(grids[anim], index)
             f = scale

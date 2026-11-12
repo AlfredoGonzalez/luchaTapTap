@@ -12,6 +12,9 @@ class JsonReader {
 
   String _where(String key) => '$source: ${path.isEmpty ? key : '$path.$key'}';
 
+  /// The keys present in this object.
+  Iterable<String> get keys => _map.keys;
+
   bool has(String key) => _map.containsKey(key) && _map[key] != null;
 
   T _typed<T>(String key, String typeName) {

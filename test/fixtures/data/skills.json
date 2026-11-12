@@ -14,7 +14,8 @@
       "unlockFight": 3,
       "baseCost": 200,
       "maxLevel": 10,
-      "description": "Salto desde las cuerdas: daño x{n} al instante."
+      "description": "Salto desde las cuerdas: daño x{n} al instante.",
+      "animation": "plancha"
     },
     {
       "id": "furia",

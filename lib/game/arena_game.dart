@@ -154,9 +154,28 @@ class ArenaGame extends FlameGame {
     }
   }
 
-  /// The player throws a punch.
-  void playerAttack() {
-    if (isLoaded) _player.punch();
+  /// The player throws a punch (or a kick, for the finisher).
+  void playerAttack({bool kick = false}) {
+    if (isLoaded) _player.punch(kick: kick);
+  }
+
+  /// Plays the animation of skill [name] (the plancha): the player flies
+  /// across the arena to the opponent. Does nothing without the art.
+  void playSkill(String name) {
+    if (!isLoaded) return;
+    final strip = sprites.skillStrip(name, playerMaskId);
+    if (strip == null) return;
+    final cfg = strip.config;
+    final startX = _player.position.x - (cfg.cellWidth - _player.size.x) / 2;
+    final endX = _enemy.position.x - cfg.cellWidth * 0.45;
+    _player.hideFor(cfg.seconds);
+    world.add(
+      _SkillFlight(
+        strip: strip,
+        start: Vector2(startX.roundToDouble(), _player.position.y),
+        endX: endX.roundToDouble(),
+      ),
+    );
   }
 
   /// The boss timer ran out: the player goes down for a moment and the
@@ -387,8 +406,11 @@ class _Fighter extends PositionComponent {
 
   void removeAfter(double seconds) => _removeLeft = seconds;
 
-  void punch() {
-    if (!_fallen) _clips?.play('attack');
+  void punch({bool kick = false}) {
+    if (_fallen) return;
+    // Sheets without the kick row (placeholders) punch instead.
+    final useKick = kick && sheet?.has('kick') == true;
+    _clips?.play(useKick ? 'kick' : 'attack');
   }
 
   void reactToHit() {
@@ -483,6 +505,55 @@ class _Fighter extends PositionComponent {
       paint,
     );
     canvas.restore();
+  }
+}
+
+/// The player flying across the arena for a skill (the plancha): the strip's
+/// frames play in order while the sprite travels to the opponent during the
+/// first `travelFrames`, then stays where it landed until the strip ends.
+class _SkillFlight extends PositionComponent {
+  _SkillFlight({
+    required this.strip,
+    required Vector2 start,
+    required this.endX,
+  }) : _startX = start.x,
+       super(
+         position: start,
+         size: Vector2(strip.cellWidth.toDouble(), strip.cellHeight.toDouble()),
+         priority: 5,
+       );
+
+  final SkillStrip strip;
+  final double _startX;
+  final double endX;
+  double _age = 0;
+
+  @override
+  void update(double dt) {
+    _age += dt;
+    final cfg = strip.config;
+    if (_age >= cfg.seconds) {
+      removeFromParent();
+      return;
+    }
+    final travel = cfg.travelFrames / cfg.fps;
+    final t = (_age / travel).clamp(0.0, 1.0);
+    final eased = 1 - (1 - t) * (1 - t); // fast start, soft landing
+    position.x = (_startX + (endX - _startX) * eased).roundToDouble();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final cfg = strip.config;
+    final frame = (_age * cfg.fps).floor().clamp(0, cfg.frames - 1);
+    canvas.drawImageRect(
+      strip.image,
+      strip.frameRect(frame),
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()
+        ..isAntiAlias = false
+        ..filterQuality = FilterQuality.none,
+    );
   }
 }
 

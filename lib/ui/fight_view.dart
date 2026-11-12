@@ -8,6 +8,8 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import 'arena_view.dart';
+import 'art_icon.dart';
+import 'ui_state.dart';
 import 'gesture_layer.dart';
 import 'hud.dart';
 import 'palette_color.dart';
@@ -348,6 +350,8 @@ class _SkillButton extends ConsumerWidget {
     final icon = learned
         ? (PixelIcons.byKey(skill.icon) ?? PixelIcons.skillBolt)
         : PixelIcons.locked;
+    // Final art for this skill's icon, when there is some.
+    final art = learned ? ref.watch(spriteLibraryProvider).icon(skill.icon) : null;
     return Semantics(
       button: true,
       enabled: learned && !onCooldown,
@@ -381,10 +385,12 @@ class _SkillButton extends ConsumerWidget {
                     ),
                   ),
                 Center(
-                  child: PixelIcon(
-                    icon,
-                    color: (learned ? Palette.bone : Palette.fog).color,
-                  ),
+                  child: art != null
+                      ? ArtIcon(art)
+                      : PixelIcon(
+                          icon,
+                          color: (learned ? Palette.bone : Palette.fog).color,
+                        ),
                 ),
                 if (onCooldown)
                   Positioned(

@@ -31,6 +31,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   late final ArenaGame _game;
   StreamSubscription<HitEvent>? _hits;
   StreamSubscription<void>? _bossLost;
+  StreamSubscription<String>? _skills;
 
   /// The fight number changed since the last hit event (that case already
   /// handled the defeat animation).
@@ -68,7 +69,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
     );
     _hits = controller.hits.listen((e) {
       if (e.isTap) {
-        _game.playerAttack();
+        _game.playerAttack(kick: e.isKick);
         _game.hit(formatBig(e.damage), isTap: true, isBig: e.isBig);
       } else {
         // Trainer damage arrives every tick: show it as one number per
@@ -90,6 +91,10 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       _fightChanged = false;
     });
     _bossLost = controller.bossLost.listen((_) => _game.playerDefeated());
+    _skills = controller.skillUsed.listen((id) {
+      final animation = content.skills.firstWhere((s) => s.id == id).animation;
+      if (animation != null) _game.playSkill(animation);
+    });
     ref.listenManual(gameControllerProvider, (previous, next) {
       if (previous != null && previous.fightNumber != next.fightNumber) {
         // Moving forward means the opponent was beaten; a boss win also makes
@@ -129,6 +134,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   void dispose() {
     _hits?.cancel();
     _bossLost?.cancel();
+    _skills?.cancel();
     super.dispose();
   }
 
