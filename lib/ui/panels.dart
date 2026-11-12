@@ -96,12 +96,17 @@ class _UpgradeRow extends ConsumerWidget {
     final amount = ref.watch(buyAmountProvider);
     final level = engine.state.upgradeLevel(upgrade.id);
     final quote = engine.quoteUpgrade(upgrade.id, amount);
+    final milestones = ref.watch(contentProvider).balance.milestones;
+    final next = milestones.nextAfter(level);
     return FlashOnIncrease(
       value: level,
       child: ListRow(
         icon: PixelIcons.byKey(upgrade.icon),
         title: upgrade.name,
-        subtitle: strings.t('row_level_short', {'n': level}),
+        subtitle: next == null
+            ? strings.t('row_level_short', {'n': level})
+            : strings.t('row_level_next', {'n': level, 'next': next}),
+        progress: next == null ? null : milestones.progressAt(level),
         trailing: CostButton(
           cost: formatBigShort(quote.cost),
           enabled: quote.canBuy,
@@ -140,6 +145,8 @@ class _TrainerRow extends ConsumerWidget {
       );
     }
     final dps = Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble());
+    final milestones = ref.watch(contentProvider).balance.milestones;
+    final next = milestones.nextAfter(level);
     return FlashOnIncrease(
       value: level,
       child: ListRow(
@@ -151,6 +158,7 @@ class _TrainerRow extends ConsumerWidget {
                 'n': level,
                 'd': formatBigShort(dps),
               }),
+        progress: next == null ? null : milestones.progressAt(level),
         trailing: CostButton(
           cost: formatBigShort(quote.cost),
           enabled: quote.canBuy,

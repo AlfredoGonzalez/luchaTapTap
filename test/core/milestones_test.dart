@@ -79,6 +79,24 @@ void main() {
     });
   });
 
+  group('milestone progress (for the list rows)', () {
+    final m = withMilestones(levels: [10, 20]).content.balance.milestones;
+
+    test('the next milestone is the first level above the current one', () {
+      expect(m.nextAfter(0), 10);
+      expect(m.nextAfter(10), 20);
+      expect(m.nextAfter(20), isNull);
+    });
+
+    test('progress runs from the previous milestone to the next', () {
+      expect(m.progressAt(0), 0);
+      expect(m.progressAt(5), 0.5);
+      expect(m.progressAt(10), 0);
+      expect(m.progressAt(15), 0.5);
+      expect(m.progressAt(25), 1);
+    });
+  });
+
   group('milestone configuration is validated', () {
     void invalid(Map<String, dynamic> section, String message) {
       expect(

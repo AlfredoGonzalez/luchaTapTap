@@ -194,6 +194,24 @@ class MilestoneConfig {
     return n;
   }
 
+  /// The next milestone level above [level], or null after the last one.
+  int? nextAfter(int level) {
+    for (final l in levels) {
+      if (l > level) return l;
+    }
+    return null;
+  }
+
+  /// Progress (0..1) from the previous milestone (or level 0) to the next
+  /// one; 1 when there is none left.
+  double progressAt(int level) {
+    final next = nextAfter(level);
+    if (next == null) return 1;
+    final n = reached(level);
+    final from = n == 0 ? 0 : levels[n - 1];
+    return ((level - from) / (next - from)).clamp(0.0, 1.0);
+  }
+
   /// Output factor of a unit at [level] (1 before the first milestone).
   Big factorAt(int level) {
     final n = reached(level);

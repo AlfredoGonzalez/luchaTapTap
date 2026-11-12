@@ -155,6 +155,7 @@
     "skill_maxed_line": "Nivel máximo",
     "skill_use_hint": "Úsala desde la fila de la pelea",
     "row_level_short": "Nv {n}",
+    "row_level_next": "Nv {n} > {next}",
     "row_level_dps": "Nv {n}  +{d}/s",
     "skill_row_level": "Nv {n}/{max}",
     "debug_row_coins": "Monedas",

@@ -73,6 +73,10 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | Gesture value | The finisher is worth a little (about 10% speed) but is not needed; the bot loses its taps while drawing. | `lib/dev/balance_sim.dart` |
 | Tests | The rules tests use a frozen copy of the economy (`test/fixtures/data/`) so tuning never breaks them; a separate pacing test guards the shipped numbers. | `test/test_content.dart` |
 
+## M6/M7 start: milestones in the UI and talents
+- Upgrade and trainer rows show a 1-pixel yellow bar with the progress to the next milestone level; upgrade rows also say the level ("Nv 12 > 25"). Milestone levels and multiplier stay in `balance.json`.
+- Talents saturated (8 talents of 5 levels cost ~80 belts, one run pays dozens and later thousands). Now 10 levels each (siesta 6), with a two-phase cost curve in `talents.json`: ~x1.8 per level up to level 5, then x4 per level (last level ~10k-21k belts). Early game pacing is unchanged or slightly faster; the deep levels are the long-term belt sink.
+
 ## Ideas for later (not built)
 
 - **One gesture per wrestler or mask, harder gesture = more damage** (designer idea after playtesting M4). Today every finisher is the same two circles for 20x tap damage. The recognizer is already pure Dart and its tolerances live in `balance.json`, so the natural step is to describe each gesture as data (a list of loops or shapes, each with a direction) and give each one a damage multiplier, tied to the equipped mask or the player's wrestler.

@@ -75,6 +75,7 @@ class ListRow extends StatelessWidget {
     this.selected = false,
     this.onTap,
     this.height = rowHeight,
+    this.progress,
   });
 
   final String title;
@@ -88,6 +89,10 @@ class ListRow extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final double height;
+
+  /// Optional 0..1 progress drawn as a 1-pixel bar on the row's bottom edge
+  /// (progress to the next milestone).
+  final double? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -131,12 +136,38 @@ class ListRow extends StatelessWidget {
         ),
       ),
     );
-    return onTap == null
+    final bar = progress;
+    final shown = bar == null
         ? row
+        : Stack(
+            children: [
+              row,
+              Positioned(
+                left: 0,
+                bottom: 0,
+                right: 0,
+                height: scale.px(1),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: (bar * 1000).round(),
+                      child: ColoredBox(color: Palette.sunYellow.color),
+                    ),
+                    Expanded(
+                      flex: 1000 - (bar * 1000).round(),
+                      child: ColoredBox(color: Palette.slate.color),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+    return onTap == null
+        ? shown
         : GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
-            child: row,
+            child: shown,
           );
   }
 }
