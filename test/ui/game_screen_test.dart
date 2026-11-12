@@ -16,6 +16,7 @@ import 'package:lucha_tap_tap/services/ad_service.dart';
 import 'package:lucha_tap_tap/services/billing_service.dart';
 import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
+import 'package:lucha_tap_tap/ui/intro_screens.dart';
 import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
 import 'package:lucha_tap_tap/ui/ui_state.dart';
 
@@ -174,14 +175,14 @@ void main() {
   group('app flow', () {
     testWidgets('studio splash, then loading, then the game', (tester) async {
       final c = await pumpApp(tester, stage: AppStage.splash);
-      expect(find.text('AM Studios Play'), findsOneWidget);
-      expect(find.text('presenta'), findsOneWidget);
+      // Only the studio video (a plain background where it cannot play).
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.text('AM Studios Play'), findsNothing);
       await tester.pump(const Duration(seconds: 3)); // splashSeconds = 2
       expect(c.read(appStageProvider), AppStage.loading);
-      expect(find.text('LUCHA'), findsOneWidget);
-      expect(find.text('TAP, TAP!'), findsOneWidget);
+      expect(find.byType(LoadingScreen), findsOneWidget);
       // The bar fills first; tapping before it is full does nothing.
-      await tester.tapAt(tester.getCenter(find.text('LUCHA')));
+      await tester.tapAt(tester.getCenter(find.byType(LoadingScreen)));
       await tester.pump(_short);
       expect(c.read(appStageProvider), AppStage.loading);
       await tester.pump(const Duration(milliseconds: 1600)); // loadingSeconds = 1.5
@@ -200,7 +201,7 @@ void main() {
       while (find.text('Toca para continuar').evaluate().isEmpty) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      await tester.tapAt(tester.getCenter(find.text('LUCHA')));
+      await tester.tapAt(tester.getCenter(find.byType(LoadingScreen)));
       await tester.pump(const Duration(milliseconds: 200));
       expect(c.read(appStageProvider), AppStage.game);
       expect(find.text('Pelea 1'), findsOneWidget);
@@ -209,7 +210,7 @@ void main() {
 
     testWidgets('tapping the splash skips it', (tester) async {
       final c = await pumpApp(tester, stage: AppStage.splash);
-      await tester.tap(find.text('AM Studios Play'));
+      await tester.tap(find.byType(SplashScreen));
       await tester.pump(_short);
       expect(c.read(appStageProvider), AppStage.loading);
       await closeApp(tester);

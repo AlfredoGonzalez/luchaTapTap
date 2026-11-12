@@ -38,13 +38,16 @@ class SpriteSheet {
 /// neither exists the arena draws its rectangle fallback. Swapping art in needs
 /// no code change.
 class SpriteLibrary {
-  SpriteLibrary._(this._opponents, this._players);
+  SpriteLibrary._(this._opponents, this._players, [this._arenas = const {}]);
 
   /// No sprites at all (tests, and builds that skip art): every fighter falls
   /// back to the rectangle drawing.
   factory SpriteLibrary.empty() => SpriteLibrary._({}, {});
 
   final Map<String, SpriteSheet> _opponents;
+
+  /// Arena backgrounds by file name (`arena_<league>_<width>`).
+  final Map<String, ui.Image> _arenas;
 
   /// The player's sheet per equipped mask id; the empty-string key is the sheet
   /// with the colors as drawn (no mask equipped).
@@ -54,7 +57,18 @@ class SpriteLibrary {
 
   SpriteSheet? player(String? maskId) => _players[maskId ?? ''];
 
-  bool get isEmpty => _opponents.isEmpty && _players.isEmpty;
+  /// The arena picture of league [order] for a canvas [virtualWidth] pixels
+  /// wide: the 270-wide variant on wide canvases, otherwise the 180 one. Null
+  /// when that league has no picture (the arena then draws flat colors).
+  ui.Image? arenaBackground(int order, double virtualWidth) =>
+      _arenas['arena_${order}_${virtualWidth > _wideCanvas ? 270 : 180}'] ??
+      _arenas['arena_${order}_180'];
+
+  /// Canvases wider than this use the 270-pixel picture.
+  static const double _wideCanvas = 225;
+
+  bool get isEmpty =>
+      _opponents.isEmpty && _players.isEmpty && _arenas.isEmpty;
 
   /// Loads every sheet the content refers to, plus the player recolored for
   /// each mask. Missing files are skipped (placeholder rectangles stay).
@@ -100,7 +114,24 @@ class SpriteLibrary {
         }
       }
     }
-    return SpriteLibrary._(opponents, players);
+    final arenas = <String, ui.Image>{};
+    for (final league in content.leagues) {
+      for (final width in const [180, 270]) {
+        final name = 'arena_${league.order}_$width';
+        final path = 'assets/backgrounds/$name.png';
+        if (listed != null && !listed.contains(path)) continue;
+        try {
+          final data = await assets.load(path);
+          final codec = await ui.instantiateImageCodec(
+            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+          );
+          arenas[name] = (await codec.getNextFrame()).image;
+        } catch (_) {
+          // No picture for this league: flat colors.
+        }
+      }
+    }
+    return SpriteLibrary._(opponents, players, arenas);
   }
 
   /// Cell size of the player sheet; 48 x 48 by the style guide.

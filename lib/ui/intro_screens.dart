@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 
 import '../core/palette.dart';
 import '../services/game_controller.dart';
+import '../services/strings.dart';
 import '../app_info.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
@@ -24,8 +25,7 @@ Duration _seconds(double s) =>
 const Color _videoBackground = Color(0xFF0E0F12);
 
 /// Studio splash: plays the studio video, then goes on. Tap to skip. If the
-/// video cannot play (no codec, a test), the old still splash shows for
-/// `splashSeconds` instead.
+/// video cannot play (no codec, a test), it moves on after `splashSeconds`.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -106,14 +106,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               // still fits the screen height).
               final aspect = video.value.aspectRatio;
               final width = math.min(
-                box.maxWidth * ui.splashLogoMaxFraction / ui.splashVideoLogoFraction,
+                box.maxWidth *
+                    ui.splashLogoMaxFraction /
+                    ui.splashVideoLogoFraction,
                 box.maxHeight * aspect,
               );
               return Center(
                 child: SizedBox(
                   width: width,
                   height: width / aspect,
-                  child: VideoPlayer(video),
+                  // In a browser the video is a native element that would swallow
+                  // the tap meant to skip it.
+                  child: IgnorePointer(child: VideoPlayer(video)),
                 ),
               );
             },
@@ -121,33 +125,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         ),
       );
     }
-    final scale = PixelScale.of(context);
-    final strings = ref.watch(stringsProvider);
+    // The video has not started yet (or cannot play): just the video's own
+    // background; the safety timer moves on.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _next,
-      child: ColoredBox(
-        color: Palette.ink.color,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const PixelIcon(PixelIcons.logoMask, size: 32),
-              SizedBox(height: scale.px(12)),
-              PixelText(
-                strings.t('studio_name'),
-                color: Palette.sunYellow.color,
-                align: TextAlign.center,
-              ),
-              SizedBox(height: scale.px(6)),
-              PixelText(
-                strings.t('studio_presents'),
-                color: Palette.fog.color,
-                align: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      child: const ColoredBox(
+        color: _videoBackground,
+        child: SizedBox.expand(),
       ),
     );
   }
@@ -206,6 +191,12 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
     final fraction = total == Duration.zero
         ? 1.0
         : (_elapsed.inMicroseconds / total.inMicroseconds).clamp(0.0, 1.0);
+    final ui = ref.watch(contentProvider).balance.ui;
+    final frame =
+        (_elapsed.inMicroseconds *
+            ui.loadingFps ~/
+            Duration.microsecondsPerSecond) %
+        ui.loadingFrames;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _ready
@@ -217,50 +208,107 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
             painter: _LoadingStripes(scale.scale),
             size: Size.infinite,
           ),
+          _LoadingBackground(frame: frame, scale: scale),
           Positioned.fill(
             child: Column(
-            children: [
-              SizedBox(height: scale.px(46)),
-              const PixelIcon(PixelIcons.logoMask, size: 64),
-              SizedBox(height: scale.px(10)),
-              PixelText(
-                strings.t('title_lucha'),
-                size: 24,
-                color: Palette.sunYellow.color,
-                shadow: Palette.ink.color,
-              ),
-              SizedBox(height: scale.px(6)),
-              PixelText(
-                strings.t('title_tap'),
-                size: 16,
-                color: Palette.bone.color,
-                shadow: Palette.luchaRed.color,
-              ),
-              const Spacer(),
-              SizedBox(
-                width: scale.px(140),
-                child: PixelBar(
-                  fraction: fraction,
-                  fill: Palette.marigold,
-                  track: Palette.ink,
-                  height: 12,
+              children: [
+                SizedBox(height: scale.px(40)),
+                _LoadingLogo(scale: scale, strings: strings),
+                const Spacer(),
+                SizedBox(
+                  width: scale.px(140),
+                  child: PixelBar(
+                    fraction: fraction,
+                    fill: Palette.marigold,
+                    track: Palette.ink,
+                    height: 12,
+                  ),
                 ),
-              ),
-              SizedBox(height: scale.px(10)),
-              SizedBox(
-                height: scale.px(8),
-                child: _ready && _blinkOn
-                    ? PixelText(
-                        strings.t('loading_tap'),
-                        shadow: Palette.ink.color,
-                      )
-                    : null,
-              ),
-              SizedBox(height: scale.px(12)),
-              PixelText('v$appVersion', color: Palette.fog.color),
-              SizedBox(height: scale.px(12)),
-            ],
+                SizedBox(height: scale.px(10)),
+                SizedBox(
+                  height: scale.px(8),
+                  child: _ready && _blinkOn
+                      ? PixelText(
+                          strings.t('loading_tap'),
+                          shadow: Palette.ink.color,
+                        )
+                      : null,
+                ),
+                SizedBox(height: scale.px(12)),
+                PixelText('v$appVersion', color: Palette.fog.color),
+                SizedBox(height: scale.px(12)),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The animated loading picture (270 x 480, frames baked by
+/// `tools/build_backgrounds.py`), drawn at a whole number of device pixels per
+/// picture pixel and cropped to the canvas. Without the files the stripes
+/// behind it show.
+class _LoadingBackground extends StatelessWidget {
+  const _LoadingBackground({required this.frame, required this.scale});
+
+  final int frame;
+  final PixelScale scale;
+
+  static const double _width = 270;
+  static const double _height = 480;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: OverflowBox(
+        maxWidth: scale.px(_width),
+        maxHeight: scale.px(_height),
+        child: Image.asset(
+          'assets/backgrounds/loading_$frame.png',
+          width: scale.px(_width),
+          height: scale.px(_height),
+          fit: BoxFit.fill,
+          filterQuality: FilterQuality.none,
+          isAntiAlias: false,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
+
+/// The game logo (`assets/ui/logo.png`); without the file, the old text title.
+class _LoadingLogo extends StatelessWidget {
+  const _LoadingLogo({required this.scale, required this.strings});
+
+  final PixelScale scale;
+  final Strings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/ui/logo.png',
+      width: scale.px(150),
+      fit: BoxFit.fitWidth,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+      errorBuilder: (_, _, _) => Column(
+        children: [
+          PixelText(
+            strings.t('title_lucha'),
+            size: 24,
+            color: Palette.sunYellow.color,
+            shadow: Palette.ink.color,
+          ),
+          SizedBox(height: scale.px(6)),
+          PixelText(
+            strings.t('title_tap'),
+            size: 16,
+            color: Palette.bone.color,
+            shadow: Palette.luchaRed.color,
           ),
         ],
       ),

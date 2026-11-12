@@ -112,7 +112,9 @@
     "maxVirtualWidth": 270,
     "maxVirtualHeight": 480,
     "splashLogoMaxFraction": 0.6,
-    "splashVideoLogoFraction": 0.88
+    "splashVideoLogoFraction": 0.88,
+    "loadingFrames": 4,
+    "loadingFps": 3
   },
   "gesture": {
     "firstDirection": "clockwise",

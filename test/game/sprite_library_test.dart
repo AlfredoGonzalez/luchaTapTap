@@ -42,20 +42,27 @@ void main() {
   });
 
   testWidgets('final art in assets/sprites wins over the placeholder', (tester) async {
-    final tmp = Directory.systemTemp.createTempSync('sprites');
-    addTearDown(() => tmp.deleteSync(recursive: true));
-    Directory('${tmp.path}/assets/sprites/placeholder').createSync(recursive: true);
-    // Placeholder: the real aguacate. "Final art": the taquero's sheet saved
-    // under the aguacate's name (same size, different pixels).
-    File('${repo.path}/assets/sprites/placeholder/opp_mr_aguacate.png')
-        .copySync('${tmp.path}/assets/sprites/placeholder/opp_mr_aguacate.png');
-    File('${repo.path}/assets/sprites/placeholder/opp_el_taquero_cosmico.png')
-        .copySync('${tmp.path}/assets/sprites/opp_mr_aguacate.png');
+    final ph = '${repo.path}/assets/sprites/placeholder';
+    Directory dir(String name) {
+      final d = Directory.systemTemp.createTempSync(name);
+      addTearDown(() => d.deleteSync(recursive: true));
+      Directory('${d.path}/assets/sprites/placeholder').createSync(recursive: true);
+      return d;
+    }
+
+    // A: the aguacate's placeholder, plus "final art" (really the taquero's
+    // placeholder file) saved under the aguacate's name.
+    final a = dir('a');
+    File('$ph/opp_mr_aguacate.png').copySync('${a.path}/assets/sprites/placeholder/opp_mr_aguacate.png');
+    File('$ph/opp_el_taquero_cosmico.png').copySync('${a.path}/assets/sprites/opp_mr_aguacate.png');
+    // B: only the taquero's placeholder.
+    final b = dir('b');
+    File('$ph/opp_el_taquero_cosmico.png').copySync('${b.path}/assets/sprites/placeholder/opp_el_taquero_cosmico.png');
+    File('$ph/opp_mr_aguacate.png').copySync('${b.path}/assets/sprites/placeholder/opp_mr_aguacate.png');
     final result = await tester.runAsync(() async {
-      final custom = await SpriteLibrary.load(content, bundle: FolderBundle(tmp));
-      final stock = await SpriteLibrary.load(content, bundle: FolderBundle(repo));
-      Future<List<int>> bytes(SpriteSheet s) async =>
-          (await s.image.toByteData())!.buffer.asUint8List().toList();
+      final custom = await SpriteLibrary.load(content, bundle: FolderBundle(a));
+      final stock = await SpriteLibrary.load(content, bundle: FolderBundle(b));
+      Future<List<int>> bytes(SpriteSheet s) async => (await s.image.toByteData())!.buffer.asUint8List().toList();
       return [
         await bytes(custom.opponent('opp_mr_aguacate')!),
         await bytes(stock.opponent('opp_el_taquero_cosmico')!),

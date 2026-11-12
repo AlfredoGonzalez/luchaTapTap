@@ -593,6 +593,8 @@ class UiConfig {
     required this.maxVirtualWidth,
     required this.maxVirtualHeight,
     required this.splashLogoMaxFraction,
+    required this.loadingFrames,
+    required this.loadingFps,
     required this.splashVideoLogoFraction,
   });
 
@@ -605,6 +607,8 @@ class UiConfig {
     maxVirtualWidth: r.integer('maxVirtualWidth', min: 180),
     maxVirtualHeight: r.integer('maxVirtualHeight', min: 320),
     splashLogoMaxFraction: r.number('splashLogoMaxFraction', min: 0, minExclusive: true),
+    loadingFrames: r.integer('loadingFrames', min: 1),
+    loadingFps: r.number('loadingFps', min: 0, minExclusive: true),
     splashVideoLogoFraction: r.number('splashVideoLogoFraction', min: 0, minExclusive: true),
   );
 
@@ -631,6 +635,11 @@ class UiConfig {
   /// The studio logo in the splash video may fill at most this share of the
   /// screen width.
   final double splashLogoMaxFraction;
+
+  /// The loading background is `assets/backgrounds/loading_<n>.png` for n in
+  /// 0 until [loadingFrames], shown at [loadingFps] frames per second.
+  final int loadingFrames;
+  final double loadingFps;
 
   /// How much of the video's width the logo spans in its last frame
   /// (measured on the file; change it if the video is replaced).

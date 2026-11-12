@@ -43,6 +43,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       opponent: controller.engine.opponent,
       animations: content.balance.animations,
       theme: content.fightInfo(controller.engine.state.fightNumber).league.theme,
+      leagueOrder: content.fightInfo(controller.engine.state.fightNumber).league.order,
       sprites: ref.read(spriteLibraryProvider),
       playerMaskId: controller.engine.equippedMaskDef?.id,
       playerMaskColor: _maskColor(controller),
@@ -64,7 +65,8 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
         _fightChanged = true;
         final won = next.fightNumber > previous.fightNumber;
         final bossFell = won && content.fightInfo(previous.fightNumber).isBoss;
-        _game.setTheme(content.fightInfo(next.fightNumber).league.theme);
+        final league = content.fightInfo(next.fightNumber).league;
+        _game.setTheme(league.theme, league: league.order);
         _game.showOpponent(controller.engine.opponent, defeated: won);
         if (bossFell) _game.playerVictory();
       } else if (previous == null) {

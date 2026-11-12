@@ -28,6 +28,7 @@ class ArenaGame extends FlameGame {
     required this.opponent,
     required this.animations,
     required this.theme,
+    this.leagueOrder = 1,
     SpriteLibrary? sprites,
     this.playerMaskId,
     this.playerMaskColor = Palette.violet,
@@ -37,6 +38,7 @@ class ArenaGame extends FlameGame {
 
   /// Arena colors of the current league (see [setTheme]).
   ArenaTheme theme;
+  int leagueOrder;
 
   /// Sprite sheets; fighters without one are drawn as placeholder rectangles.
   final SpriteLibrary sprites;
@@ -74,7 +76,12 @@ class ArenaGame extends FlameGame {
     camera.viewfinder.anchor = Anchor.topLeft;
     camera.viewfinder.position = Vector2.zero();
 
-    _backdrop = _ArenaBackdrop(size: virtualSize, floorY: _floorY, theme: theme);
+    _backdrop = _ArenaBackdrop(
+      size: virtualSize,
+      floorY: _floorY,
+      theme: theme,
+      image: sprites.arenaBackground(leagueOrder, virtualSize.x),
+    );
     world.add(_backdrop);
     _player = _buildPlayer();
     _enemy = _buildEnemy(opponent);
@@ -138,9 +145,13 @@ class ArenaGame extends FlameGame {
   }
 
   /// A new league: the arena changes colors.
-  void setTheme(ArenaTheme next) {
+  void setTheme(ArenaTheme next, {int? league}) {
     theme = next;
-    if (isLoaded) _backdrop.theme = next;
+    if (league != null) leagueOrder = league;
+    if (isLoaded) {
+      _backdrop.theme = next;
+      _backdrop.image = sprites.arenaBackground(leagueOrder, virtualSize.x);
+    }
   }
 
   /// The player throws a punch.
@@ -202,17 +213,86 @@ class ArenaGame extends FlameGame {
 }
 
 class _ArenaBackdrop extends PositionComponent {
+  /// Draws the picture at 1:1, centered and sitting on the bottom edge. Where
+  /// the canvas is wider or taller than the picture, its edge pixels are
+  /// stretched outward so there is never a gap.
+  void _renderPicture(Canvas canvas, Image picture) {
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..filterQuality = FilterQuality.none;
+    final w = picture.width.toDouble();
+    final h = picture.height.toDouble();
+    final left = ((size.x - w) / 2).floorToDouble();
+    final top = size.y - h;
+    // Crop sides when the canvas is narrower than the picture.
+    final srcX = left < 0 ? -left : 0.0;
+    final srcW = math.min(w - srcX, size.x);
+    final dstX = math.max(left, 0.0);
+    canvas.drawImageRect(
+      picture,
+      Rect.fromLTWH(srcX, 0, srcW, h),
+      Rect.fromLTWH(dstX, top, srcW, h),
+      paint,
+    );
+    if (dstX > 0) {
+      canvas.drawImageRect(
+        picture,
+        Rect.fromLTWH(0, 0, 1, h),
+        Rect.fromLTWH(0, top, dstX, h),
+        paint,
+      );
+      canvas.drawImageRect(
+        picture,
+        Rect.fromLTWH(w - 1, 0, 1, h),
+        Rect.fromLTWH(dstX + srcW, top, size.x - dstX - srcW, h),
+        paint,
+      );
+    }
+    if (top > 0) {
+      canvas.drawImageRect(
+        picture,
+        Rect.fromLTWH(0, 0, w, 1),
+        Rect.fromLTWH(dstX, 0, srcW, top),
+        paint,
+      );
+      if (dstX > 0) {
+        canvas.drawImageRect(
+          picture,
+          const Rect.fromLTWH(0, 0, 1, 1),
+          Rect.fromLTWH(0, 0, dstX, top),
+          paint,
+        );
+        canvas.drawImageRect(
+          picture,
+          Rect.fromLTWH(w - 1, 0, 1, 1),
+          Rect.fromLTWH(dstX + srcW, 0, size.x - dstX - srcW, top),
+          paint,
+        );
+      }
+    }
+  }
+
   _ArenaBackdrop({
     required Vector2 size,
     required this.floorY,
     required this.theme,
+    this.image,
   }) : super(size: size);
 
   final double floorY;
   ArenaTheme theme;
 
+  /// The league's arena picture, drawn bottom-aligned and centered; null draws
+  /// flat colors from [theme].
+  Image? image;
+
   @override
   void render(Canvas canvas) {
+    final picture = image;
+    if (picture != null) {
+      _renderPicture(canvas, picture);
+      return;
+    }
     final paint = Paint()..isAntiAlias = false;
     // Wall.
     canvas.drawRect(
