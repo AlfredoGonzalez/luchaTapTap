@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "achievements": [
+    {
+      "id": "primera_victoria",
+      "name": "Primera victoria",
+      "counter": "defeats",
+      "target": 1,
+      "rewardBelts": 1
+    },
+    {
+      "id": "cien_golpes",
+      "name": "Cien golpes",
+      "counter": "taps",
+      "target": 100,
+      "rewardBelts": 1
+    },
+    {
+      "id": "mil_golpes",
+      "name": "Mil golpes",
+      "counter": "taps",
+      "target": 1000,
+      "rewardBelts": 2
+    },
+    {
+      "id": "veterano",
+      "name": "Veterano del barrio",
+      "counter": "defeats",
+      "target": 50,
+      "rewardBelts": 2
+    },
+    {
+      "id": "cazajefes",
+      "name": "Cazajefes",
+      "counter": "bosses",
+      "target": 1,
+      "rewardBelts": 2
+    },
+    {
+      "id": "nueva_cara",
+      "name": "Nueva cara",
+      "counter": "prestiges",
+      "target": 1,
+      "rewardBelts": 3
+    }
+  ]
+}

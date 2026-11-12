@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "masks": [
+    {
+      "id": "jaguar_dorado",
+      "name": "Jaguar Dorado",
+      "rarity": "common",
+      "bonus": {
+        "type": "tapDamageMultiplier",
+        "value": 0.15
+      },
+      "unlock": {
+        "rule": "starter"
+      },
+      "slotColors": [
+        "burnt_orange",
+        "marigold",
+        "sun_yellow"
+      ],
+      "icon": "mask_jaguar"
+    },
+    {
+      "id": "la_calaverita",
+      "name": "La Calaverita",
+      "rarity": "rare",
+      "bonus": {
+        "type": "bossCoinMultiplier",
+        "value": 0.5
+      },
+      "unlock": {
+        "rule": "belts",
+        "value": 3
+      },
+      "slotColors": [
+        "dust",
+        "bone",
+        "white"
+      ],
+      "icon": "mask_wolf"
+    }
+  ]
+}

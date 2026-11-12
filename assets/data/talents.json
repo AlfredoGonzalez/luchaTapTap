@@ -18,7 +18,7 @@
             5
           ],
           "effect": "tapDamageMultiplier",
-          "valuePerLevel": 0.1,
+          "valuePerLevel": 0.15,
           "parent": null
         },
         {
@@ -56,7 +56,7 @@
             5
           ],
           "effect": "trainerDamageMultiplier",
-          "valuePerLevel": 0.1,
+          "valuePerLevel": 0.15,
           "parent": null
         },
         {
@@ -87,7 +87,7 @@
             5
           ],
           "effect": "coinGainMultiplier",
-          "valuePerLevel": 0.05,
+          "valuePerLevel": 0.075,
           "parent": null
         }
       ]

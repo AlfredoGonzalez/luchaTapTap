@@ -250,17 +250,22 @@ class GameEngine {
 
   /// Damage of one regular tap, before a critical hit.
   Big get tapDamage {
-    var base = _balance.baseTapDamage;
+    var base = Big.fromDouble(_balance.baseTapDamage);
     for (final u in content.upgrades) {
       if (u.effect == UpgradeEffect.tapDamage) {
-        base += _state.upgradeLevel(u.id) * u.perLevelValue;
+        final level = _state.upgradeLevel(u.id);
+        if (level > 0) {
+          base +=
+              Big.fromDouble(level * u.perLevelValue) *
+              _balance.milestones.factorAt(level);
+        }
       }
     }
     final factor =
         (1 + _talentSum(TalentEffect.tapDamageMultiplier)) *
         (1 + _maskBonus(MaskBonusType.tapDamageMultiplier)) *
         (_activeSkillValue(SkillEffect.tapMultiplier) ?? 1);
-    return Big.fromDouble(base).mulDouble(factor) * beltMultiplier;
+    return base.mulDouble(factor) * beltMultiplier;
   }
 
   /// Chance (0 to 1) that a tap is a critical hit.
@@ -281,7 +286,9 @@ class GameEngine {
     for (final trainer in content.trainers) {
       final level = _state.trainerLevel(trainer.id);
       if (level > 0) {
-        total += Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble());
+        total +=
+            Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble()) *
+            _balance.milestones.factorAt(level);
       }
     }
     if (total.isZero) return total;

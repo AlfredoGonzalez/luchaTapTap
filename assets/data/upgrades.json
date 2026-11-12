@@ -5,7 +5,7 @@
       "id": "puno_duro",
       "name": "Puño duro",
       "icon": "up_puno_duro",
-      "baseCost": 10,
+      "baseCost": 72,
       "effect": "tapDamage",
       "perLevelValue": 1
     },

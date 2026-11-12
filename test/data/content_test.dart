@@ -17,7 +17,7 @@ void expectInvalid(void Function(Map<String, Map<String, dynamic>>) edit, String
 
 void main() {
   test('the shipped data files load and validate', () {
-    final c = loadTestContent();
+    final c = loadShippedContent();
     expect(c.opponents.length, 4);
     expect(c.trainers.length, 2);
     expect(c.upgrades.length, 2);
@@ -28,7 +28,7 @@ void main() {
   });
 
   test('every data file has a schemaVersion', () {
-    for (final entry in readContentFiles().entries) {
+    for (final entry in readShippedFiles().entries) {
       expect(entry.value['schemaVersion'], isA<int>(), reason: entry.key);
     }
   });

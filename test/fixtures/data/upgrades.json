@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "upgrades": [
+    {
+      "id": "puno_duro",
+      "name": "Puño duro",
+      "icon": "up_puno_duro",
+      "baseCost": 10,
+      "effect": "tapDamage",
+      "perLevelValue": 1
+    },
+    {
+      "id": "golpe_certero",
+      "name": "Ojo clínico",
+      "icon": "up_golpe_certero",
+      "baseCost": 150,
+      "effect": "critChance",
+      "perLevelValue": 0.005
+    }
+  ]
+}

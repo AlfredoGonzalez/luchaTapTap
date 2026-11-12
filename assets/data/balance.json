@@ -9,13 +9,13 @@
     "baseDamage": 1
   },
   "economy": {
-    "hpBase": 10,
-    "hpGrowth": 1.55,
+    "hpBase": 125,
+    "hpGrowth": 1.3,
     "bossHpMultiplier": 10,
-    "coinsPerHpFraction": 0.15,
+    "coinsPerHpFraction": 0.6,
     "bossCoinMultiplier": 5,
     "costGrowth": 1.15,
-    "beltCoinDivisor": 1000000
+    "beltCoinDivisor": 3000
   },
   "buy": {
     "fixedAmounts": [
@@ -52,10 +52,10 @@
   "lucky": {
     "spawnPerSecond": 0.03,
     "lifetimeSeconds": 6,
-    "rewardCoinMultiple": 8
+    "rewardCoinMultiple": 0.75
   },
   "prestige": {
-    "minBelts": 1,
+    "minBelts": 44,
     "beltDamageBonus": 0.02
   },
   "skills": {
@@ -109,5 +109,22 @@
     "maxLoopAspect": 2.2,
     "closeFraction": 0.8,
     "minArcDegrees": 120
+  },
+  "milestones": {
+    "levels": [
+      10,
+      25,
+      50,
+      100,
+      150,
+      200,
+      250,
+      300,
+      400,
+      500,
+      700,
+      1000
+    ],
+    "multiplier": 2
   }
 }

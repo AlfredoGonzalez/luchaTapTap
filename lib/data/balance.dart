@@ -1,3 +1,4 @@
+import '../core/big.dart';
 import 'content_exception.dart';
 import 'json_reader.dart';
 
@@ -34,6 +35,7 @@ class Balance {
     required this.debug,
     required this.ui,
     required this.gesture,
+    required this.milestones,
   });
 
   static const int schemaVersion = 1;
@@ -96,6 +98,9 @@ class Balance {
       debug: DebugConfig.fromReader(r.object('debug')),
       ui: UiConfig.fromReader(r.object('ui')),
       gesture: GestureConfig.fromReader(r.object('gesture')),
+      milestones: r.has('milestones')
+          ? MilestoneConfig.fromReader(r.object('milestones'))
+          : const MilestoneConfig(levels: [], multiplier: 1),
     );
   }
 
@@ -152,6 +157,48 @@ class Balance {
   final DebugConfig debug;
   final UiConfig ui;
   final GestureConfig gesture;
+
+  /// Level milestones of upgrades and trainers (the GDD's "milestone levels").
+  final MilestoneConfig milestones;
+}
+
+/// Every time an upgrade or trainer reaches one of [levels], its output is
+/// multiplied by [multiplier]. This is what lets damage keep up with the
+/// exponential growth of opponent HP.
+class MilestoneConfig {
+  const MilestoneConfig({required this.levels, required this.multiplier});
+
+  factory MilestoneConfig.fromReader(JsonReader r) {
+    final levels = r.integers('levels', min: 1);
+    for (var i = 1; i < levels.length; i++) {
+      if (levels[i] <= levels[i - 1]) {
+        throw ContentException('balance.json: milestones.levels must be increasing');
+      }
+    }
+    return MilestoneConfig(levels: levels, multiplier: r.number('multiplier', min: 1));
+  }
+
+  final List<int> levels;
+  final double multiplier;
+
+  /// How many milestones a unit at [level] has reached.
+  int reached(int level) {
+    var n = 0;
+    for (final l in levels) {
+      if (l <= level) {
+        n++;
+      } else {
+        break;
+      }
+    }
+    return n;
+  }
+
+  /// Output factor of a unit at [level] (1 before the first milestone).
+  Big factorAt(int level) {
+    final n = reached(level);
+    return n == 0 || multiplier == 1 ? Big.one : Big.powOf(multiplier, n);
+  }
 }
 
 class ComboConfig {
