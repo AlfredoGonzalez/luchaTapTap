@@ -31,7 +31,7 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - name: Compilar web
-        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+        run: flutter build web --release --pwa-strategy=none --base-href "/${{ github.event.repository.name }}/"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
