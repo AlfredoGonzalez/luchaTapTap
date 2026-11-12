@@ -34,6 +34,11 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Code shrinking (R8) removed the database class WorkManager (used
+            // by the ads SDK) needs at start-up, and the app crashed on open.
+            // Keep it off until proper keep rules are added.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
