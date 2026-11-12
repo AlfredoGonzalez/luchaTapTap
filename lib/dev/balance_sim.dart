@@ -420,7 +420,22 @@ class _Bot {
   }
 
   void _maybeChallengeBoss() {
-    if (!engine.bossGateReady || engine.awaitingBossStart) return;
+    if (engine.awaitingBossLossAck) {
+      engine.acknowledgeBossLoss();
+      return;
+    }
+    if (engine.awaitingBossStart) {
+      // The first time the boss comes by itself: take it or go back to farm.
+      final expected = _effective(engine) * engine.bossTimerLength * 1.05;
+      if (expected >= engine.enemyMaxHp.toDouble() * 1.1) {
+        engine.startBoss();
+        _log('jefe: reto');
+      } else {
+        engine.abandonBoss();
+      }
+      return;
+    }
+    if (!engine.bossGateReady) return;
     final trial = _copy();
     trial.challengeBoss();
     final hp = trial.enemyMaxHp.toDouble();

@@ -63,6 +63,7 @@ class FightView extends ConsumerWidget {
               const _NoticeBanner(),
               const FinisherPrompt(),
               const _BossButton(),
+              const _BossLossPanel(),
             ],
           ),
         ),
@@ -166,6 +167,57 @@ class _BossName extends ConsumerWidget {
               }),
               color: Palette.marigold.color,
               align: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the boss wins: the fighters stay where they fell and a tip waits
+/// for "Aceptar", which sends the player back to the farming fight.
+class _BossLossPanel extends ConsumerWidget {
+  const _BossLossPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    ref.watch(gameControllerProvider);
+    final controller = ref.read(gameControllerProvider.notifier);
+    if (!controller.engine.awaitingBossLossAck) return const SizedBox.shrink();
+    final strings = ref.watch(stringsProvider);
+    return Positioned(
+      left: scale.px(sideMargin),
+      right: scale.px(sideMargin),
+      bottom: scale.px(4),
+      child: PixelPanel(
+        padding: 6,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PixelText(
+              strings.t('boss_lost_title'),
+              size: 16,
+              color: Palette.coral.color,
+              shadow: Palette.ink.color,
+              align: TextAlign.center,
+            ),
+            SizedBox(height: scale.px(3)),
+            PixelText(
+              strings.t('boss_lost_tip'),
+              wrap: true,
+              align: TextAlign.center,
+            ),
+            SizedBox(height: scale.px(5)),
+            Center(
+              child: PixelButton(
+                label: strings.t('boss_lost_ok'),
+                style: PixelButtonStyle.gold,
+                width: 80,
+                onPressed: controller.acknowledgeBossLoss,
+              ),
             ),
           ],
         ),

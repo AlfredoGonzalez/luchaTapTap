@@ -87,6 +87,12 @@ void main() {
       }
       expect(timedOut, isTrue);
       expect(ticks, inInclusiveRange(300, 302)); // 30 s at 10 ticks per second
+      // The player lies defeated at the boss until the loss is accepted.
+      expect(e.awaitingBossLossAck, isTrue);
+      expect(e.state.fightNumber, 10);
+      expect(e.tap().damageDealt.isZero, isTrue);
+      expect(e.acknowledgeBossLoss(), isTrue);
+      expect(e.awaitingBossLossAck, isFalse);
       expect(e.state.fightNumber, 9);
       expect(e.isBossFight, isFalse);
       expect(e.state.bossTimeLeft, isNull);
@@ -653,8 +659,26 @@ void main() {
     GameEngine atGate() {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e9});
       e.debugSkipFights(8); // fight 9, the last one before the boss
+      // The player has already met the boss once (so the gate holds them).
+      e.debugGoToBoss();
+      e.abandonBoss();
       return e;
     }
+
+    test('the first time, beating the fight before the boss leads into the boss', () {
+      final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e9});
+      e.debugSkipFights(8);
+      expect(e.bossGateReady, isFalse); // no button yet: the boss comes by itself
+      final r = e.tap();
+      expect(r.defeats, 1);
+      expect(e.state.fightNumber, 10);
+      expect(e.isBossFight, isTrue);
+      expect(e.awaitingBossStart, isTrue);
+      expect(e.state.enemyHp, e.enemyMaxHp); // nothing leaked into the boss
+      // Backing out leaves the player farming, with the button from now on.
+      expect(e.abandonBoss(), isTrue);
+      expect(e.bossGateReady, isTrue);
+    });
 
     test('beating the fight before the boss repeats it instead of advancing', () {
       final e = atGate();
@@ -679,6 +703,8 @@ void main() {
         f['trainers.json']!['trainers'][0]['baseDps'] = 1e6;
       });
       e.buyTrainer('don_chuy', x1);
+      e.debugGoToBoss(); // the boss was met before: the gate holds
+      e.abandonBoss();
       for (var i = 0; i < 50; i++) {
         e.tick();
       }
@@ -717,6 +743,8 @@ void main() {
     test('losing to the boss sends the player back to farm, not into a rematch', () {
       final e = newEngine();
       e.debugSkipFights(8);
+      e.debugGoToBoss();
+      e.abandonBoss();
       e.challengeBoss();
       e.startBoss();
       var timedOut = false;
@@ -724,6 +752,7 @@ void main() {
         timedOut = e.tick().bossTimedOut;
       }
       expect(timedOut, isTrue);
+      e.acknowledgeBossLoss();
       expect(e.state.fightNumber, 9);
       expect(e.isBossFight, isFalse);
       expect(e.awaitingBossStart, isFalse);

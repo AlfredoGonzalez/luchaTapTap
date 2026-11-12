@@ -335,10 +335,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     if (!damage.isZero) {
       _hits.add(HitEvent(damage: damage, isTap: false, defeated: defeated));
     }
-    if (timedOut) {
-      _bossLost.add(null);
-      ref.read(noticeProvider.notifier).show('boss_failed');
-    }
+    if (timedOut) _bossLost.add(null); // the defeat tip waits for "Aceptar"
   }
 
   void _publish() {
@@ -623,6 +620,11 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _sfx(Sfx.bossIntro);
     _buzz('bossIntro');
     _publish();
+  }
+
+  /// "Aceptar" on the defeat tip: back to the farming fight.
+  void acknowledgeBossLoss() {
+    if (_engine.acknowledgeBossLoss()) _publish();
   }
 
   /// "Volver" on the boss intro: back to the farming fight.

@@ -159,7 +159,29 @@ class GameEngine {
       !content.fightInfo(fight).isBoss && content.fightInfo(fight + 1).isBoss;
 
   /// The player stands in the fight before a boss and may challenge it.
-  bool get bossGateReady => _isGate(_state.fightNumber);
+  bool get bossGateReady => _holdsGate(_state.fightNumber);
+
+  /// The gate holds the player (farming) only after they have met the boss
+  /// once. The first time, beating the gate fight leads straight into the boss.
+  bool _holdsGate(int fight) => _isGate(fight) && _state.bestFight > fight;
+
+  /// The boss countdown ran out and the player lies defeated until
+  /// [acknowledgeBossLoss] (the UI shows its tip meanwhile).
+  bool get awaitingBossLossAck => _bossLossPending;
+  bool _bossLossPending = false;
+
+  /// "Aceptar" on the defeat tip: back to the farming fight, no other penalty.
+  bool acknowledgeBossLoss() {
+    if (!_bossLossPending) return false;
+    _bossLossPending = false;
+    final previous = math.max(1, _state.fightNumber - 1);
+    _state = _state.copyWith(
+      fightNumber: previous,
+      enemyHp: _maxHpOf(previous),
+      clearBossTimer: true,
+    );
+    return true;
+  }
 
   /// "Jefe": leaves the farming fight for the boss fight (its intro shows, the
   /// countdown waits for [startBoss]). False when no boss is waiting.
@@ -346,7 +368,7 @@ class GameEngine {
   /// One tap. Applied immediately, not on the tick. Damage beyond the current
   /// opponent's HP is not carried over to the next one.
   DamageOutcome tap() {
-    if (awaitingBossStart) return DamageOutcome.none;
+    if (awaitingBossStart || _bossLossPending) return DamageOutcome.none;
     final chance = critChance;
     final isCrit = chance > 0 && rng.nextDouble() < chance;
     var damage = tapDamage;
@@ -379,7 +401,7 @@ class GameEngine {
   /// The finisher ("GOLPE"): one large hit, then the meter resets. Null when
   /// the meter is not full.
   DamageOutcome? finisher() {
-    if (!finisherReady || awaitingBossStart) return null;
+    if (!finisherReady || awaitingBossStart || _bossLossPending) return null;
     final damage = tapDamage.mulDouble(_balance.combo.finisherMultiplier);
     _state = _state.copyWith(comboMeter: 0);
     final outcome = _applyDamage(damage, carryOver: false);
@@ -400,7 +422,7 @@ class GameEngine {
   /// boss countdown, combo decay, skill timers and lucky events.
   DamageOutcome tick() {
     // The boss intro is showing: the fight has not begun.
-    if (awaitingBossStart) return DamageOutcome.none;
+    if (awaitingBossStart || _bossLossPending) return DamageOutcome.none;
     final dt = 1 / _balance.ticksPerSecond;
     var outcome = DamageOutcome.none;
 
@@ -450,13 +472,9 @@ class GameEngine {
       _state = _state.copyWith(bossTimeLeft: remaining);
       return false;
     }
-    // Time is up: back to the previous regular fight, no other penalty.
-    final previous = math.max(1, _state.fightNumber - 1);
-    _state = _state.copyWith(
-      fightNumber: previous,
-      enemyHp: _maxHpOf(previous),
-      clearBossTimer: true,
-    );
+    // Time is up: the player lies defeated until the loss is acknowledged.
+    _bossLossPending = true;
+    _state = _state.copyWith(bossTimeLeft: 0);
     return true;
   }
 
@@ -558,9 +576,12 @@ class GameEngine {
       if (content.fightInfo(fight).isBoss) bosses++;
       // Before a boss the player keeps farming the same fight until they
       // choose to challenge the boss.
-      if (!_isGate(fight)) fight++;
+      if (!_holdsGate(fight)) fight++;
       hp = _maxHpOf(fight);
-      if (!carryOver || defeats >= maxDefeats) break;
+      // A boss waits for its intro: no damage carries into it.
+      if (!carryOver || defeats >= maxDefeats || content.fightInfo(fight).isBoss) {
+        break;
+      }
     }
 
     var stats = _state.stats;
@@ -771,7 +792,7 @@ class GameEngine {
     if (level == 0) {
       return const SkillUseResult(failure: SkillFailure.notLearned);
     }
-    if (awaitingBossStart) {
+    if (awaitingBossStart || _bossLossPending) {
       return const SkillUseResult(failure: SkillFailure.waitingBoss);
     }
     if (_state.skillCooldownLeft(id) > 0) {
@@ -1055,7 +1076,7 @@ class GameEngine {
     var earned = Big.zero;
     var defeats = 0;
     while (!budget.isZero && !content.fightInfo(fight).isBoss) {
-      if (_isGate(fight)) {
+      if (_holdsGate(fight)) {
         // Farming the fight before the boss: the same fight is beaten over and
         // over, so the kills are counted with a division instead of a loop.
         final maxHp = _maxHpOf(fight);

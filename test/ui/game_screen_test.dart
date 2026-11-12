@@ -587,16 +587,20 @@ void main() {
       await closeApp(tester);
     });
 
-    testWidgets('failing drops one fight and says so', (tester) async {
+    testWidgets('failing shows a tip; "Aceptar" drops back one fight', (tester) async {
       final c = await pumpApp(tester, save: saveFrom((e) => e.debugGoToBoss()));
       await tapButton(tester, '¡A PELEAR!');
-      for (var i = 0; i < 40 && stateOf(c).fightNumber == 10; i++) {
+      for (var i = 0; i < 40 && find.text('¡Has perdido!').evaluate().isEmpty; i++) {
         await elapse(tester, 1);
       }
+      // The player stays defeated at the boss until the tip is accepted.
+      expect(find.text('¡Has perdido!'), findsOneWidget);
+      expect(stateOf(c).fightNumber, 10);
+      await elapse(tester, 5);
+      expect(stateOf(c).fightNumber, 10);
+      await tapButton(tester, 'Aceptar');
       expect(stateOf(c).fightNumber, 9);
-      expect(find.text('¡Se acabó el tiempo!'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 3)); // the notice goes away
-      expect(find.text('¡Se acabó el tiempo!'), findsNothing);
+      expect(find.text('¡Has perdido!'), findsNothing);
       await closeApp(tester);
     });
 
@@ -610,7 +614,12 @@ void main() {
   });
 
   group('the boss is the player\'s choice', () {
-    SaveData atGate() => saveFrom((e) => e.debugSkipFights(8));
+    SaveData atGate() => saveFrom((e) {
+      e.debugSkipFights(8);
+      // The boss was met before, so the gate holds the player farming.
+      e.debugGoToBoss();
+      e.abandonBoss();
+    });
     void strongTaps(Map<String, Map<String, dynamic>> f) => f['balance.json']!['tap'] = {'baseDamage': 1e9};
 
     testWidgets('beating the fight before the boss repeats it and shows the "¡JEFE!" button', (tester) async {
@@ -646,11 +655,12 @@ void main() {
       final c = await pumpApp(tester, save: atGate());
       await tapButton(tester, '¡JEFE!');
       await tapButton(tester, '¡A PELEAR!');
-      for (var i = 0; i < 40 && stateOf(c).fightNumber == 10; i++) {
+      for (var i = 0; i < 40 && find.text('¡Has perdido!').evaluate().isEmpty; i++) {
         await elapse(tester, 1);
       }
+      expect(find.text('¡Has perdido!'), findsOneWidget);
+      await tapButton(tester, 'Aceptar');
       expect(stateOf(c).fightNumber, 9);
-      expect(find.text('¡Se acabó el tiempo!'), findsOneWidget);
       await elapse(tester, 10);
       expect(stateOf(c).fightNumber, 9);
       expect(find.text('¡A PELEAR!'), findsNothing); // no new intro

@@ -40,10 +40,10 @@
     "fadeSteps": 4
   },
   "combo": {
-    "fillPerTap": 0.1,
+    "fillPerTap": 0.02,
     "holdSeconds": 1.5,
     "decayPerSecond": 0.5,
-    "finisherMultiplier": 20
+    "finisherMultiplier": 100
   },
   "boss": {
     "timerSeconds": 30
@@ -191,6 +191,9 @@
     "victorySeconds": 1.5,
     "defeatedHoldSeconds": 0.2,
     "playerDownSeconds": 1.2,
+    "kickHoldSeconds": 2,
+    "kickGlowBlinkSeconds": 0.12,
+    "kickEnemyFlashSeconds": 0.5,
     "skillClips": {
       "plancha": {
         "frames": 8,

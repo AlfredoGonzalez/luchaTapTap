@@ -104,6 +104,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
         final bossFell = won && content.fightInfo(previous.fightNumber).isBoss;
         final league = content.fightInfo(next.fightNumber).league;
         _game.setTheme(league.theme, league: league.order);
+        _game.recoverFromDefeat();
         _game.showOpponent(controller.engine.opponent, defeated: won);
         if (bossFell) _game.playerVictory();
       } else if (previous == null) {

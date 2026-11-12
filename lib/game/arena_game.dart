@@ -156,7 +156,10 @@ class ArenaGame extends FlameGame {
 
   /// The player throws a punch (or a kick, for the finisher).
   void playerAttack({bool kick = false}) {
-    if (isLoaded) _player.punch(kick: kick);
+    if (!isLoaded) return;
+    _player.punch(kick: kick);
+    // The kick lands harder: the opponent keeps flashing for a while.
+    if (kick) _enemy.flash(animations.kickEnemyFlashSeconds, true);
   }
 
   /// Plays the animation of skill [name] (the plancha): the player flies
@@ -182,8 +185,16 @@ class ArenaGame extends FlameGame {
   /// opponent celebrates.
   void playerDefeated() {
     if (!isLoaded) return;
-    _player.knockDown(animations.playerDownSeconds);
-    _enemy.celebrate(animations.playerDownSeconds);
+    // They stay like that until the player accepts the defeat.
+    _player.knockDown(double.infinity);
+    _enemy.celebrate(double.infinity);
+  }
+
+  /// The defeat was accepted: everybody goes back to idle.
+  void recoverFromDefeat() {
+    if (!isLoaded) return;
+    _player.getUp();
+    _enemy.getUp();
   }
 
   /// The player celebrates (a boss fell) for the time set in the data.
@@ -399,7 +410,22 @@ class _Fighter extends PositionComponent {
   double _downLeft = 0;
   late final double _baseY = position.y;
 
-  void flash() => _flashLeft = flashSeconds;
+  double _flashTotal = 0;
+  bool _flashBlink = false;
+
+  void flash([double? seconds, bool blink = false]) {
+    final length = seconds ?? flashSeconds;
+    // A short flash never cuts a longer one (the kick's) short.
+    if (length <= _flashLeft) return;
+    _flashLeft = length;
+    _flashTotal = length;
+    _flashBlink = blink;
+  }
+
+  /// Kick in progress (reaching, held, pulling back): taps do not interrupt it.
+  double _kickLeft = 0;
+  bool _kickRetracting = false;
+  double _glowTime = 0;
 
   /// Not drawn for [seconds] (the previous opponent is still falling).
   void hideFor(double seconds) => _hiddenLeft = seconds;
@@ -410,7 +436,24 @@ class _Fighter extends PositionComponent {
     if (_fallen) return;
     // Sheets without the kick row (placeholders) punch instead.
     final useKick = kick && sheet?.has('kick') == true;
-    _clips?.play(useKick ? 'kick' : 'attack');
+    if (useKick) {
+      // Reach, hold the leg out, then pull it back (see update).
+      _clips?.play('kick', then: null);
+      _kickLeft = animations.clips['kick']!.seconds + animations.kickHoldSeconds;
+      _kickRetracting = false;
+      _glowTime = 0;
+      return;
+    }
+    if (_kickLeft > 0) return;
+    _clips?.play('attack');
+  }
+
+  /// Back to idle after being knocked down / celebrating.
+  void getUp() {
+    _fallen = false;
+    _downLeft = 0;
+    _celebrateLeft = 0;
+    _clips?.play('idle');
   }
 
   void reactToHit() {
@@ -439,6 +482,21 @@ class _Fighter extends PositionComponent {
   void update(double dt) {
     _time += dt;
     if (_flashLeft > 0) _flashLeft = math.max(0, _flashLeft - dt);
+    if (_kickLeft > 0) {
+      _glowTime += dt;
+      _kickLeft -= dt;
+      if (_kickLeft <= 0) {
+        // Leg held long enough: pull it back (the clip plays in reverse).
+        if (!_kickRetracting) {
+          _kickRetracting = true;
+          _kickLeft = animations.clips['kick']!.seconds;
+          _clips?.play('kick', reverse: true);
+        } else {
+          _kickLeft = 0;
+          _kickRetracting = false;
+        }
+      }
+    }
     if (_hiddenLeft > 0) _hiddenLeft = math.max(0, _hiddenLeft - dt);
     final left = _removeLeft;
     if (left != null) {
@@ -469,6 +527,9 @@ class _Fighter extends PositionComponent {
     position.x = position.x.roundToDouble();
   }
 
+  bool _blinkOn(double t) =>
+      (t / animations.kickGlowBlinkSeconds).floor().isEven;
+
   @override
   void render(Canvas canvas) {
     if (_hiddenLeft > 0) return;
@@ -487,9 +548,15 @@ class _Fighter extends PositionComponent {
     final paint = Paint()
       ..isAntiAlias = false
       ..filterQuality = FilterQuality.none;
-    if (_flashLeft > 0) {
+    if (_flashLeft > 0 && (!_flashBlink || _blinkOn(_flashTotal - _flashLeft))) {
       paint.colorFilter = ColorFilter.mode(
         Palette.white.color,
+        BlendMode.srcATop,
+      );
+    } else if (_kickLeft > 0 && !_kickRetracting && _blinkOn(_glowTime)) {
+      // The kick glows: the fighter blinks to yellow while the leg is out.
+      paint.colorFilter = ColorFilter.mode(
+        Palette.sunYellow.color,
         BlendMode.srcATop,
       );
     }

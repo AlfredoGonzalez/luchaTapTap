@@ -11,6 +11,7 @@ class ClipPlayer {
   double _time = 0;
   String? _after = 'idle';
   bool _finished = false;
+  bool _reverse = false;
 
   /// Name of the clip being played.
   String get clip => _clip;
@@ -24,13 +25,16 @@ class ClipPlayer {
   int get frame {
     final c = config.clips[_clip]!;
     final index = (_time * c.fps).floor();
-    return c.loop ? index % c.frames : index.clamp(0, c.frames - 1);
+    final shown = c.loop ? index % c.frames : index.clamp(0, c.frames - 1);
+    return _reverse ? c.frames - 1 - shown : shown;
   }
 
   /// Starts [name] from its first frame. When it ends (clips that do not loop)
   /// the player goes to [then]; null holds the last frame.
-  void play(String name, {String? then = 'idle'}) {
+  /// [reverse] plays the frames from last to first (a pulled-back leg).
+  void play(String name, {String? then = 'idle', bool reverse = false}) {
     _clip = name;
+    _reverse = reverse;
     _after = then;
     _time = 0;
     _finished = false;

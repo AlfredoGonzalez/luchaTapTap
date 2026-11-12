@@ -161,6 +161,9 @@
     "victorySeconds": 1.5,
     "defeatedHoldSeconds": 0.2,
     "playerDownSeconds": 1.2,
+    "kickHoldSeconds": 2,
+    "kickGlowBlinkSeconds": 0.12,
+    "kickEnemyFlashSeconds": 0.5,
     "skillClips": {
       "plancha": {
         "frames": 8,
