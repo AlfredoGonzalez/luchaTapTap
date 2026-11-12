@@ -2,8 +2,10 @@ import 'dart:typed_data';
 import 'dart:ui' show PointMode;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/palette.dart';
+import '../services/game_controller.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
 import 'pixel_icons.dart';
@@ -341,39 +343,71 @@ class PixelDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
-    return Stack(
-      children: [
-        const CheckerOverlay(),
-        Center(
-          child: SizedBox(
-            width: scale.px(150),
-            child: PixelPanel(
-              padding: 6,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PixelText(
-                    title,
-                    size: _titleSize(title),
-                    align: TextAlign.center,
-                    wrap: true,
-                    color: Palette.sunYellow.color,
-                    shadow: Palette.ink.color,
-                  ),
-                  SizedBox(height: scale.px(6)),
-                  ...body,
-                  SizedBox(height: scale.px(6)),
-                  for (var i = 0; i < actions.length; i++) ...[
-                    if (i > 0) SizedBox(height: scale.px(4)),
-                    actions[i],
+    return _PopupSounds(
+      child: Stack(
+        children: [
+          const CheckerOverlay(),
+          Center(
+            child: SizedBox(
+              width: scale.px(150),
+              child: PixelPanel(
+                padding: 6,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PixelText(
+                      title,
+                      size: _titleSize(title),
+                      align: TextAlign.center,
+                      wrap: true,
+                      color: Palette.sunYellow.color,
+                      shadow: Palette.ink.color,
+                    ),
+                    SizedBox(height: scale.px(6)),
+                    ...body,
+                    SizedBox(height: scale.px(6)),
+                    for (var i = 0; i < actions.length; i++) ...[
+                      if (i > 0) SizedBox(height: scale.px(4)),
+                      actions[i],
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+/// Plays the pop-up open/close effects for as long as a dialog is mounted.
+class _PopupSounds extends ConsumerStatefulWidget {
+  const _PopupSounds({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_PopupSounds> createState() => _PopupSoundsState();
+}
+
+class _PopupSoundsState extends ConsumerState<_PopupSounds> {
+  late final GameController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ref.read(gameControllerProvider.notifier);
+    _controller.popupSound(open: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.popupSound(open: false);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

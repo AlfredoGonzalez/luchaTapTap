@@ -90,6 +90,19 @@
       12
     ]
   },
+  "audio": {
+    "master": 0.8,
+    "music": 0.5,
+    "sfx": 1
+  },
+  "haptics": {
+    "tap": "light",
+    "crit": "medium",
+    "finisher": "heavy",
+    "buy": "selection",
+    "bossIntro": "heavy",
+    "victory": "medium"
+  },
   "ui": {
     "splashSeconds": 2,
     "loadingSeconds": 1.5,

@@ -36,6 +36,8 @@ class Balance {
     required this.ui,
     required this.gesture,
     required this.milestones,
+    required this.audio,
+    required this.haptics,
   });
 
   static const int schemaVersion = 1;
@@ -98,6 +100,12 @@ class Balance {
       debug: DebugConfig.fromReader(r.object('debug')),
       ui: UiConfig.fromReader(r.object('ui')),
       gesture: GestureConfig.fromReader(r.object('gesture')),
+      audio: r.has('audio')
+          ? AudioConfig.fromReader(r.object('audio'))
+          : const AudioConfig(master: 1, music: 1, sfx: 1),
+      haptics: r.has('haptics')
+          ? HapticsConfig.fromReader(r.object('haptics'))
+          : const HapticsConfig({}),
       milestones: r.has('milestones')
           ? MilestoneConfig.fromReader(r.object('milestones'))
           : const MilestoneConfig(levels: [], multiplier: 1),
@@ -160,7 +168,71 @@ class Balance {
 
   /// Level milestones of upgrades and trainers (the GDD's "milestone levels").
   final MilestoneConfig milestones;
+
+  /// Volume levels (0 to 1) of the audio mix.
+  final AudioConfig audio;
+
+  /// Which vibration each event gives.
+  final HapticsConfig haptics;
 }
+
+/// Volume mix. The player's own switches in Ajustes turn music and effects on
+/// or off; these set how loud each group is when on.
+class AudioConfig {
+  const AudioConfig({
+    required this.master,
+    required this.music,
+    required this.sfx,
+  });
+
+  factory AudioConfig.fromReader(JsonReader r) => AudioConfig(
+    master: r.number('master', min: 0),
+    music: r.number('music', min: 0),
+    sfx: r.number('sfx', min: 0),
+  );
+
+  final double master;
+  final double music;
+  final double sfx;
+}
+
+/// Vibration strength per event: one of none, selection, light, medium, heavy.
+class HapticsConfig {
+  const HapticsConfig(this.byEvent);
+
+  /// The events that can vibrate.
+  static const List<String> events = [
+    'tap',
+    'crit',
+    'finisher',
+    'buy',
+    'bossIntro',
+    'victory',
+  ];
+
+  factory HapticsConfig.fromReader(JsonReader r) {
+    final result = <String, HapticKind>{};
+    for (final event in events) {
+      if (!r.has(event)) continue;
+      final name = r.string(event);
+      final kind = HapticKind.values.where((k) => k.name == name).firstOrNull;
+      if (kind == null) {
+        throw ContentException(
+          'balance.json: haptics.$event must be one of '
+          '${HapticKind.values.map((k) => k.name).join(', ')}',
+        );
+      }
+      result[event] = kind;
+    }
+    return HapticsConfig(result);
+  }
+
+  final Map<String, HapticKind> byEvent;
+
+  HapticKind of(String event) => byEvent[event] ?? HapticKind.none;
+}
+
+enum HapticKind { none, selection, light, medium, heavy }
 
 /// Every time an upgrade or trainer reaches one of [levels], its output is
 /// multiplied by [multiplier]. This is what lets damage keep up with the

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +15,9 @@ import '../core/save_codec.dart';
 import '../data/content_bundle.dart';
 import '../data/content_models.dart';
 import 'ad_service.dart';
+import 'audio_service.dart';
 import 'billing_service.dart';
+import 'haptics_service.dart';
 import 'save_store.dart';
 import 'strings.dart';
 
@@ -110,6 +111,16 @@ class AppSettings {
   };
 }
 
+/// Sound output. The app overrides this with real playback; tests use the
+/// silent or recording service.
+final audioServiceProvider = Provider<AudioService>(
+  (ref) => SilentAudioService(),
+);
+
+final hapticsServiceProvider = Provider<HapticsService>(
+  (ref) => SystemHapticsService(),
+);
+
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(
   SettingsNotifier.new,
 );
@@ -121,7 +132,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void toggle(String name) {
     state = state.toggled(name);
-    ref.read(gameControllerProvider.notifier).saveNow();
+    final controller = ref.read(gameControllerProvider.notifier);
+    controller.syncAudio();
+    controller.saveNow();
   }
 
   void reset() => state = const AppSettings();
@@ -259,6 +272,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       gestureTrail.dispose();
       gestureCircles.dispose();
     });
+    // Start the music once the providers are ready.
+    Future.microtask(syncAudio);
     return _engine.state;
   }
 
@@ -266,6 +281,10 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // Time
 
   void _onPoll() {
+    if (!ref.mounted) {
+      _timer?.cancel();
+      return;
+    }
     final now = _clock.elapsed;
     if (!_active) {
       _lastElapsed = now;
@@ -283,12 +302,14 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     var damage = Big.zero;
     var defeated = false;
     var timedOut = false;
+    final wasBoss = _engine.isBossFight;
     for (var i = 0; i < ticks; i++) {
       final outcome = _engine.tick();
       damage += outcome.damageDealt;
       defeated = defeated || outcome.defeats > 0;
       timedOut = timedOut || outcome.bossTimedOut;
     }
+    if (defeated && wasBoss) _afterBossWin();
     _publish();
     if (!damage.isZero) {
       _hits.add(HitEvent(damage: damage, isTap: false, defeated: defeated));
@@ -296,7 +317,10 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     if (timedOut) ref.read(noticeProvider.notifier).show('boss_failed');
   }
 
-  void _publish() => state = _engine.state;
+  void _publish() {
+    state = _engine.state;
+    syncAudio();
+  }
 
   double _seconds(Duration d) => d.inMicroseconds / Duration.microsecondsPerSecond;
 
@@ -348,6 +372,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       case GestureStatus.failed:
         _resetGesture();
         _engine.failFinisher();
+        _sfx(Sfx.error);
         _publish();
         ref.read(noticeProvider.notifier).show('gesture_failed');
       case GestureStatus.drawing:
@@ -378,6 +403,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   void onBackground() {
     if (!_active) return;
     _active = false;
+    ref.read(audioServiceProvider).pause();
     _backgroundAt = clock.now().toUtc();
     saveNow();
   }
@@ -389,6 +415,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _backgroundAt = null;
     _lastElapsed = _clock.elapsed;
     _active = true;
+    ref.read(audioServiceProvider).resume();
     if (left == null) return;
     _engine.applyOffline(clock.now().toUtc().difference(left));
     _publish();
@@ -420,14 +447,68 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   // Player actions
 
-  void _haptic() {
-    if (ref.read(settingsProvider).vibration) HapticFeedback.lightImpact();
+  // Sound, music and vibration -------------------------------------------
+
+  void _sfx(Sfx sfx) {
+    if (!ref.read(settingsProvider).sound) return;
+    final audio = ref.read(contentProvider).balance.audio;
+    ref
+        .read(audioServiceProvider)
+        .playSfx(sfx, volume: (audio.master * audio.sfx).clamp(0.0, 1.0));
+  }
+
+  void _buzz(String event) {
+    if (!ref.read(settingsProvider).vibration) return;
+    final kind = ref.read(contentProvider).balance.haptics.of(event);
+    ref.read(hapticsServiceProvider).perform(kind);
+  }
+
+  MusicTrack? _musicNow;
+  double _musicVolumeNow = -1;
+
+  /// Plays the music that fits the screen (boss music during a boss fight) at
+  /// the volume the settings allow. Called after every state change; the audio
+  /// service is only touched when something actually changed.
+  void syncAudio() {
+    final audio = ref.read(audioServiceProvider);
+    final settings = ref.read(settingsProvider);
+    if (!settings.music) {
+      if (_musicNow != null) audio.stopMusic();
+      _musicNow = null;
+      _musicVolumeNow = -1;
+      return;
+    }
+    final levels = ref.read(contentProvider).balance.audio;
+    final volume = (levels.master * levels.music).clamp(0.0, 1.0);
+    final track = _engine.isBossFight ? MusicTrack.boss : MusicTrack.main;
+    if (track == _musicNow && volume == _musicVolumeNow) return;
+    _musicNow = track;
+    _musicVolumeNow = volume;
+    audio.playMusic(track, volume: volume);
+  }
+
+  /// Pop-ups play a small sound when they open and close.
+  void popupSound({required bool open}) =>
+      _sfx(open ? Sfx.popupOpen : Sfx.popupClose);
+
+  void _afterDefeat({required bool wasBoss}) =>
+      wasBoss ? _afterBossWin() : _sfx(Sfx.hit);
+
+  void _afterBossWin() {
+    _sfx(Sfx.victory);
+    _buzz('victory');
   }
 
   void tap() {
+    final wasBoss = _engine.isBossFight;
     final outcome = _engine.tap();
     if (outcome.damageDealt.isZero) return; // the boss intro is showing
-    _haptic();
+    if (outcome.defeats > 0) {
+      _afterDefeat(wasBoss: wasBoss);
+    } else {
+      _sfx(outcome.isCrit ? Sfx.crit : Sfx.tap);
+    }
+    _buzz(outcome.isCrit ? 'crit' : 'tap');
     _publish();
     _hits.add(
       HitEvent(
@@ -440,9 +521,12 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   }
 
   void finisher() {
+    final wasBoss = _engine.isBossFight;
     final outcome = _engine.finisher();
     if (outcome == null) return;
-    _haptic();
+    _sfx(Sfx.finisher);
+    _buzz('finisher');
+    if (outcome.defeats > 0) _afterDefeat(wasBoss: wasBoss);
     _publish();
     _hits.add(
       HitEvent(
@@ -454,27 +538,40 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     );
   }
 
+  void _afterBuy(BuyQuote quote) {
+    if (quote.canBuy) {
+      _publish();
+      _sfx(Sfx.buy);
+      _buzz('buy');
+    } else {
+      _sfx(Sfx.error);
+    }
+  }
+
   BuyQuote buyUpgrade(String id) {
     final quote = _engine.buyUpgrade(id, ref.read(buyAmountProvider));
-    if (quote.canBuy) _publish();
+    _afterBuy(quote);
     return quote;
   }
 
   BuyQuote buyTrainer(String id) {
     final quote = _engine.buyTrainer(id, ref.read(buyAmountProvider));
-    if (quote.canBuy) _publish();
+    _afterBuy(quote);
     return quote;
   }
 
   BuyQuote buySkill(String id) {
     final quote = _engine.buySkill(id);
-    if (quote.canBuy) _publish();
+    _afterBuy(quote);
     return quote;
   }
 
   void useSkill(String id) {
+    final wasBoss = _engine.isBossFight;
     final result = _engine.useSkill(id);
     if (!result.ok) return;
+    _sfx(Sfx.crit);
+    if (result.outcome.defeats > 0) _afterDefeat(wasBoss: wasBoss);
     _publish();
     if (result.outcome.damageDealt > Big.zero) {
       _hits.add(
@@ -496,7 +593,10 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   /// "¡JEFE!": leave the farming fight for the boss (its intro shows).
   void challengeBoss() {
-    if (_engine.challengeBoss()) _publish();
+    if (!_engine.challengeBoss()) return;
+    _sfx(Sfx.bossIntro);
+    _buzz('bossIntro');
+    _publish();
   }
 
   /// "Volver" on the boss intro: back to the farming fight.
@@ -510,13 +610,13 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   BuyQuote buyTalent(String id) {
     final quote = _engine.buyTalent(id);
-    if (quote.canBuy) _publish();
+    _afterBuy(quote);
     return quote;
   }
 
   BuyQuote buyMask(String id) {
     final quote = _engine.buyMask(id);
-    if (quote.canBuy) _publish();
+    _afterBuy(quote);
     return quote;
   }
 

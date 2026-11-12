@@ -9,6 +9,7 @@ import 'app.dart';
 import 'data/content_exception.dart';
 import 'core/save_codec.dart';
 import 'data/content_loader.dart';
+import 'services/audio_service.dart';
 import 'services/game_controller.dart';
 import 'services/prefs_save_store.dart';
 import 'services/save_store.dart';
@@ -30,6 +31,8 @@ Future<void> main() async {
             directory: await getApplicationDocumentsDirectory(),
             codec: codec,
           );
+    final audio = FlameAudioService();
+    await audio.preload();
     final loaded = await store.load();
     if (loaded.error != null) {
       // A damaged main save falls back to the backup; report it for debugging.
@@ -41,6 +44,7 @@ Future<void> main() async {
           contentProvider.overrideWithValue(content),
           saveStoreProvider.overrideWithValue(store),
           initialSaveProvider.overrideWithValue(loaded.data),
+          audioServiceProvider.overrideWithValue(audio),
         ],
         child: const LuchaTapApp(),
       ),

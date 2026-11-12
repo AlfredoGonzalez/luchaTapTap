@@ -13,10 +13,11 @@
       "title": "MÚSICA",
       "lines": [
         {
-          "text": "[Pista] · [Autor]"
+          "text": "Pistas provisionales",
+          "license": "CC0"
         },
         {
-          "text": "CC0 / CC-BY"
+          "text": "Hechas para el juego"
         }
       ]
     },
@@ -24,10 +25,11 @@
       "title": "EFECTOS",
       "lines": [
         {
-          "text": "[Paquete] · [Autor]"
+          "text": "Efectos provisionales",
+          "license": "CC0"
         },
         {
-          "text": "CC0 / CC-BY"
+          "text": "Hechos para el juego"
         }
       ]
     },
