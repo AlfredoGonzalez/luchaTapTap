@@ -9,10 +9,12 @@ import 'app.dart';
 import 'data/content_exception.dart';
 import 'core/save_codec.dart';
 import 'data/content_loader.dart';
+import 'game/sprite_library.dart';
 import 'services/audio_service.dart';
 import 'services/game_controller.dart';
 import 'services/prefs_save_store.dart';
 import 'services/save_store.dart';
+import 'ui/ui_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +33,7 @@ Future<void> main() async {
             directory: await getApplicationDocumentsDirectory(),
             codec: codec,
           );
+    final sprites = await SpriteLibrary.load(content);
     final audio = FlameAudioService();
     await audio.preload();
     final loaded = await store.load();
@@ -45,6 +48,7 @@ Future<void> main() async {
           saveStoreProvider.overrideWithValue(store),
           initialSaveProvider.overrideWithValue(loaded.data),
           audioServiceProvider.overrideWithValue(audio),
+          spriteLibraryProvider.overrideWithValue(sprites),
         ],
         child: const LuchaTapApp(),
       ),

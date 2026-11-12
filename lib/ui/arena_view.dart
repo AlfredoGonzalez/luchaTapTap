@@ -8,6 +8,7 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../game/arena_game.dart';
 import '../services/game_controller.dart';
+import 'ui_state.dart';
 
 /// Hosts the Flame arena. The whole arena is the tap area.
 class ArenaView extends ConsumerStatefulWidget {
@@ -25,6 +26,10 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   late final ArenaGame _game;
   StreamSubscription<HitEvent>? _hits;
 
+  /// The fight number changed since the last hit event (that case already
+  /// handled the defeat animation).
+  bool _fightChanged = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,17 +41,38 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       onTap: controller.tap,
       onLuckyTap: controller.collectLucky,
       opponent: controller.engine.opponent,
+      animations: content.balance.animations,
+      sprites: ref.read(spriteLibraryProvider),
+      playerMaskId: controller.engine.equippedMaskDef?.id,
       playerMaskColor: _maskColor(controller),
     );
-    _hits = controller.hits.listen(
-      (e) => _game.hit(formatBig(e.damage), isTap: e.isTap, isBig: e.isBig),
-    );
+    _hits = controller.hits.listen((e) {
+      if (e.isTap) _game.playerAttack();
+      _game.hit(formatBig(e.damage), isTap: e.isTap, isBig: e.isBig);
+      // The fight before a boss repeats with the same number: the opponent
+      // still falls and a new one steps in.
+      if (e.defeated && !_fightChanged) {
+        _game.showOpponent(controller.engine.opponent, defeated: true);
+      }
+      _fightChanged = false;
+    });
     ref.listenManual(gameControllerProvider, (previous, next) {
-      if (previous?.fightNumber != next.fightNumber) {
+      if (previous != null && previous.fightNumber != next.fightNumber) {
+        // Moving forward means the opponent was beaten; a boss win also makes
+        // the player celebrate. Going back (boss gate, prestige) is not a win.
+        _fightChanged = true;
+        final won = next.fightNumber > previous.fightNumber;
+        final bossFell = won && content.fightInfo(previous.fightNumber).isBoss;
+        _game.showOpponent(controller.engine.opponent, defeated: won);
+        if (bossFell) _game.playerVictory();
+      } else if (previous == null) {
         _game.showOpponent(controller.engine.opponent);
       }
       if (previous?.equippedMask != next.equippedMask) {
-        _game.setPlayerMask(_maskColor(controller));
+        _game.setPlayerMask(
+          controller.engine.equippedMaskDef?.id,
+          _maskColor(controller),
+        );
       }
       final lucky = next.lucky;
       _game.setLucky(

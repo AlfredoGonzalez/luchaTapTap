@@ -64,6 +64,8 @@ flutter:
   assets:
     - assets/data/
     - assets/audio/
+    - assets/sprites/
+    - assets/sprites/placeholder/
     - assets/fonts/PressStart2P-OFL.txt
 
   fonts:

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../game/sprite_library.dart';
+
 /// App flow: studio splash, loading screen, then the game.
 enum AppStage { splash, loading, game }
 
@@ -68,3 +70,9 @@ class SelectionNotifier extends Notifier<String?> {
 
   void select(String id) => state = id;
 }
+
+/// Decoded sprite sheets. Empty until `main` loads them, so tests and builds
+/// without art draw the placeholder rectangles.
+final spriteLibraryProvider = Provider<SpriteLibrary>(
+  (ref) => SpriteLibrary.empty(),
+);

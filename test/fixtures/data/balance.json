@@ -109,5 +109,43 @@
     "maxLoopAspect": 2.2,
     "closeFraction": 0.8,
     "minArcDegrees": 120
+  },
+  "animations": {
+    "order": [
+      "idle",
+      "attack",
+      "hit",
+      "defeated",
+      "victory"
+    ],
+    "clips": {
+      "idle": {
+        "frames": 4,
+        "fps": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": 3,
+        "fps": 12,
+        "loop": false
+      },
+      "hit": {
+        "frames": 2,
+        "fps": 12,
+        "loop": false
+      },
+      "defeated": {
+        "frames": 3,
+        "fps": 10,
+        "loop": false
+      },
+      "victory": {
+        "frames": 2,
+        "fps": 4,
+        "loop": true
+      }
+    },
+    "victorySeconds": 1.5,
+    "defeatedHoldSeconds": 0.2
   }
 }

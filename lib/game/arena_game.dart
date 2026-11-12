@@ -11,7 +11,9 @@ import '../core/palette.dart';
 import '../data/balance.dart';
 import '../data/content_models.dart';
 import '../ui/palette_color.dart';
+import 'clip_player.dart';
 import 'fighter_shape.dart';
+import 'sprite_library.dart';
 
 /// Placeholder arena: flat rectangles in palette colors. Final sprites replace
 /// the fighters later without changing this game's API.
@@ -24,8 +26,19 @@ class ArenaGame extends FlameGame {
     required this.onTap,
     required this.onLuckyTap,
     required this.opponent,
+    required this.animations,
+    SpriteLibrary? sprites,
+    this.playerMaskId,
     this.playerMaskColor = Palette.violet,
-  });
+  }) : sprites = sprites ?? SpriteLibrary.empty();
+
+  final AnimationConfig animations;
+
+  /// Sprite sheets; fighters without one are drawn as placeholder rectangles.
+  final SpriteLibrary sprites;
+
+  /// Equipped mask (selects the recolored player sheet); null = none.
+  String? playerMaskId;
 
   final Vector2 virtualSize;
   final FxConfig fx;
@@ -68,6 +81,8 @@ class ArenaGame extends FlameGame {
     spriteSize: regularSpriteSize,
     idleFps: fx.idleFps,
     flashSeconds: fx.hitFlashSeconds,
+    sheet: sprites.player(playerMaskId),
+    animations: animations,
   )..position = Vector2(_sideMargin, _floorY - regularSpriteSize);
 
   _Fighter _buildEnemy(OpponentDef o) {
@@ -78,26 +93,52 @@ class ArenaGame extends FlameGame {
       spriteSize: o.size,
       idleFps: fx.idleFps,
       flashSeconds: fx.hitFlashSeconds,
+      sheet: sprites.opponent(o.sprite),
+      animations: animations,
+      faceLeft: true, // sheets are drawn facing right
     )..position = Vector2(virtualSize.x - _sideMargin - size, _floorY - size);
   }
 
-  /// Shows a new opponent (after a defeat).
-  void showOpponent(OpponentDef next) {
+  /// Shows a new opponent. When the previous one was [defeated] it falls first
+  /// (the defeated clip) and the next one steps in after a short pause.
+  void showOpponent(OpponentDef next, {bool defeated = false}) {
     opponent = next;
     if (!isLoaded) return;
-    _enemy.removeFromParent();
-    _enemy = _buildEnemy(next);
+    final old = _enemy;
+    var delay = 0.0;
+    if (defeated && old.hasSprite) {
+      old.fall();
+      delay =
+          animations.clips['defeated']!.seconds +
+          animations.defeatedHoldSeconds;
+      old.removeAfter(delay);
+    } else {
+      old.removeFromParent();
+    }
+    _enemy = _buildEnemy(next)..hideFor(delay);
     world.add(_enemy);
   }
 
-  /// Shows the equipped mask's color on the player's head.
-  void setPlayerMask(int color) {
+  /// Shows the equipped mask on the player: the recolored sheet, or the head
+  /// color of the placeholder.
+  void setPlayerMask(String? maskId, int color) {
+    playerMaskId = maskId;
     playerMaskColor = color;
     if (!isLoaded) return;
     final position = _player.position.clone();
     _player.removeFromParent();
     _player = _buildPlayer()..position = position;
     world.add(_player);
+  }
+
+  /// The player throws a punch.
+  void playerAttack() {
+    if (isLoaded) _player.punch();
+  }
+
+  /// The player celebrates (a boss fell) for the time set in the data.
+  void playerVictory() {
+    if (isLoaded) _player.celebrate(animations.victorySeconds);
   }
 
   /// Shows (or removes) the lucky pickup at a fractional position.
@@ -125,6 +166,7 @@ class ArenaGame extends FlameGame {
   void hit(String damageText, {required bool isTap, bool isBig = false}) {
     if (!isLoaded) return;
     _enemy.flash();
+    _enemy.reactToHit();
     if (!isTap) return;
     final jitter = fx.damageNumberJitterPx;
     final offset = jitter == 0
@@ -180,7 +222,8 @@ class _ArenaBackdrop extends PositionComponent {
   }
 }
 
-/// A placeholder wrestler: body block, head block, 1-pixel Ink outline.
+/// A wrestler: animated from its sprite sheet when there is one, otherwise
+/// the placeholder (body block, head block, 1-pixel Ink outline).
 class _Fighter extends PositionComponent {
   _Fighter({
     required this.bodyColor,
@@ -188,39 +231,124 @@ class _Fighter extends PositionComponent {
     required int spriteSize,
     required this.idleFps,
     required this.flashSeconds,
-  }) : super(size: Vector2.all(spriteSize.toDouble()));
+    required this.animations,
+    this.sheet,
+    this.faceLeft = false,
+  }) : super(size: Vector2.all(spriteSize.toDouble())) {
+    if (sheet != null) _clips = ClipPlayer(animations);
+  }
 
   final int bodyColor;
   final int accentColor;
   final int idleFps;
   final double flashSeconds;
+  final AnimationConfig animations;
+  final SpriteSheet? sheet;
+  final bool faceLeft;
+  ClipPlayer? _clips;
 
-  /// Idle bob: body drops 1 pixel on the middle frames, like the 4-frame idle.
+  bool get hasSprite => sheet != null;
+
+  /// Idle bob of the placeholder: body drops 1 pixel on the middle frames.
   static const List<int> _idleBob = [0, 1, 1, 0];
 
   double _time = 0;
   double _flashLeft = 0;
+  double _hiddenLeft = 0;
+  double _celebrateLeft = 0;
+  double? _removeLeft;
+  bool _fallen = false;
   late final double _baseY = position.y;
 
   void flash() => _flashLeft = flashSeconds;
+
+  /// Not drawn for [seconds] (the previous opponent is still falling).
+  void hideFor(double seconds) => _hiddenLeft = seconds;
+
+  void removeAfter(double seconds) => _removeLeft = seconds;
+
+  void punch() {
+    if (!_fallen) _clips?.play('attack');
+  }
+
+  void reactToHit() {
+    if (!_fallen && _celebrateLeft == 0) _clips?.play('hit');
+  }
+
+  void fall() {
+    _fallen = true;
+    _clips?.play('defeated', then: null);
+  }
+
+  void celebrate(double seconds) {
+    _celebrateLeft = seconds;
+    _clips?.play('victory', then: null);
+  }
 
   @override
   void update(double dt) {
     _time += dt;
     if (_flashLeft > 0) _flashLeft = math.max(0, _flashLeft - dt);
-    final frame = (_time * idleFps).floor() % _idleBob.length;
-    position.y = (_baseY + _idleBob[frame]).roundToDouble();
+    if (_hiddenLeft > 0) _hiddenLeft = math.max(0, _hiddenLeft - dt);
+    final left = _removeLeft;
+    if (left != null) {
+      _removeLeft = left - dt;
+      if (_removeLeft! <= 0) {
+        removeFromParent();
+        return;
+      }
+    }
+    if (_celebrateLeft > 0) {
+      _celebrateLeft = math.max(0, _celebrateLeft - dt);
+      if (_celebrateLeft == 0) _clips?.play('idle');
+    }
+    final clips = _clips;
+    if (clips != null) {
+      clips.update(dt);
+    } else {
+      final frame = (_time * idleFps).floor() % _idleBob.length;
+      position.y = (_baseY + _idleBob[frame]).roundToDouble();
+    }
     position.x = position.x.roundToDouble();
   }
 
   @override
-  void render(Canvas canvas) => paintFighter(
-    canvas,
-    Size(size.x, size.y),
-    bodyColor: bodyColor,
-    accentColor: accentColor,
-    flashing: _flashLeft > 0,
-  );
+  void render(Canvas canvas) {
+    if (_hiddenLeft > 0) return;
+    final sheet = this.sheet;
+    final clips = _clips;
+    if (sheet == null || clips == null) {
+      paintFighter(
+        canvas,
+        Size(size.x, size.y),
+        bodyColor: bodyColor,
+        accentColor: accentColor,
+        flashing: _flashLeft > 0,
+      );
+      return;
+    }
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..filterQuality = FilterQuality.none;
+    if (_flashLeft > 0) {
+      paint.colorFilter = ColorFilter.mode(
+        Palette.white.color,
+        BlendMode.srcATop,
+      );
+    }
+    canvas.save();
+    if (faceLeft) {
+      canvas.translate(size.x, 0);
+      canvas.scale(-1, 1);
+    }
+    canvas.drawImageRect(
+      sheet.image,
+      sheet.frameRect(clips.clip, clips.frame),
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      paint,
+    );
+    canvas.restore();
+  }
 }
 
 class _TapArea extends PositionComponent with TapCallbacks {

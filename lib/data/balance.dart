@@ -36,6 +36,7 @@ class Balance {
     required this.ui,
     required this.gesture,
     required this.milestones,
+    required this.animations,
     required this.audio,
     required this.haptics,
   });
@@ -100,6 +101,7 @@ class Balance {
       debug: DebugConfig.fromReader(r.object('debug')),
       ui: UiConfig.fromReader(r.object('ui')),
       gesture: GestureConfig.fromReader(r.object('gesture')),
+      animations: AnimationConfig.fromReader(r.object('animations')),
       audio: r.has('audio')
           ? AudioConfig.fromReader(r.object('audio'))
           : const AudioConfig(master: 1, music: 1, sfx: 1),
@@ -169,11 +171,92 @@ class Balance {
   /// Level milestones of upgrades and trainers (the GDD's "milestone levels").
   final MilestoneConfig milestones;
 
+  /// Sprite sheet layout and clip speeds.
+  final AnimationConfig animations;
+
   /// Volume levels (0 to 1) of the audio mix.
   final AudioConfig audio;
 
   /// Which vibration each event gives.
   final HapticsConfig haptics;
+}
+
+/// One animation clip of a fighter sprite sheet.
+class ClipConfig {
+  const ClipConfig({
+    required this.frames,
+    required this.fps,
+    required this.loop,
+  });
+
+  final int frames;
+  final double fps;
+  final bool loop;
+
+  double get seconds => frames / fps;
+}
+
+/// Layout of the sprite sheets (one row per clip, in [order]) and how fast each
+/// clip plays. Frame size is the sprite's size from the data.
+class AnimationConfig {
+  const AnimationConfig({
+    required this.order,
+    required this.clips,
+    required this.victorySeconds,
+    required this.defeatedHoldSeconds,
+  });
+
+  factory AnimationConfig.fromReader(JsonReader r) {
+    final order = r.strings('order');
+    final clipsReader = r.object('clips');
+    final clips = <String, ClipConfig>{};
+    for (final name in order) {
+      final c = clipsReader.object(name);
+      clips[name] = ClipConfig(
+        frames: c.integer('frames', min: 1),
+        fps: c.number('fps', min: 0, minExclusive: true),
+        loop: c.boolean('loop'),
+      );
+    }
+    for (final required in AnimationConfig.requiredClips) {
+      if (!clips.containsKey(required)) {
+        throw ContentException(
+          'balance.json: animations.order must include "$required"',
+        );
+      }
+    }
+    return AnimationConfig(
+      order: order,
+      clips: clips,
+      victorySeconds: r.number('victorySeconds', min: 0),
+      defeatedHoldSeconds: r.number('defeatedHoldSeconds', min: 0),
+    );
+  }
+
+  /// Clips the arena plays; the sheet must have a row for each.
+  static const List<String> requiredClips = [
+    'idle',
+    'attack',
+    'hit',
+    'defeated',
+    'victory',
+  ];
+
+  /// Clip names from the top row of a sheet down.
+  final List<String> order;
+  final Map<String, ClipConfig> clips;
+
+  /// How long the player celebrates after a boss falls.
+  final double victorySeconds;
+
+  /// How long a defeated opponent stays on the floor before the next arrives.
+  final double defeatedHoldSeconds;
+
+  int rowOf(String clip) => order.indexOf(clip);
+
+  /// Frames of the longest clip: the number of columns of a sheet.
+  int get columns =>
+      clips.values.map((c) => c.frames).reduce((a, b) => a > b ? a : b);
 }
 
 /// Volume mix. The player's own switches in Ajustes turn music and effects on
