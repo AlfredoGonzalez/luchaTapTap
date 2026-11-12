@@ -39,7 +39,31 @@ class ViewNotifier extends Notifier<GameView> {
 
 /// Pop-ups opened by the player (the offline earnings pop-up and the boss
 /// intro are driven by the game state instead).
-enum GameDialog { prestige, debug, privacy, deleteData }
+enum GameDialog { prestige, debug, privacy, deleteData, info }
+
+/// What the info pop-up explains: an upgrade or a trainer.
+enum InfoKind { upgrade, trainer }
+
+class InfoTarget {
+  const InfoTarget(this.kind, this.id);
+  final InfoKind kind;
+  final String id;
+}
+
+final infoTargetProvider = NotifierProvider<InfoTargetNotifier, InfoTarget?>(
+  InfoTargetNotifier.new,
+);
+
+class InfoTargetNotifier extends Notifier<InfoTarget?> {
+  @override
+  InfoTarget? build() => null;
+
+  /// Opens the info pop-up for [target].
+  void show(InfoTarget target) {
+    state = target;
+    ref.read(dialogProvider.notifier).open(GameDialog.info);
+  }
+}
 
 final dialogProvider = NotifierProvider<DialogNotifier, GameDialog?>(
   DialogNotifier.new,

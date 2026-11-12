@@ -7,7 +7,8 @@
       "portrait": "tr_don_chuy",
       "baseCost": 50,
       "baseDps": 1,
-      "unlockFight": 1
+      "unlockFight": 1,
+      "description": "Tu entrenador de siempre. Pelea solo: cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "chema_pesas",
@@ -15,7 +16,8 @@
       "portrait": "tr_chema_pesas",
       "baseCost": 1100,
       "baseDps": 20,
-      "unlockFight": 4
+      "unlockFight": 4,
+      "description": "Mucho músculo y poca paciencia. Cada nivel suma {d} de daño por segundo."
     }
   ]
 }

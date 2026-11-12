@@ -76,6 +76,8 @@ class ListRow extends StatelessWidget {
     this.onTap,
     this.height = rowHeight,
     this.progress,
+    this.onInfo,
+    this.infoLabel = '',
   });
 
   final String title;
@@ -94,6 +96,69 @@ class ListRow extends StatelessWidget {
   /// (progress to the next milestone).
   final double? progress;
 
+  /// Shows a small "i" on the icon; tapping the icon area calls this (the
+  /// touch area is 24 pixels wide). [infoLabel] is its accessibility label.
+  final VoidCallback? onInfo;
+  final String infoLabel;
+
+  Widget _iconArea(PixelScale scale) {
+    final art = SizedBox(
+      width: scale.px(16),
+      height: scale.px(16),
+      child:
+          iconWidget ??
+          (icon == null
+              ? ColoredBox(color: Palette.slate.color)
+              : PixelIcon(icon!, color: Palette.bone.color)),
+    );
+    if (onInfo == null) return art;
+    // 24 x 26 touch area with a tiny "i" badge in the corner of the icon.
+    return Semantics(
+      container: true,
+      button: true,
+      label: infoLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onInfo,
+        child: SizedBox(
+          width: scale.px(24),
+          height: scale.px(height),
+          child: Center(
+            child: SizedBox(
+              width: scale.px(18),
+              height: scale.px(18),
+              child: Stack(
+                children: [
+                  Positioned(left: 0, top: 0, child: art),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Palette.royal.color,
+                        border: Border.all(
+                          color: Palette.ink.color,
+                          width: scale.px(1),
+                        ),
+                      ),
+                      child: SizedBox(
+                        width: scale.px(10),
+                        height: scale.px(10),
+                        child: Center(
+                          child: PixelText('i', color: Palette.bone.color),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
@@ -109,16 +174,8 @@ class ListRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(width: scale.px(2)),
-            SizedBox(
-              width: scale.px(16),
-              height: scale.px(16),
-              child:
-                  iconWidget ??
-                  (icon == null
-                      ? ColoredBox(color: Palette.slate.color)
-                      : PixelIcon(icon!, color: Palette.bone.color)),
-            ),
-            SizedBox(width: scale.px(4)),
+            _iconArea(scale),
+            SizedBox(width: scale.px(onInfo == null ? 4 : 0)),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

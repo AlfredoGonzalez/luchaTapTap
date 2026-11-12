@@ -12,6 +12,7 @@ import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'rows.dart';
+import 'ui_state.dart';
 
 const double buySelectorHeight = 24;
 const double upgradesPanelHeight = 80;
@@ -102,6 +103,10 @@ class _UpgradeRow extends ConsumerWidget {
       value: level,
       child: ListRow(
         icon: PixelIcons.byKey(upgrade.icon),
+        onInfo: () => ref
+            .read(infoTargetProvider.notifier)
+            .show(InfoTarget(InfoKind.upgrade, upgrade.id)),
+        infoLabel: '${strings.t('info_open')} ${upgrade.name}',
         title: upgrade.name,
         subtitle: next == null
             ? strings.t('row_level_short', {'n': level})
@@ -135,6 +140,10 @@ class _TrainerRow extends ConsumerWidget {
     if (!unlocked) {
       return ListRow(
         icon: PixelIcons.locked,
+        onInfo: () => ref
+            .read(infoTargetProvider.notifier)
+            .show(InfoTarget(InfoKind.trainer, trainer.id)),
+        infoLabel: '${strings.t('info_open')} ${strings.t('row_locked')}',
         title: strings.t('row_locked'),
         subtitle: strings.t('row_mystery'),
         trailing: PixelButton(
@@ -151,6 +160,10 @@ class _TrainerRow extends ConsumerWidget {
       value: level,
       child: ListRow(
         icon: PixelIcons.byKey(trainer.portrait) ?? PixelIcons.trainer,
+        onInfo: () => ref
+            .read(infoTargetProvider.notifier)
+            .show(InfoTarget(InfoKind.trainer, trainer.id)),
+        infoLabel: '${strings.t('info_open')} ${trainer.name}',
         title: trainer.name,
         subtitle: level == 0
             ? strings.t('row_level_short', {'n': level})

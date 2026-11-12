@@ -34,7 +34,10 @@
     "hitFlashSeconds": 0.1,
     "damageNumberRisePx": 12,
     "damageNumberSeconds": 0.6,
-    "damageNumberJitterPx": 6
+    "damageNumberJitterPx": 6,
+    "idleNumberEverySeconds": 0.5,
+    "idleNumberColor": "fog",
+    "fadeSteps": 4
   },
   "combo": {
     "fillPerTap": 0.1,

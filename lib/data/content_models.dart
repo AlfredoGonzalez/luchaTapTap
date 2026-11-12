@@ -147,6 +147,7 @@ class TrainerDef {
     required this.baseCost,
     required this.baseDps,
     required this.unlockFight,
+    required this.description,
   });
 
   factory TrainerDef.fromReader(JsonReader r) => TrainerDef(
@@ -156,7 +157,11 @@ class TrainerDef {
     baseCost: r.number('baseCost', min: 0, minExclusive: true),
     baseDps: r.number('baseDps', min: 0, minExclusive: true),
     unlockFight: r.integer('unlockFight', min: 1),
+    description: r.string('description'),
   );
+
+  /// What it does, in Spanish; `{d}` is the damage per second per level.
+  final String description;
 
   final String id;
   final String name;
@@ -192,6 +197,7 @@ class UpgradeDef {
     required this.baseCost,
     required this.effect,
     required this.perLevelValue,
+    required this.description,
   });
 
   factory UpgradeDef.fromReader(JsonReader r) {
@@ -203,8 +209,12 @@ class UpgradeDef {
       baseCost: r.number('baseCost', min: 0, minExclusive: true),
       effect: UpgradeEffect.parse('upgrades.json', id, r.string('effect')),
       perLevelValue: r.number('perLevelValue', min: 0, minExclusive: true),
+      description: r.string('description'),
     );
   }
+
+  /// What it does, in Spanish; `{n}` is the value per level.
+  final String description;
 
   final String id;
   final String name;

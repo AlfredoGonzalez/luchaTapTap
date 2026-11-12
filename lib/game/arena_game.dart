@@ -192,22 +192,33 @@ class ArenaGame extends FlameGame {
     world.add(_lucky!);
   }
 
-  /// Reaction to a hit: flash the opponent and float the damage number.
-  /// [isBig] (critical hits, finishers) uses the large yellow number.
+  final math.Random _random = math.Random();
+
+  /// Reaction to a hit. A tap flashes the opponent white and floats the damage
+  /// number above it; [isBig] (critical hits, finishers) uses the large yellow
+  /// number. Damage from trainers ([isTap] false) does not flash: its number
+  /// rises from a random spot on the opponent in a quieter color and fades.
   void hit(String damageText, {required bool isTap, bool isBig = false}) {
     if (!isLoaded) return;
-    _enemy.flash();
-    _enemy.reactToHit();
-    if (!isTap) return;
-    final jitter = fx.damageNumberJitterPx;
-    final offset = jitter == 0
-        ? 0
-        : (_hitCount * 7) % (2 * jitter + 1) - jitter;
-    _hitCount++;
-    final spawn = Vector2(
-      _enemy.position.x + _enemy.size.x / 2 + offset,
-      _enemy.position.y - 2,
-    );
+    final Vector2 spawn;
+    if (isTap) {
+      _enemy.flash();
+      _enemy.reactToHit();
+      final jitter = fx.damageNumberJitterPx;
+      final offset = jitter == 0
+          ? 0
+          : (_hitCount * 7) % (2 * jitter + 1) - jitter;
+      _hitCount++;
+      spawn = Vector2(
+        _enemy.position.x + _enemy.size.x / 2 + offset,
+        _enemy.position.y - 2,
+      );
+    } else {
+      spawn = Vector2(
+        _enemy.position.x + _random.nextDouble() * _enemy.size.x,
+        _enemy.position.y + 8 + _random.nextDouble() * _enemy.size.y * 0.7,
+      );
+    }
     world.add(
       _DamageNumber(
         text: damageText,
@@ -215,6 +226,10 @@ class ArenaGame extends FlameGame {
         risePx: fx.damageNumberRisePx.toDouble(),
         seconds: fx.damageNumberSeconds,
         big: isBig,
+        color: isTap
+            ? (isBig ? Palette.sunYellow : Palette.bone)
+            : Palette.byId[fx.idleNumberColor]!,
+        fadeSteps: fx.fadeSteps,
       ),
     );
   }
@@ -528,27 +543,37 @@ class _DamageNumber extends TextComponent {
     required this.start,
     required this.risePx,
     required this.seconds,
+    required this.color,
+    required this.fadeSteps,
     this.big = false,
   }) : super(
          text: text,
          anchor: Anchor.bottomCenter,
-         textRenderer: TextPaint(
-           style: TextStyle(
-             color: (big ? Palette.sunYellow : Palette.bone).color,
-             fontSize: big ? 16 : 8,
-             height: 1,
-             shadows: [
-               Shadow(color: Palette.ink.color, offset: const Offset(1, 1)),
-             ],
-           ),
-         ),
+         textRenderer: _paint(color, big, 1),
        );
 
   final Vector2 start;
   final double risePx;
   final double seconds;
   final bool big;
+  final int color;
+  final int fadeSteps;
   double _age = 0;
+  int _step = 0;
+
+  static TextPaint _paint(int color, bool big, double opacity) => TextPaint(
+    style: TextStyle(
+      color: color.color.withValues(alpha: opacity),
+      fontSize: big ? 16 : 8,
+      height: 1,
+      shadows: [
+        Shadow(
+          color: Palette.ink.color.withValues(alpha: opacity),
+          offset: const Offset(1, 1),
+        ),
+      ],
+    ),
+  );
 
   @override
   void onMount() {
@@ -564,6 +589,13 @@ class _DamageNumber extends TextComponent {
     if (_age >= seconds) {
       removeFromParent();
       return;
+    }
+    // Fade out over the second half, in whole steps (no soft transparency).
+    final fade = ((_age / seconds - 0.5) * 2).clamp(0.0, 1.0);
+    final step = (fade * fadeSteps).floor();
+    if (step != _step) {
+      _step = step;
+      textRenderer = _paint(color, big, 1 - step / fadeSteps);
     }
     position = Vector2(
       start.x.roundToDouble(),

@@ -4,6 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/big.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../game/arena_game.dart';
@@ -35,6 +36,9 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   /// handled the defeat animation).
   bool _fightChanged = false;
 
+  Big _idleDamage = Big.zero;
+  final Stopwatch _idleWatch = Stopwatch()..start();
+
   @override
   void initState() {
     super.initState();
@@ -63,8 +67,21 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       playerMaskColor: _maskColor(controller),
     );
     _hits = controller.hits.listen((e) {
-      if (e.isTap) _game.playerAttack();
-      _game.hit(formatBig(e.damage), isTap: e.isTap, isBig: e.isBig);
+      if (e.isTap) {
+        _game.playerAttack();
+        _game.hit(formatBig(e.damage), isTap: true, isBig: e.isBig);
+      } else {
+        // Trainer damage arrives every tick: show it as one number per
+        // `idleNumberEverySeconds` with the total of that time.
+        _idleDamage += e.damage;
+        final every = content.balance.fx.idleNumberEverySeconds;
+        if (_idleWatch.elapsedMicroseconds >=
+            every * Duration.microsecondsPerSecond) {
+          _game.hit(formatBig(_idleDamage), isTap: false);
+          _idleDamage = Big.zero;
+          _idleWatch.reset();
+        }
+      }
       // The fight before a boss repeats with the same number: the opponent
       // still falls and a new one steps in.
       if (e.defeated && !_fightChanged) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/big.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
+import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import '../services/strings.dart';
 import 'palette_color.dart';
@@ -301,9 +302,9 @@ class DebugDialog extends ConsumerWidget {
       ),
     );
     Widget label(String key) => Padding(
-          padding: EdgeInsets.only(bottom: scale.px(2)),
-          child: PixelText(strings.t(key), color: Palette.fog.color),
-        );
+      padding: EdgeInsets.only(bottom: scale.px(2)),
+      child: PixelText(strings.t(key), color: Palette.fog.color),
+    );
     return PixelDialog(
       title: strings.t('debug_title'),
       body: [
@@ -311,7 +312,9 @@ class DebugDialog extends ConsumerWidget {
         row([
           for (final amount in debug.coinAmounts)
             PixelButton(
-              label: strings.t('debug_add_coins', {'n': formatBig(Big.fromDouble(amount))}),
+              label: strings.t('debug_add_coins', {
+                'n': formatBig(Big.fromDouble(amount)),
+              }),
               style: PixelButtonStyle.secondary,
               onPressed: () => controller.debugAddCoins(amount),
             ),
@@ -370,3 +373,79 @@ class DebugDialog extends ConsumerWidget {
 
 /// Whether the debug panel may be opened in this build.
 bool get debugToolsEnabled => kDebugMode;
+
+/// What an upgrade or trainer does, its level and its next milestone; for a
+/// locked trainer, how to unlock it. Opened with the "i" on the row.
+class InfoDialog extends ConsumerWidget {
+  const InfoDialog({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(stringsProvider);
+    final content = ref.watch(contentProvider);
+    final target = ref.watch(infoTargetProvider);
+    final engine = ref.read(gameControllerProvider.notifier).engine;
+    final milestones = content.balance.milestones;
+    final body = <Widget>[];
+    var title = '';
+
+    void line(String text, {Color? color}) {
+      body.add(PixelText(text, wrap: true, color: color));
+      body.add(const SizedBox(height: 4));
+    }
+
+    int levelAndMilestone(int level) {
+      line(
+        strings.t('info_level', {'n': level}),
+        color: Palette.sunYellow.color,
+      );
+      final next = milestones.nextAfter(level);
+      line(
+        next == null
+            ? strings.t('info_all_milestones')
+            : strings.t('info_next_milestone', {
+                'n': next,
+                'm': milestones.multiplier.round(),
+              }),
+        color: Palette.fog.color,
+      );
+      return level;
+    }
+
+    if (target != null && target.kind == InfoKind.upgrade) {
+      final u = content.upgrades.firstWhere((u) => u.id == target.id);
+      title = u.name;
+      final value = u.effect == UpgradeEffect.critChance
+          ? formatBigShort(Big.fromDouble(u.perLevelValue * 100))
+          : formatBigShort(Big.fromDouble(u.perLevelValue));
+      line(u.description.replaceAll('{n}', value));
+      levelAndMilestone(engine.state.upgradeLevel(u.id));
+    } else if (target != null) {
+      final t = content.trainers.firstWhere((t) => t.id == target.id);
+      if (!engine.isTrainerUnlocked(t)) {
+        title = strings.t('info_locked_title');
+        line(strings.t('info_locked', {'n': t.unlockFight}));
+      } else {
+        title = t.name;
+        line(
+          t.description.replaceAll(
+            '{d}',
+            formatBigShort(Big.fromDouble(t.baseDps)),
+          ),
+        );
+        levelAndMilestone(engine.state.trainerLevel(t.id));
+      }
+    }
+    return PixelDialog(
+      title: title,
+      body: body,
+      actions: [
+        PixelButton(
+          label: strings.t('info_close'),
+          style: PixelButtonStyle.secondary,
+          onPressed: () => ref.read(dialogProvider.notifier).close(),
+        ),
+      ],
+    );
+  }
+}

@@ -7,7 +7,8 @@
       "portrait": "tr_don_chuy",
       "baseCost": 450,
       "baseDps": 4.2,
-      "unlockFight": 1
+      "unlockFight": 1,
+      "description": "Tu entrenador de siempre. Pelea solo: cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "chema_pesas",
@@ -15,7 +16,8 @@
       "portrait": "tr_chema_pesas",
       "baseCost": 10000,
       "baseDps": 85,
-      "unlockFight": 4
+      "unlockFight": 4,
+      "description": "Mucho músculo y poca paciencia. Cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "la_licenciada",
@@ -23,7 +25,8 @@
       "portrait": "tr_la_licenciada",
       "baseCost": 100000000,
       "baseDps": 600000,
-      "unlockFight": 32
+      "unlockFight": 32,
+      "description": "La manager que consigue las peleas. Cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "las_porras",
@@ -31,7 +34,8 @@
       "portrait": "tr_las_porras",
       "baseCost": 10000000000,
       "baseDps": 50000000,
-      "unlockFight": 48
+      "unlockFight": 48,
+      "description": "El club de fans que no deja de gritar. Cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "tortilleria_el_puno",
@@ -39,7 +43,8 @@
       "portrait": "tr_tortilleria_el_puno",
       "baseCost": 1000000000000,
       "baseDps": 4000000000,
-      "unlockFight": 64
+      "unlockFight": 64,
+      "description": "Tu patrocinador: tortillas y puñetazos. Cada nivel suma {d} de daño por segundo."
     },
     {
       "id": "doctor_vendajes",
@@ -47,7 +52,8 @@
       "portrait": "tr_doctor_vendajes",
       "baseCost": 100000000000000,
       "baseDps": 300000000000,
-      "unlockFight": 80
+      "unlockFight": 80,
+      "description": "Te vende vendas y te cura a golpes. Cada nivel suma {d} de daño por segundo."
     }
   ]
 }

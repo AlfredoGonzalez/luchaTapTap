@@ -7,7 +7,8 @@
       "icon": "up_puno_duro",
       "baseCost": 72,
       "effect": "tapDamage",
-      "perLevelValue": 1
+      "perLevelValue": 1,
+      "description": "Entrena tus puños. Cada nivel suma {n} de daño a cada toque."
     },
     {
       "id": "golpe_certero",
@@ -15,7 +16,8 @@
       "icon": "up_golpe_certero",
       "baseCost": 150,
       "effect": "critChance",
-      "perLevelValue": 0.005
+      "perLevelValue": 0.005,
+      "description": "Aprende a ver el punto débil. Cada nivel suma {n}% de probabilidad de golpe crítico (pega el doble)."
     }
   ]
 }

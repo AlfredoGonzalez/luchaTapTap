@@ -166,6 +166,13 @@
     "combo_draw": "DIBUJA",
     "gesture_prompt": "¡DIBUJA!",
     "gesture_failed": "¡Falló el golpe!",
-    "boss_button": "¡JEFE!"
+    "boss_button": "¡JEFE!",
+    "info_level": "Nivel {n}",
+    "info_next_milestone": "Próximo hito: nivel {n}. Al llegar, lo que produce se multiplica por {m}.",
+    "info_all_milestones": "Ya pasaste todos los hitos.",
+    "info_locked": "Se desbloquea al llegar a la pelea {n}.",
+    "info_locked_title": "Bloqueado",
+    "info_close": "Cerrar",
+    "info_open": "Información"
   }
 }

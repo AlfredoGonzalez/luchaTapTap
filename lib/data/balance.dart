@@ -566,6 +566,9 @@ class FxConfig {
     required this.damageNumberRisePx,
     required this.damageNumberSeconds,
     required this.damageNumberJitterPx,
+    required this.idleNumberEverySeconds,
+    required this.idleNumberColor,
+    required this.fadeSteps,
   });
 
   factory FxConfig.fromReader(JsonReader r) => FxConfig(
@@ -578,6 +581,9 @@ class FxConfig {
       minExclusive: true,
     ),
     damageNumberJitterPx: r.integer('damageNumberJitterPx', min: 0),
+    idleNumberEverySeconds: r.number('idleNumberEverySeconds', min: 0, minExclusive: true),
+    idleNumberColor: r.string('idleNumberColor'),
+    fadeSteps: r.integer('fadeSteps', min: 1),
   );
 
   final int idleFps;
@@ -585,6 +591,14 @@ class FxConfig {
   final int damageNumberRisePx;
   final double damageNumberSeconds;
   final int damageNumberJitterPx;
+
+  /// Damage from trainers shows as one number every this many seconds (the
+  /// total of that time), in the palette color [idleNumberColor].
+  final double idleNumberEverySeconds;
+  final String idleNumberColor;
+
+  /// Floating numbers fade out in this many steps (no soft transparency).
+  final int fadeSteps;
 }
 
 /// Screen timings (splash, loading, flashes). Not balance, but tunable.

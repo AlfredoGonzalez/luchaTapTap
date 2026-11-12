@@ -228,6 +228,30 @@ void main() {
     });
   });
 
+  group('info buttons', () {
+    testWidgets('the "i" on an upgrade explains it and shows the next milestone', (tester) async {
+      await pumpApp(tester, edit: (f) => f['balance.json']!['milestones'] = {'levels': [10], 'multiplier': 2});
+      await tester.tap(buttonLabelled('Información Puño duro'));
+      await tester.pump(_short);
+      expect(find.textContaining('Cada nivel suma'), findsOneWidget);
+      expect(find.textContaining('Próximo hito'), findsOneWidget);
+      await tester.tap(buttonLabelled('Cerrar'));
+      await tester.pump(_short);
+      expect(find.textContaining('Cada nivel suma'), findsNothing);
+      await closeApp(tester);
+    });
+
+    testWidgets('a locked trainer says in which fight it unlocks', (tester) async {
+      await pumpApp(tester);
+      await tester.drag(find.text('Puño duro'), const Offset(0, -400));
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Información ???').first);
+      await tester.pump(_short);
+      expect(find.textContaining('Se desbloquea al llegar a la pelea'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
   group('fight screen', () {
     testWidgets('shows everything in Spanish', (tester) async {
       await pumpApp(tester);

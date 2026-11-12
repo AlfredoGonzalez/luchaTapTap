@@ -81,6 +81,7 @@ class GameScreen extends ConsumerWidget {
           if (dialog == GameDialog.prestige) const PrestigeDialog(),
           if (dialog == GameDialog.debug) const DebugDialog(),
           if (dialog == GameDialog.privacy) const PrivacyDialog(),
+          if (dialog == GameDialog.info) const InfoDialog(),
           if (dialog == GameDialog.deleteData) const DeleteDataDialog(),
           if (hasOffline) const OfflineDialog(),
           if (bossIntro) const BossIntro(),
