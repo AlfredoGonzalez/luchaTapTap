@@ -1,0 +1,36 @@
+name: Crear APK para probar
+
+# Se ejecuta a mano: GitHub > Actions > "Crear APK para probar" > Run workflow.
+# Deja el APK en Releases (etiqueta "apk-prueba") para bajarlo desde el celular.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Compilar APK
+        run: flutter build apk --release
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-prueba
+          name: APK de prueba
+          body: "APK de prueba (firmado con la llave de depuración, anuncios de prueba). Commit ${{ github.sha }}."
+          prerelease: true
+          files: build/app/outputs/flutter-apk/app-release.apk
