@@ -2,6 +2,7 @@ import 'balance.dart';
 import 'content_exception.dart';
 import 'content_models.dart';
 import 'json_reader.dart';
+import 'tutorial_models.dart';
 
 /// Names of the JSON files the game loads at startup, under `assets/data/`.
 abstract final class ContentFiles {
@@ -16,6 +17,7 @@ abstract final class ContentFiles {
   static const achievements = 'achievements.json';
   static const shop = 'shop.json';
   static const credits = 'credits.json';
+  static const tutorial = 'tutorial.json';
   static const strings = 'strings_es.json';
 
   static const all = [
@@ -30,6 +32,7 @@ abstract final class ContentFiles {
     achievements,
     shop,
     credits,
+    tutorial,
     strings,
   ];
 }
@@ -76,6 +79,7 @@ class ContentBundle {
     required this.achievements,
     required this.shopItems,
     required this.credits,
+    required this.tutorial,
     required this.strings,
   });
 
@@ -292,6 +296,11 @@ class ContentBundle {
         ),
     ];
 
+    final tutorial = TutorialDef.fromReader(
+      JsonReader(ContentFiles.tutorial, file(ContentFiles.tutorial))
+        ..expectSchemaVersion(_supportedSchemaVersion),
+    );
+
     final stringsReader = JsonReader(
       ContentFiles.strings,
       file(ContentFiles.strings),
@@ -310,6 +319,7 @@ class ContentBundle {
       achievements: List.unmodifiable(achievements),
       shopItems: List.unmodifiable(shopItems),
       credits: List.unmodifiable(credits),
+      tutorial: tutorial,
       strings: Map.unmodifiable(strings),
     );
   }
@@ -341,6 +351,7 @@ class ContentBundle {
   final List<AchievementDef> achievements;
   final List<ShopItemDef> shopItems;
   final List<CreditGroup> credits;
+  final TutorialDef tutorial;
   final Map<String, String> strings;
 
   late final Map<String, OpponentDef> _opponentById = {

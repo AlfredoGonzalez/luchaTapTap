@@ -12,6 +12,7 @@ import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'rows.dart';
+import 'tutorial_overlay.dart';
 import 'ui_state.dart';
 
 const double buySelectorHeight = 24;
@@ -112,12 +113,16 @@ class _UpgradeRow extends ConsumerWidget {
             ? strings.t('row_level_short', {'n': level})
             : strings.t('row_level_next', {'n': level, 'next': next}),
         progress: next == null ? null : milestones.progressAt(level),
-        trailing: CostButton(
-          cost: formatBigShort(quote.cost),
-          enabled: quote.canBuy,
-          semanticLabel: upgrade.name,
-          onPressed: () =>
-              ref.read(gameControllerProvider.notifier).buyUpgrade(upgrade.id),
+        trailing: TutorialTarget(
+          id: 'upgrade:${upgrade.id}',
+          child: CostButton(
+            cost: formatBigShort(quote.cost),
+            enabled: quote.canBuy,
+            semanticLabel: upgrade.name,
+            onPressed: () => ref
+                .read(gameControllerProvider.notifier)
+                .buyUpgrade(upgrade.id),
+          ),
         ),
       ),
     );

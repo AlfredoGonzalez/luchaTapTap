@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "coach": {
+    "name": "El Profe",
+    "bodyColor": "royal",
+    "accentColor": "marigold"
+  },
+  "steps": [
+    {
+      "id": "tap",
+      "targets": ["arena"],
+      "text": "tut_tap",
+      "advance": { "type": "taps", "count": 3 }
+    },
+    {
+      "id": "defeat",
+      "targets": ["hudCoins", "opponentBar"],
+      "text": "tut_defeat",
+      "advance": { "type": "ok" }
+    },
+    {
+      "id": "upgrade",
+      "targets": ["upgrade:puno_duro"],
+      "text": "tut_upgrade",
+      "ensureAffordable": "puno_duro",
+      "advance": { "type": "upgradeBought", "id": "puno_duro" }
+    },
+    {
+      "id": "panel",
+      "targets": ["upgradesPanel"],
+      "text": "tut_panel",
+      "advance": { "type": "ok" }
+    }
+  ]
+}

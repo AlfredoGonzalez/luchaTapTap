@@ -113,3 +113,11 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 ## Pacing notes for the balance milestone (M5)
 
 A bot that taps four times a second and buys everything reaches fight 20 within 10 minutes and the first prestige almost immediately, then climbs slowly (fight 30 after three hours across 18 prestiges). The starting numbers from the GDD are therefore too generous early and too flat later; tune `balance.json`, `talents.json` and `skills.json` with the debug panel.
+
+## Tutorial (guided, data-driven)
+
+- `assets/data/tutorial.json` lists the steps: lit targets, the coach's text key, what advances the step (`taps`, `defeats`, `upgradeBought`, `ok`) and an optional `ensureAffordable` upgrade (the missing coins are gifted, not counted as earned). Texts are in `strings_es.json` (`tut_*`).
+- The screen is dimmed with only the targets lit and taps outside them are blocked (`lib/ui/tutorial_overlay.dart`); UI elements are marked with `TutorialTarget(id: ...)`.
+- Progress is saved in the settings (`tutorialStep`). A save that already played never sees it. "Saltar" ends it; Ajustes > Tutorial plays it again.
+- The coach's portrait is a placeholder wrestler until `assets/ui/coach.png` exists (it is picked up automatically).
+- Steps 1-4 exist (tap, bars, gifted upgrade, panel). Later steps (trainers, finisher, lucky belt, skills, boss, prestige) only need new entries and trigger conditions.

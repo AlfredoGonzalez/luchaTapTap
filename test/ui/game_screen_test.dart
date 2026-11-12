@@ -16,6 +16,7 @@ import 'package:lucha_tap_tap/services/ad_service.dart';
 import 'package:lucha_tap_tap/services/billing_service.dart';
 import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
+import 'package:lucha_tap_tap/services/tutorial_controller.dart';
 import 'package:lucha_tap_tap/ui/intro_screens.dart';
 import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
 import 'package:lucha_tap_tap/ui/ui_state.dart';
@@ -48,6 +49,7 @@ Future<ProviderContainer> pumpApp(
   AdService? ads,
   BillingService? billing,
   AppStage stage = AppStage.game,
+  bool tutorial = false,
   Size size = const Size(1080, 1920),
   double dpr = 3,
 }) async {
@@ -59,6 +61,7 @@ Future<ProviderContainer> pumpApp(
     overrides: [
       contentProvider.overrideWithValue(loadTestContent(edit)),
       initialAppStageProvider.overrideWithValue(stage),
+      tutorialEnabledProvider.overrideWithValue(tutorial),
       if (save != null) initialSaveProvider.overrideWithValue(save),
       if (store != null) saveStoreProvider.overrideWithValue(store),
       if (ads != null) adServiceProvider.overrideWithValue(ads),
@@ -172,6 +175,7 @@ Future<void> openDebug(WidgetTester tester) async {
 }
 
 void main() {
+  tutorialTests();
   group('app flow', () {
     testWidgets('studio splash, then loading, then the game', (tester) async {
       final c = await pumpApp(tester, stage: AppStage.splash);
@@ -1050,6 +1054,83 @@ void main() {
       await openDebug(tester);
       await tapButton(tester, '4 h');
       expect(find.text('¡BIENVENIDO!'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+}
+
+void tutorialTests() {
+  group('tutorial', () {
+    testWidgets('a new game starts with the coach and the arena lit', (tester) async {
+      await pumpApp(tester, tutorial: true);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('¡Toca la arena para golpear al oponente!'), findsOneWidget);
+      expect(find.text('El Profe'), findsOneWidget);
+      expect(find.text('Saltar'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('taps outside the lit area do nothing', (tester) async {
+      final c = await pumpApp(tester, tutorial: true);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.bySemanticsLabel('Talentos'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 30));
+      expect(c.read(viewProvider), GameView.fight);
+      await closeApp(tester);
+    });
+
+    testWidgets('the steps follow the player: taps, the bars, a gifted upgrade, "Entendido"', (tester) async {
+      final c = await pumpApp(tester, tutorial: true);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tapArena(tester, 3);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('vida del oponente'), findsOneWidget);
+      await tapButton(tester, 'Entendido');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('Te regalo las monedas'), findsOneWidget);
+      // The upgrade is affordable now, whatever the player had.
+      final quote = c
+          .read(gameControllerProvider.notifier)
+          .engine
+          .quoteUpgrade('puno_duro', const BuyAmount.fixed(1));
+      expect(quote.canBuy, isTrue);
+      await tester.tap(find.bySemanticsLabel('Puño duro'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('Aquí compras mejoras'), findsOneWidget);
+      await tapButton(tester, 'Entendido');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('El Profe'), findsNothing);
+      expect(c.read(settingsProvider).tutorialStep, 4);
+      await closeApp(tester);
+    });
+
+    testWidgets('"Saltar" ends it', (tester) async {
+      final c = await pumpApp(tester, tutorial: true);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tapButton(tester, 'Saltar');
+      expect(find.text('El Profe'), findsNothing);
+      expect(c.read(tutorialProvider).step, isNull);
+      await closeApp(tester);
+    });
+
+    testWidgets('a game already played never sees it', (tester) async {
+      await pumpApp(tester, tutorial: true, save: saveFrom((e) => e.tap()));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('El Profe'), findsNothing);
+      await closeApp(tester);
+    });
+
+    testWidgets('"Tutorial" in the settings plays it again', (tester) async {
+      final c = await pumpApp(tester, tutorial: true);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tapButton(tester, 'Saltar');
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.tap(find.bySemanticsLabel('Tutorial').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('El Profe'), findsOneWidget);
+      expect(c.read(settingsProvider).tutorialStep, 0);
       await closeApp(tester);
     });
   });

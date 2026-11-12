@@ -1172,6 +1172,11 @@ class GameEngine {
   }
 
   // ---------------------------------------------------------------------------
+  /// Coins that are not earned from a fight (they do not count towards belts).
+  void grantCoins(Big amount) {
+    _state = _state.copyWith(coins: _state.coins + amount);
+  }
+
   // Debug tools (reached only from the debug panel)
 
   void debugAddCoins(Big amount) {

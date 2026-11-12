@@ -58,6 +58,7 @@ class AppSettings {
     this.music = true,
     this.vibration = false,
     this.notices = false,
+    this.tutorialStep,
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -65,6 +66,7 @@ class AppSettings {
     music: map['music'] as bool? ?? true,
     vibration: map['vibration'] as bool? ?? false,
     notices: map['notices'] as bool? ?? false,
+    tutorialStep: (map['tutorialStep'] as num?)?.toInt(),
   );
 
   final bool sound;
@@ -75,38 +77,37 @@ class AppSettings {
   /// notifications themselves arrive in a later milestone).
   final bool notices;
 
+  /// Next tutorial step to show; past the last one means finished. Null on a
+  /// save that never saw the tutorial (decided when the game starts).
+  final int? tutorialStep;
+
   Map<String, dynamic> toMap() => {
     'sound': sound,
     'music': music,
     'vibration': vibration,
     'notices': notices,
+    if (tutorialStep != null) 'tutorialStep': tutorialStep,
   };
 
+  AppSettings copyWith({
+    bool? sound,
+    bool? music,
+    bool? vibration,
+    bool? notices,
+    int? tutorialStep,
+  }) => AppSettings(
+    sound: sound ?? this.sound,
+    music: music ?? this.music,
+    vibration: vibration ?? this.vibration,
+    notices: notices ?? this.notices,
+    tutorialStep: tutorialStep ?? this.tutorialStep,
+  );
+
   AppSettings toggled(String name) => switch (name) {
-    'sound' => AppSettings(
-      sound: !sound,
-      music: music,
-      vibration: vibration,
-      notices: notices,
-    ),
-    'music' => AppSettings(
-      sound: sound,
-      music: !music,
-      vibration: vibration,
-      notices: notices,
-    ),
-    'vibration' => AppSettings(
-      sound: sound,
-      music: music,
-      vibration: !vibration,
-      notices: notices,
-    ),
-    'notices' => AppSettings(
-      sound: sound,
-      music: music,
-      vibration: vibration,
-      notices: !notices,
-    ),
+    'sound' => copyWith(sound: !sound),
+    'music' => copyWith(music: !music),
+    'vibration' => copyWith(vibration: !vibration),
+    'notices' => copyWith(notices: !notices),
     _ => throw ArgumentError.value(name, 'name', 'unknown setting'),
   };
 }
@@ -138,6 +139,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   void reset() => state = const AppSettings();
+
+  /// Remembers how far the tutorial went (saved with the game).
+  void setTutorialStep(int step) {
+    state = state.copyWith(tutorialStep: step);
+    ref.read(gameControllerProvider.notifier).saveNow();
+  }
 }
 
 /// Result of using a store item.
@@ -761,6 +768,12 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   // ---------------------------------------------------------------------------
   // Debug tools (opened from the debug panel in debug builds)
+
+  /// Gives coins that do not count as earned (the tutorial's gift).
+  void grantCoins(Big amount) {
+    _engine.grantCoins(amount);
+    _publish();
+  }
 
   void debugAddCoins(double amount) {
     _engine.debugAddCoins(Big.fromDouble(amount));

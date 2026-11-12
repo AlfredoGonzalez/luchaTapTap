@@ -8,6 +8,7 @@ import 'hud.dart';
 import 'palette_color.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
+import '../services/tutorial_controller.dart';
 import 'rows.dart';
 import 'ui_state.dart';
 
@@ -95,6 +96,10 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               toggle('vibration', 'settings_vibration', settings.vibration),
               toggle('notices', 'settings_notices', settings.notices, sub: strings.t('settings_notices_sub')),
               action('settings_restore', subKey: 'settings_restore_sub', onTap: _restore),
+              action('settings_tutorial', onTap: () {
+                ref.read(tutorialProvider.notifier).restart();
+                ref.read(viewProvider.notifier).show(GameView.fight);
+              }),
               action('settings_credits', onTap: () => ref.read(viewProvider.notifier).show(GameView.credits)),
               action('settings_privacy', onTap: () => ref.read(dialogProvider.notifier).open(GameDialog.privacy)),
               action('settings_delete',

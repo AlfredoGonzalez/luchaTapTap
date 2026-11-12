@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/palette.dart';
 import '../services/game_controller.dart';
+import '../services/tutorial_controller.dart';
 import 'boss_intro.dart';
 import 'dialogs.dart';
 import 'fight_view.dart';
@@ -14,6 +15,7 @@ import 'settings_view.dart';
 import 'shop_view.dart';
 import 'skills_view.dart';
 import 'talents_view.dart';
+import 'tutorial_overlay.dart';
 import 'ui_state.dart';
 
 /// The game: HUD on top, the current view in the middle and the navigation bar
@@ -30,6 +32,14 @@ class GameScreen extends ConsumerWidget {
     final engine = ref.read(gameControllerProvider.notifier).engine;
     final hasOffline = state.pendingOffline != null;
     final bossIntro = engine.awaitingBossStart && !hasOffline && dialog == null;
+    // The tutorial only lights the fight screen, when nothing else is on top.
+    final tutorial =
+        ref.watch(tutorialProvider).step != null &&
+        view == GameView.fight &&
+        dialog == null &&
+        !hasOffline &&
+        !engine.awaitingBossStart &&
+        !engine.awaitingBossLossAck;
 
     final contentHeight =
         scale.virtualHeight -
@@ -85,6 +95,7 @@ class GameScreen extends ConsumerWidget {
           if (dialog == GameDialog.deleteData) const DeleteDataDialog(),
           if (hasOffline) const OfflineDialog(),
           if (bossIntro) const BossIntro(),
+          if (tutorial) const TutorialOverlay(),
         ],
       ),
     );

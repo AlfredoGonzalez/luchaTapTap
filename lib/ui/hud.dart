@@ -10,6 +10,7 @@ import 'pixel_icon.dart';
 import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
+import 'tutorial_overlay.dart';
 import 'ui_state.dart';
 
 const double topSafeHeight = 12;
@@ -38,7 +39,9 @@ class HudBar extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: Row(
+                child: TutorialTarget(
+                  id: 'hudCoins',
+                  child: Row(
                   children: [
                     const PixelIcon(PixelIcons.coin),
                     SizedBox(width: scale.px(3)),
@@ -49,6 +52,7 @@ class HudBar extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  ),
                 ),
               ),
               GestureDetector(

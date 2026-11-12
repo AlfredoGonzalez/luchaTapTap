@@ -5,7 +5,7 @@ import 'package:lucha_tap_tap/data/content_bundle.dart';
 
 /// Files whose text always comes from the shipped data (they hold no numbers
 /// the rules tests depend on).
-const _alwaysShipped = {ContentFiles.strings, ContentFiles.credits};
+const _alwaysShipped = {ContentFiles.strings, ContentFiles.credits, ContentFiles.tutorial};
 
 Map<String, dynamic> _read(String path) =>
     jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;

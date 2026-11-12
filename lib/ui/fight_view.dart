@@ -18,6 +18,7 @@ import 'pixel_icon.dart';
 import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
+import 'tutorial_overlay.dart';
 
 const double opponentBarHeight = 16;
 const double comboRowHeight = 24;
@@ -45,11 +46,13 @@ class FightView extends ConsumerWidget {
       children: [
         SizedBox(
           height: scale.px(opponentBarHeight),
-          child: const _OpponentBar(),
+          child: const TutorialTarget(id: 'opponentBar', child: _OpponentBar()),
         ),
         SizedBox(
           height: scale.px(arenaHeight),
-          child: Stack(
+          child: TutorialTarget(
+            id: 'arena',
+            child: Stack(
             children: [
               FinisherGestureLayer(
                 // A new arena is built when the window changes size.
@@ -66,6 +69,7 @@ class FightView extends ConsumerWidget {
               const _BossLossPanel(),
             ],
           ),
+          ),
         ),
         SizedBox(height: scale.px(comboRowHeight), child: const _ComboRow()),
         SizedBox(height: scale.px(skillsRowHeight), child: const _SkillsRow()),
@@ -73,7 +77,10 @@ class FightView extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: scale.px(sideMargin)),
           child: SizedBox(
             height: scale.px(upgradesPanelHeight),
-            child: const UpgradesPanel(),
+            child: const TutorialTarget(
+              id: 'upgradesPanel',
+              child: UpgradesPanel(),
+            ),
           ),
         ),
       ],
