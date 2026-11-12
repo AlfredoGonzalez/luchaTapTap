@@ -250,6 +250,7 @@ class AnimationConfig {
     required this.clips,
     required this.victorySeconds,
     required this.defeatedHoldSeconds,
+    required this.playerDownSeconds,
   });
 
   factory AnimationConfig.fromReader(JsonReader r) {
@@ -276,6 +277,7 @@ class AnimationConfig {
       clips: clips,
       victorySeconds: r.number('victorySeconds', min: 0),
       defeatedHoldSeconds: r.number('defeatedHoldSeconds', min: 0),
+      playerDownSeconds: r.number('playerDownSeconds', min: 0),
     );
   }
 
@@ -297,6 +299,9 @@ class AnimationConfig {
 
   /// How long a defeated opponent stays on the floor before the next arrives.
   final double defeatedHoldSeconds;
+
+  /// How long the player stays on the floor after the boss timer runs out.
+  final double playerDownSeconds;
 
   int rowOf(String clip) => order.indexOf(clip);
 

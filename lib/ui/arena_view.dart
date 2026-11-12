@@ -12,7 +12,11 @@ import 'ui_state.dart';
 
 /// Hosts the Flame arena. The whole arena is the tap area.
 class ArenaView extends ConsumerStatefulWidget {
-  const ArenaView({super.key, required this.virtualWidth, required this.virtualHeight});
+  const ArenaView({
+    super.key,
+    required this.virtualWidth,
+    required this.virtualHeight,
+  });
 
   /// Size of the arena zone in virtual pixels.
   final int virtualWidth;
@@ -25,6 +29,7 @@ class ArenaView extends ConsumerStatefulWidget {
 class _ArenaViewState extends ConsumerState<ArenaView> {
   late final ArenaGame _game;
   StreamSubscription<HitEvent>? _hits;
+  StreamSubscription<void>? _bossLost;
 
   /// The fight number changed since the last hit event (that case already
   /// handled the defeat animation).
@@ -36,14 +41,23 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
     final controller = ref.read(gameControllerProvider.notifier);
     final content = ref.read(contentProvider);
     _game = ArenaGame(
-      virtualSize: Vector2(widget.virtualWidth.toDouble(), widget.virtualHeight),
+      virtualSize: Vector2(
+        widget.virtualWidth.toDouble(),
+        widget.virtualHeight,
+      ),
       fx: content.balance.fx,
       onTap: controller.tap,
       onLuckyTap: controller.collectLucky,
       opponent: controller.engine.opponent,
       animations: content.balance.animations,
-      theme: content.fightInfo(controller.engine.state.fightNumber).league.theme,
-      leagueOrder: content.fightInfo(controller.engine.state.fightNumber).league.order,
+      theme: content
+          .fightInfo(controller.engine.state.fightNumber)
+          .league
+          .theme,
+      leagueOrder: content
+          .fightInfo(controller.engine.state.fightNumber)
+          .league
+          .order,
       sprites: ref.read(spriteLibraryProvider),
       playerMaskId: controller.engine.equippedMaskDef?.id,
       playerMaskColor: _maskColor(controller),
@@ -58,6 +72,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       }
       _fightChanged = false;
     });
+    _bossLost = controller.bossLost.listen((_) => _game.playerDefeated());
     ref.listenManual(gameControllerProvider, (previous, next) {
       if (previous != null && previous.fightNumber != next.fightNumber) {
         // Moving forward means the opponent was beaten; a boss win also makes
@@ -96,6 +111,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   @override
   void dispose() {
     _hits?.cancel();
+    _bossLost?.cancel();
     super.dispose();
   }
 

@@ -159,6 +159,14 @@ class ArenaGame extends FlameGame {
     if (isLoaded) _player.punch();
   }
 
+  /// The boss timer ran out: the player goes down for a moment and the
+  /// opponent celebrates.
+  void playerDefeated() {
+    if (!isLoaded) return;
+    _player.knockDown(animations.playerDownSeconds);
+    _enemy.celebrate(animations.playerDownSeconds);
+  }
+
   /// The player celebrates (a boss fell) for the time set in the data.
   void playerVictory() {
     if (isLoaded) _player.celebrate(animations.victorySeconds);
@@ -354,6 +362,7 @@ class _Fighter extends PositionComponent {
   double _celebrateLeft = 0;
   double? _removeLeft;
   bool _fallen = false;
+  double _downLeft = 0;
   late final double _baseY = position.y;
 
   void flash() => _flashLeft = flashSeconds;
@@ -376,6 +385,14 @@ class _Fighter extends PositionComponent {
     _clips?.play('defeated', then: null);
   }
 
+  /// Knocked down (the boss won): lies on the floor for [seconds], then gets up.
+  void knockDown(double seconds) {
+    _fallen = true;
+    _downLeft = seconds;
+    _celebrateLeft = 0;
+    _clips?.play('defeated', then: null);
+  }
+
   void celebrate(double seconds) {
     _celebrateLeft = seconds;
     _clips?.play('victory', then: null);
@@ -392,6 +409,13 @@ class _Fighter extends PositionComponent {
       if (_removeLeft! <= 0) {
         removeFromParent();
         return;
+      }
+    }
+    if (_downLeft > 0) {
+      _downLeft = math.max(0, _downLeft - dt);
+      if (_downLeft == 0) {
+        _fallen = false;
+        _clips?.play('idle');
       }
     }
     if (_celebrateLeft > 0) {

@@ -150,7 +150,8 @@
       }
     },
     "victorySeconds": 1.5,
-    "defeatedHoldSeconds": 0.2
+    "defeatedHoldSeconds": 0.2,
+    "playerDownSeconds": 1.2
   },
   "monetization": {
     "adLoadTimeoutSeconds": 10,

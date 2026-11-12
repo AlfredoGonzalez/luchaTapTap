@@ -220,6 +220,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   // `clock.stopwatch()` is the real clock in the app and the fake clock in
   // widget tests, so progress can be tested without waiting.
   final Stopwatch _clock = clock.stopwatch();
+  final StreamController<void> _bossLost = StreamController<void>.broadcast();
   final StreamController<HitEvent> _hits =
       StreamController<HitEvent>.broadcast();
   Duration _lastElapsed = Duration.zero;
@@ -236,6 +237,9 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   /// Circles of the finisher gesture already done (0 to 2).
   final ValueNotifier<int> gestureCircles = ValueNotifier(0);
+
+  /// The boss timer ran out (the player lost the fight).
+  Stream<void> get bossLost => _bossLost.stream;
 
   /// Taps, finishers and idle hits, for floating damage numbers and flashes.
   Stream<HitEvent> get hits => _hits.stream;
@@ -269,6 +273,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       WidgetsBinding.instance.removeObserver(this);
       _timer?.cancel();
       _hits.close();
+      _bossLost.close();
       gestureTrail.dispose();
       gestureCircles.dispose();
     });
@@ -320,7 +325,10 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     if (!damage.isZero) {
       _hits.add(HitEvent(damage: damage, isTap: false, defeated: defeated));
     }
-    if (timedOut) ref.read(noticeProvider.notifier).show('boss_failed');
+    if (timedOut) {
+      _bossLost.add(null);
+      ref.read(noticeProvider.notifier).show('boss_failed');
+    }
   }
 
   void _publish() {
