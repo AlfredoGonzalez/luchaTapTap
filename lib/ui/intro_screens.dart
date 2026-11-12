@@ -11,8 +11,6 @@ import '../services/game_controller.dart';
 import '../services/strings.dart';
 import '../app_info.dart';
 import 'palette_color.dart';
-import 'pixel_icon.dart';
-import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'ui_state.dart';
