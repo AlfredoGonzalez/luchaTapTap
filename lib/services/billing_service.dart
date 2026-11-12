@@ -4,17 +4,22 @@ import '../data/content_models.dart';
 /// never hard-coded; entitlements are checked from the store's answer, there is
 /// no server.
 ///
-/// The real implementation arrives with the monetization milestone; until
-/// then the game runs on [FakeBillingService] and needs no SDK.
+/// The real implementation is `PlayBillingService` (Android); browsers and
+/// tests run on [FakeBillingService] and need no SDK.
 abstract class BillingService {
-  /// Price text to show on the buy button (for example "$29").
-  Future<String> priceOf(ShopItemDef item);
+  /// Price text to show on the buy button (for example "$29"), or null when
+  /// the store does not offer the item right now.
+  Future<String?> priceOf(ShopItemDef item);
 
   /// Runs the purchase flow. True when the player paid.
   Future<bool> buy(ShopItemDef item);
 
   /// Ids of the one-time purchases the player already owns (restore purchases).
   Future<Set<String>> restore();
+
+  /// Purchases that finished outside a [buy] call, for example a payment that
+  /// completed after the app was closed. The game must grant them.
+  Stream<ShopItemDef> get delivered;
 }
 
 /// Stand-in used by the prototype: shows a placeholder price and "buys"
@@ -34,7 +39,10 @@ class FakeBillingService implements BillingService {
   final Set<String> owned = {};
 
   @override
-  Future<String> priceOf(ShopItemDef item) async => placeholderPrice;
+  Future<String?> priceOf(ShopItemDef item) async => placeholderPrice;
+
+  @override
+  Stream<ShopItemDef> get delivered => const Stream.empty();
 
   @override
   Future<bool> buy(ShopItemDef item) async {

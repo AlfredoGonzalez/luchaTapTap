@@ -37,6 +37,7 @@ class Balance {
     required this.gesture,
     required this.milestones,
     required this.animations,
+    required this.monetization,
     required this.audio,
     required this.haptics,
   });
@@ -102,6 +103,7 @@ class Balance {
       ui: UiConfig.fromReader(r.object('ui')),
       gesture: GestureConfig.fromReader(r.object('gesture')),
       animations: AnimationConfig.fromReader(r.object('animations')),
+      monetization: MonetizationConfig.fromReader(r.object('monetization')),
       audio: r.has('audio')
           ? AudioConfig.fromReader(r.object('audio'))
           : const AudioConfig(master: 1, music: 1, sfx: 1),
@@ -171,6 +173,9 @@ class Balance {
   /// Level milestones of upgrades and trainers (the GDD's "milestone levels").
   final MilestoneConfig milestones;
 
+  /// Ad and store settings.
+  final MonetizationConfig monetization;
+
   /// Sprite sheet layout and clip speeds.
   final AnimationConfig animations;
 
@@ -179,6 +184,47 @@ class Balance {
 
   /// Which vibration each event gives.
   final HapticsConfig haptics;
+}
+
+/// Settings of the rewarded ads and the store. The ad unit ids are data so the
+/// release id can be set without touching code; non-release builds always use
+/// the Google test unit.
+class MonetizationConfig {
+  const MonetizationConfig({
+    required this.adLoadTimeoutSeconds,
+    required this.restoreWaitSeconds,
+    required this.purchaseWaitSeconds,
+    required this.testRewardedUnitId,
+    required this.rewardedUnitId,
+  });
+
+  factory MonetizationConfig.fromReader(JsonReader r) => MonetizationConfig(
+    adLoadTimeoutSeconds: r.number('adLoadTimeoutSeconds', min: 0, minExclusive: true),
+    restoreWaitSeconds: r.number('restoreWaitSeconds', min: 0, minExclusive: true),
+    purchaseWaitSeconds: r.number('purchaseWaitSeconds', min: 0, minExclusive: true),
+    testRewardedUnitId: r.string('testRewardedUnitId'),
+    rewardedUnitId: r.optionalString('rewardedUnitId'),
+  );
+
+  /// Give up on an ad that has not loaded after this long.
+  final double adLoadTimeoutSeconds;
+
+  /// How long "Restaurar compras" waits for the store to answer.
+  final double restoreWaitSeconds;
+
+  /// How long a purchase may stay open before the app stops waiting for it.
+  final double purchaseWaitSeconds;
+
+  /// Google's sample rewarded unit, used in every non-release build.
+  final String testRewardedUnitId;
+
+  /// Your own rewarded unit for release builds; null until it exists (ads are
+  /// then simply unavailable in release).
+  final String? rewardedUnitId;
+
+  /// The unit to load: the test one outside release builds.
+  String? unitFor({required bool release}) =>
+      release ? rewardedUnitId : testRewardedUnitId;
 }
 
 /// One animation clip of a fighter sprite sheet.

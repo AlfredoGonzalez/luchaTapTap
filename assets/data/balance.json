@@ -177,5 +177,11 @@
     },
     "victorySeconds": 1.5,
     "defeatedHoldSeconds": 0.2
+  },
+  "monetization": {
+    "adLoadTimeoutSeconds": 10,
+    "restoreWaitSeconds": 6,
+    "purchaseWaitSeconds": 180,
+    "testRewardedUnitId": "ca-app-pub-3940256099942544/5224354917"
   }
 }

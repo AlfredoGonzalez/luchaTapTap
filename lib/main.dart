@@ -12,6 +12,7 @@ import 'data/content_loader.dart';
 import 'game/sprite_library.dart';
 import 'services/audio_service.dart';
 import 'services/game_controller.dart';
+import 'services/platform_services.dart';
 import 'services/prefs_save_store.dart';
 import 'services/save_store.dart';
 import 'ui/ui_state.dart';
@@ -48,6 +49,10 @@ Future<void> main() async {
           saveStoreProvider.overrideWithValue(store),
           initialSaveProvider.overrideWithValue(loaded.data),
           audioServiceProvider.overrideWithValue(audio),
+          adServiceProvider.overrideWithValue(createAdService(content)),
+          billingServiceProvider.overrideWithValue(
+            createBillingService(content),
+          ),
           spriteLibraryProvider.overrideWithValue(sprites),
         ],
         child: const LuchaTapApp(),

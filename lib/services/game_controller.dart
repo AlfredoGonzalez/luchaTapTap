@@ -272,6 +272,12 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       gestureTrail.dispose();
       gestureCircles.dispose();
     });
+    // Purchases that finished while no purchase was open (paid, then the app
+    // closed) are granted when the store reports them.
+    final delivered = ref.read(billingServiceProvider).delivered.listen(
+      _grantDelivered,
+    );
+    ref.onDispose(delivered.cancel);
     // Start the music once the providers are ready.
     Future.microtask(syncAudio);
     return _engine.state;
@@ -683,6 +689,19 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _publish();
     saveNow();
     return ShopResult.done;
+  }
+
+  void _grantDelivered(ShopItemDef item) {
+    if (item.kind == ShopKind.purchase) {
+      if (_engine.ownsPurchase(item.id)) return;
+      _engine.grantPurchase(item.id);
+    } else if (item.kind == ShopKind.beltPack) {
+      _engine.grantBeltPack(item.id);
+    } else {
+      return;
+    }
+    _publish();
+    saveNow();
   }
 
   /// Asks the store for the one-time purchases the player owns and grants them

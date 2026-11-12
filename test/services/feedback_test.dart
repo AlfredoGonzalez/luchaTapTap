@@ -41,6 +41,7 @@ class Rig {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   test('a tap plays the tap effect at master x sfx volume and vibrates', () {
     final rig = Rig();
     addTearDown(rig.dispose);

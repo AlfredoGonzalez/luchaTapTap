@@ -14,7 +14,7 @@ import 'pixel_widgets.dart';
 import 'rows.dart';
 
 /// Price text of a shop item, from the billing service (never hard-coded).
-final shopPriceProvider = FutureProvider.family<String, String>((
+final shopPriceProvider = FutureProvider.family<String?, String>((
   ref,
   id,
 ) async {
@@ -115,11 +115,17 @@ class _ShopViewState extends ConsumerState<ShopView> {
       case ShopKind.beltPack:
         final price = ref.watch(shopPriceProvider(item.id));
         button = PixelButton(
-          label: owned ? strings.t('shop_owned') : (price.value ?? ''),
+          label: owned
+              ? strings.t('shop_owned')
+              : (price.hasValue
+                    ? (price.value ?? strings.t('shop_unavailable'))
+                    : ''),
           width: 52,
           style: PixelButtonStyle.confirm,
           semanticLabel: '${strings.t('shop_buy')} ${item.name}',
-          onPressed: owned || _busy ? null : () => _use(item),
+          onPressed: owned || _busy || (price.hasValue && price.value == null)
+              ? null
+              : () => _use(item),
         );
       case ShopKind.boost:
       case ShopKind.adBelt:
