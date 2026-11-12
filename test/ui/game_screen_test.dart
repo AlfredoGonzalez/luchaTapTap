@@ -273,7 +273,7 @@ void main() {
       final c = await pumpApp(tester);
       await tapArena(tester, 10);
       expect(find.text('Pelea 2'), findsOneWidget);
-      expect(find.text('El Tamal Mortal'), findsOneWidget);
+      expect(find.text(c.read(gameControllerProvider.notifier).engine.opponent.name), findsWidgets);
       expect(stateOf(c).coins.toDouble(), closeTo(1.5, 1e-9));
       expect(find.text('1.5'), findsOneWidget); // the HUD coins
       await closeApp(tester);

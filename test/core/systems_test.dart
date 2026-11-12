@@ -25,9 +25,10 @@ void main() {
 
     test('9 regular fights then the boss, then the league repeats', () {
       final ids = [for (var f = 1; f <= 11; f++) content.fightInfo(f).opponent.id];
-      expect(ids[8], 'el_taquero_cosmico');
+      expect(ids[0], 'mr_aguacate'); // the first pass starts with the first wrestler
       expect(ids[9], 'el_mariachi_furioso');
-      expect(ids[10], 'mr_aguacate'); // endless leagues: back to the start
+      expect(ids[10], isNot('el_mariachi_furioso')); // endless leagues: back to the start (mixed)
+      expect(ids.sublist(0, 9).toSet().length, greaterThan(1));
       expect(content.fightInfo(10).isBoss, isTrue);
       expect(content.fightInfo(9).isBoss, isFalse);
       expect(content.fightInfo(11).loops, 1);

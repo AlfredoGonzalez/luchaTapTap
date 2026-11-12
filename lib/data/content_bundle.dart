@@ -371,7 +371,9 @@ class ContentBundle {
       final length = leagueLength(league);
       if (offset < length) {
         final isBoss = league.bossId != null && offset == length - 1;
-        final id = isBoss ? league.bossId! : league.opponentIds[offset];
+        final id = isBoss
+            ? league.bossId!
+            : _shuffledOpponents(league, loops)[offset];
         return FightInfo(
           fight: fight,
           league: league,
@@ -384,6 +386,48 @@ class ContentBundle {
       offset -= length;
     }
     throw StateError('unreachable: fight $fight is outside every league');
+  }
+
+  final Map<String, List<String>> _shuffleCache = {};
+
+  /// The league's opponents in a mixed order that is the same every time for
+  /// the same league and pass (so a saved fight shows the same wrestler), with
+  /// no wrestler twice in a row when the list allows it.
+  List<String> _shuffledOpponents(LeagueDef league, int loops) {
+    return _shuffleCache.putIfAbsent('${league.id}#$loops', () {
+      final ids = league.opponentIds;
+      var seed = 17;
+      for (final unit in '${league.id}#$loops'.codeUnits) {
+        seed = (seed * 31 + unit) & 0x7fffffff;
+      }
+      int next(int bound) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return (seed >> 8) % bound;
+      }
+
+      var best = List<String>.of(ids);
+      var bestRepeats = ids.length;
+      for (var attempt = 0; attempt < 200 && bestRepeats > 0; attempt++) {
+        final order = List<String>.of(ids);
+        // The very first pass keeps the first wrestler of each league first.
+        final lowest = loops == 0 ? 1 : 0;
+        for (var i = order.length - 1; i > lowest; i--) {
+          final j = lowest + next(i + 1 - lowest);
+          final t = order[i];
+          order[i] = order[j];
+          order[j] = t;
+        }
+        var repeats = 0;
+        for (var i = 1; i < order.length; i++) {
+          if (order[i] == order[i - 1]) repeats++;
+        }
+        if (repeats < bestRepeats) {
+          best = order;
+          bestRepeats = repeats;
+        }
+      }
+      return best;
+    });
   }
 
   /// Opponent for fight number [fight].

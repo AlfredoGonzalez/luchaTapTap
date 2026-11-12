@@ -51,7 +51,7 @@ void main() {
       expect(e.state.coins.toDouble(), closeTo(1.5, 1e-9));
       expect(e.state.totalCoinsEarned.toDouble(), closeTo(1.5, 1e-9));
       expect(e.state.enemyHp.toDouble(), closeTo(15.5, 1e-9));
-      expect(e.opponent.id, 'el_tamal_mortal');
+      expect(e.opponent.id, e.content.opponentForFight(2).id);
     });
 
     test('opponents rotate through the league', () {
@@ -60,7 +60,13 @@ void main() {
       for (var fight = 1; fight <= 4; fight++) {
         ids.add(e.content.opponentForFight(fight).id);
       }
-      expect(ids, ['mr_aguacate', 'el_tamal_mortal', 'el_taquero_cosmico', 'mr_aguacate']);
+      expect(ids.first, 'mr_aguacate');
+      // Mixed order, never the same wrestler twice in a row, and always the
+      // same for the same fight.
+      for (var i = 1; i < ids.length; i++) {
+        expect(ids[i], isNot(ids[i - 1]));
+      }
+      expect([for (var f = 1; f <= 4; f++) e.content.opponentForFight(f).id], ids);
     });
 
     test('tap overkill is not carried to the next opponent', () {
