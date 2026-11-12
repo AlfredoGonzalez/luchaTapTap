@@ -153,6 +153,40 @@ class GameEngine {
     _state = _state.copyWith(bossTimeLeft: _bossSeconds(fightInfo));
   }
 
+  /// True when [fight] is the last regular fight before a boss. The game holds
+  /// the player there, farming coins, until they choose to challenge the boss.
+  bool _isGate(int fight) =>
+      !content.fightInfo(fight).isBoss && content.fightInfo(fight + 1).isBoss;
+
+  /// The player stands in the fight before a boss and may challenge it.
+  bool get bossGateReady => _isGate(_state.fightNumber);
+
+  /// "Jefe": leaves the farming fight for the boss fight (its intro shows, the
+  /// countdown waits for [startBoss]). False when no boss is waiting.
+  bool challengeBoss() {
+    if (!bossGateReady) return false;
+    final boss = _state.fightNumber + 1;
+    _state = _state.copyWith(
+      fightNumber: boss,
+      enemyHp: _maxHpOf(boss),
+      bestFight: math.max(_state.bestFight, boss),
+      clearBossTimer: true,
+    );
+    return true;
+  }
+
+  /// "Volver" on the boss intro: back to the farming fight before the boss.
+  bool abandonBoss() {
+    if (!awaitingBossStart) return false;
+    final gate = _state.fightNumber - 1;
+    _state = _state.copyWith(
+      fightNumber: gate,
+      enemyHp: _maxHpOf(gate),
+      clearBossTimer: true,
+    );
+    return true;
+  }
+
   Big get enemyMaxHp => _maxHpOf(_state.fightNumber);
 
   Big _maxHpOf(int fight) {
@@ -350,6 +384,11 @@ class GameEngine {
     );
   }
 
+  /// The finisher gesture failed: the combo starts over.
+  void failFinisher() {
+    _state = _state.copyWith(comboMeter: 0, secondsSinceTap: 0);
+  }
+
   /// One fixed simulation step of `1 / ticksPerSecond` seconds: idle damage,
   /// boss countdown, combo decay, skill timers and lucky events.
   DamageOutcome tick() {
@@ -417,7 +456,8 @@ class GameEngine {
   void _tickCombo(double dt) {
     final since = _state.secondsSinceTap + dt;
     var meter = _state.comboMeter;
-    if (since > _balance.combo.holdSeconds) {
+    // A full meter waits for the finisher gesture; it does not decay.
+    if (meter < 1 && since > _balance.combo.holdSeconds) {
       meter = math.max(0, meter - _balance.combo.decayPerSecond * dt);
     }
     _state = _state.copyWith(comboMeter: meter, secondsSinceTap: since);
@@ -509,7 +549,9 @@ class GameEngine {
       earned += reward;
       defeats++;
       if (content.fightInfo(fight).isBoss) bosses++;
-      fight++;
+      // Before a boss the player keeps farming the same fight until they
+      // choose to challenge the boss.
+      if (!_isGate(fight)) fight++;
       hp = _maxHpOf(fight);
       if (!carryOver || defeats >= maxDefeats) break;
     }
@@ -986,6 +1028,9 @@ class GameEngine {
   ///
   /// Cost is bounded by the length of a league, not by the time away, so eight
   /// hours compute instantly.
+  /// Largest value kept in a plain counter (defeats): far beyond any real game.
+  static const double _maxCounted = 1e15;
+
   OfflineReport? applyOffline(Duration away) {
     final awaySeconds = away.isNegative
         ? 0.0
@@ -1003,6 +1048,23 @@ class GameEngine {
     var earned = Big.zero;
     var defeats = 0;
     while (!budget.isZero && !content.fightInfo(fight).isBoss) {
+      if (_isGate(fight)) {
+        // Farming the fight before the boss: the same fight is beaten over and
+        // over, so the kills are counted with a division instead of a loop.
+        final maxHp = _maxHpOf(fight);
+        if (budget >= hp) {
+          budget = budget - hp;
+          final extra = (budget / maxHp).floor();
+          final kills = Big.one + extra;
+          budget = budget - extra * maxHp;
+          earned += _rewardOf(fight) * kills;
+          final counted = kills > Big.fromDouble(_maxCounted) ? _maxCounted : kills.toDouble();
+          defeats += counted.toInt();
+          hp = maxHp;
+        }
+        hp = hp - budget;
+        break;
+      }
       if (budget < hp) {
         hp = hp - budget;
         break;

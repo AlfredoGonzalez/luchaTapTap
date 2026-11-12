@@ -199,7 +199,8 @@ void main() {
       e.buyTrainer('don_chuy', x1);
       final r = e.tick();
       expect(r.defeats, greaterThan(1));
-      expect(e.state.fightNumber, 1 + r.defeats);
+      // Eight fights, then the player is held at fight 9 (before the boss).
+      expect(e.state.fightNumber, 9);
     });
 
     test('defeats per tick are capped by balance.json', () {

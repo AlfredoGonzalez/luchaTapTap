@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/big.dart';
 import '../core/buy_amount.dart';
 import '../core/fixed_step.dart';
+import '../core/finisher_gesture.dart';
 import '../core/game_engine.dart';
 import '../core/game_state.dart';
 import '../core/rng.dart';
@@ -200,6 +201,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   late final GameEngine _engine;
   late final FixedStepper _stepper;
+  late final FinisherGesture _gesture;
   late final SaveCodec _codec;
   late final SaveStore _store;
   // `clock.stopwatch()` is the real clock in the app and the fake clock in
@@ -215,6 +217,12 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   Future<void> _pendingSave = Future.value();
 
   GameEngine get engine => _engine;
+
+  /// Points of the finisher gesture being drawn (virtual pixels), for the trail.
+  final ValueNotifier<List<Offset>> gestureTrail = ValueNotifier(const []);
+
+  /// Circles of the finisher gesture already done (0 to 2).
+  final ValueNotifier<int> gestureCircles = ValueNotifier(0);
 
   /// Taps, finishers and idle hits, for floating damage numbers and flashes.
   Stream<HitEvent> get hits => _hits.stream;
@@ -236,6 +244,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       _engine.applyOffline(clock.now().toUtc().difference(save.lastSeen));
     }
 
+    _gesture = FinisherGesture(content.balance.gesture);
     _stepper = FixedStepper(
       ticksPerSecond: content.balance.ticksPerSecond,
       maxCatchUpTicks: content.balance.maxCatchUpTicks,
@@ -247,6 +256,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       WidgetsBinding.instance.removeObserver(this);
       _timer?.cancel();
       _hits.close();
+      gestureTrail.dispose();
+      gestureCircles.dispose();
     });
     return _engine.state;
   }
@@ -265,6 +276,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
         balance.saveIntervalSeconds * Duration.microsecondsPerSecond) {
       saveNow();
     }
+    _pollGesture(now);
     final ticks = _stepper.advance(now - _lastElapsed);
     _lastElapsed = now;
     if (ticks == 0) return;
@@ -285,6 +297,66 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   }
 
   void _publish() => state = _engine.state;
+
+  double _seconds(Duration d) => d.inMicroseconds / Duration.microsecondsPerSecond;
+
+  // ---------------------------------------------------------------------------
+  // Finisher gesture: two circles in opposite directions
+
+  /// A finger went down in the arena (position in virtual pixels). The gesture
+  /// only counts while the combo meter is full.
+  void gesturePointerDown(double x, double y) {
+    if (!_engine.finisherReady || _engine.awaitingBossStart) return;
+    _gesture.pointerDown(x, y, _seconds(_clock.elapsed));
+    _afterGesture();
+  }
+
+  void gesturePointerMove(double x, double y) {
+    if (!_engine.finisherReady) return;
+    _gesture.pointerMove(x, y, _seconds(_clock.elapsed));
+    _afterGesture();
+  }
+
+  void gesturePointerUp() {
+    if (!_engine.finisherReady) return;
+    _gesture.pointerUp(_seconds(_clock.elapsed));
+    _afterGesture();
+  }
+
+  void _pollGesture(Duration now) {
+    if (!_engine.finisherReady) {
+      if (_gesture.status != GestureStatus.idle) _resetGesture();
+      return;
+    }
+    if (_gesture.isDrawing) {
+      _gesture.tick(_seconds(now));
+      _afterGesture();
+    }
+  }
+
+  void _resetGesture() {
+    _gesture.reset();
+    gestureTrail.value = const [];
+    gestureCircles.value = 0;
+  }
+
+  void _afterGesture() {
+    switch (_gesture.status) {
+      case GestureStatus.success:
+        _resetGesture();
+        finisher();
+      case GestureStatus.failed:
+        _resetGesture();
+        _engine.failFinisher();
+        _publish();
+        ref.read(noticeProvider.notifier).show('gesture_failed');
+      case GestureStatus.drawing:
+        gestureTrail.value = [for (final p in _gesture.trail) Offset(p.x, p.y)];
+        gestureCircles.value = _gesture.circlesDone;
+      case GestureStatus.idle:
+        break;
+    }
+  }
 
   @override
   // ignore: avoid_renaming_method_parameters
@@ -420,6 +492,16 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   void startBoss() {
     _engine.startBoss();
     _publish();
+  }
+
+  /// "¡JEFE!": leave the farming fight for the boss (its intro shows).
+  void challengeBoss() {
+    if (_engine.challengeBoss()) _publish();
+  }
+
+  /// "Volver" on the boss intro: back to the farming fight.
+  void abandonBoss() {
+    if (_engine.abandonBoss()) _publish();
   }
 
   void collectLucky() {

@@ -95,6 +95,19 @@
     "loadingSeconds": 1.5,
     "blinkSeconds": 0.5,
     "purchaseFlashSeconds": 0.1,
-    "noticeSeconds": 2
+    "noticeSeconds": 2,
+    "maxVirtualWidth": 270,
+    "maxVirtualHeight": 480
+  },
+  "gesture": {
+    "firstDirection": "clockwise",
+    "timeLimitSeconds": 5,
+    "minStrokeLength": 10,
+    "sampleStep": 2,
+    "loopDegrees": 300,
+    "minLoopSize": 14,
+    "maxLoopAspect": 2.2,
+    "closeFraction": 0.8,
+    "minArcDegrees": 120
   }
 }

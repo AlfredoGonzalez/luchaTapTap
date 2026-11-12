@@ -8,6 +8,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import 'arena_view.dart';
+import 'gesture_layer.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -19,7 +20,7 @@ import 'pixel_widgets.dart';
 const double opponentBarHeight = 16;
 const double comboRowHeight = 24;
 const double skillsRowHeight = 30;
-const double _finisherWidth = 48;
+const double _finisherWidth = 56;
 const double _skillButtonSize = 30;
 
 /// Height of everything on the fight screen except the arena.
@@ -48,9 +49,18 @@ class FightView extends ConsumerWidget {
           height: scale.px(arenaHeight),
           child: Stack(
             children: [
-              ArenaView(virtualHeight: arenaHeight),
+              FinisherGestureLayer(
+                // A new arena is built when the window changes size.
+                child: ArenaView(
+                  key: ValueKey('${scale.virtualWidth}x$arenaHeight'),
+                  virtualWidth: scale.virtualWidth,
+                  virtualHeight: arenaHeight,
+                ),
+              ),
               const _BossName(),
               const _NoticeBanner(),
+              const FinisherPrompt(),
+              const _BossButton(),
             ],
           ),
         ),
@@ -162,6 +172,31 @@ class _BossName extends ConsumerWidget {
   }
 }
 
+/// "¡JEFE!": appears while the player farms the fight before a boss; pressing
+/// it is the player's choice to fight the boss.
+class _BossButton extends ConsumerWidget {
+  const _BossButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    ref.watch(gameControllerProvider);
+    final controller = ref.read(gameControllerProvider.notifier);
+    if (!controller.engine.bossGateReady) return const SizedBox.shrink();
+    final strings = ref.watch(stringsProvider);
+    return Positioned(
+      top: scale.px(2),
+      right: scale.px(2),
+      child: PixelButton(
+        label: strings.t('boss_button'),
+        style: PixelButtonStyle.gold,
+        width: 52,
+        onPressed: controller.challengeBoss,
+      ),
+    );
+  }
+}
+
 class _NoticeBanner extends ConsumerWidget {
   const _NoticeBanner();
 
@@ -214,14 +249,44 @@ class _ComboRow extends ConsumerWidget {
               color: ready ? Palette.sunYellow.color : Palette.fog.color,
             ),
           ),
-          PixelButton(
-            label: strings.t('combo_button'),
-            width: _finisherWidth,
-            onPressed: ready
-                ? ref.read(gameControllerProvider.notifier).finisher
-                : null,
-          ),
+          _FinisherBadge(ready: ready),
         ],
+      ),
+    );
+  }
+}
+
+/// Shows whether the finisher is ready: "GOLPE" when the combo is filling and
+/// "DIBUJA" when the gesture can be drawn. It is not a button.
+class _FinisherBadge extends ConsumerWidget {
+  const _FinisherBadge({required this.ready});
+
+  final bool ready;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    final strings = ref.watch(stringsProvider);
+    final text = strings.t(ready ? 'combo_draw' : 'combo_button');
+    return Semantics(
+      label: text,
+      excludeSemantics: true,
+      child: SizedBox(
+        width: scale.px(_finisherWidth),
+        height: scale.px(24),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: (ready ? Palette.marigold : Palette.slate).color,
+            border: Border.all(color: Palette.ink.color, width: scale.px(1)),
+          ),
+          child: Center(
+            child: PixelText(
+              text,
+              color: (ready ? Palette.ink : Palette.fog).color,
+              align: TextAlign.center,
+            ),
+          ),
+        ),
       ),
     );
   }

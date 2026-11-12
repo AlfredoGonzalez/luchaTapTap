@@ -199,12 +199,12 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
 class _LoadingStripes extends CustomPainter {
   _LoadingStripes(this.scale);
 
-  final int scale;
+  final double scale;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..isAntiAlias = false;
-    final band = (8 * scale).toDouble();
+    final band = 8 * scale;
     var y = 0.0;
     var i = 0;
     while (y < size.height) {

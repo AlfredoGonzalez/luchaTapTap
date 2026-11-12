@@ -52,6 +52,16 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | Pixel rules | Icons come from the mockups' own pixel art, drawn at whole-pixel scale; masks recolor their three reserved colors per mask. | `pixel_icons.dart` |
 | Web build | `web/` and a Pages workflow exist only for browser testing. The browser save uses local storage. | `pages.yml` |
 
+## Changes after playtesting M4 (designer feedback)
+
+| Topic | What was done | Where |
+| --- | --- | --- |
+| Boss on demand | The fight before a boss (fight 9) repeats forever, paying coins, until the player presses "¡JEFE!". Losing the boss returns to that fight and nothing restarts the boss by itself. The intro has a "Volver" button. Offline earnings farm that fight too (one division, not a loop). | `GameEngine.bossGateReady`, `challengeBoss` |
+| Responsive screen | The canvas keeps whole *device* pixels per virtual pixel but now grows to fill the window: wider and taller than 180 x 320, up to 270 x 480 virtual pixels (the rest is a border). A narrow browser window or a tablet no longer leaves big empty bands. | `PixelLayout`, `balance.json` `ui` |
+| Finisher gesture | The GOLPE button is replaced by a gesture once the combo is full: a clockwise circle, then a counterclockwise one (one stroke as a figure eight, or two strokes). Success lands the finisher; a wrong circle, a straight swipe or running out of time (5 s) resets the combo. A full combo no longer decays while it waits. Short taps keep fighting. | `finisher_gesture.dart`, `balance.json` `gesture` |
+
+**Interpretation to confirm:** "de izquierda a derecha y de derecha a izquierda" was read as clockwise first, then counterclockwise (both go over the top, which makes a figure eight when drawn without lifting). To swap the order, set `gesture.firstDirection` to `counterclockwise` in `balance.json`. The size, roundness and time tolerances are in the same block.
+
 ## Still open (designer decides)
 
 - Mask slot colors for trunks and cape, app icon, store title, studio name, `applicationId` (currently `com.example.lucha_tap_tap`).

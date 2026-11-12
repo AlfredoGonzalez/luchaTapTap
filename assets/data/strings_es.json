@@ -160,6 +160,10 @@
     "debug_row_coins": "Monedas",
     "debug_row_fight": "Pelea",
     "debug_row_time": "Avanzar tiempo",
-    "debug_row_away": "Simular ausencia"
+    "debug_row_away": "Simular ausencia",
+    "combo_draw": "DIBUJA",
+    "gesture_prompt": "¡DIBUJA!",
+    "gesture_failed": "¡Falló el golpe!",
+    "boss_button": "¡JEFE!"
   }
 }

@@ -42,7 +42,7 @@ class PixelText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = PixelScale.of(context);
-    return Text(
+    final label = Text(
       text,
       textAlign: align,
       maxLines: wrap ? null : maxLines,
@@ -67,6 +67,10 @@ class PixelText extends StatelessWidget {
               ],
       ),
     );
+    // One line is exactly `size` virtual pixels tall. At scales that are not
+    // whole logical pixels, font metrics round up and would overflow a row
+    // that is packed to the pixel, so the height is fixed here.
+    return wrap ? label : SizedBox(height: scale.px(size), child: label);
   }
 }
 
@@ -278,7 +282,7 @@ class CheckerOverlay extends StatelessWidget {
 class _CheckerPainter extends CustomPainter {
   _CheckerPainter({required this.scale, required this.color});
 
-  final int scale;
+  final double scale;
   final Color color;
 
   @override
@@ -298,7 +302,7 @@ class _CheckerPainter extends CustomPainter {
       Float32List.fromList(points),
       Paint()
         ..color = color
-        ..strokeWidth = scale.toDouble()
+        ..strokeWidth = scale
         ..strokeCap = StrokeCap.butt
         ..isAntiAlias = false,
     );

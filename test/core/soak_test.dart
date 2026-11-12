@@ -39,6 +39,8 @@ void main() {
     for (var tick = 1; tick <= 3 * 3600 * tps; tick++) {
       // About 4 taps per second, a finisher whenever it is ready.
       if (tick % 3 == 0) engine.tap();
+      // The bot challenges the boss about once a minute when it is waiting.
+      if (engine.bossGateReady && tick % (60 * tps) == 0) engine.challengeBoss();
       if (engine.awaitingBossStart) engine.startBoss();
       engine.finisher();
       final out = engine.tick();

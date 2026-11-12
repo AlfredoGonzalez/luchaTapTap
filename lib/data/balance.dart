@@ -33,6 +33,7 @@ class Balance {
     required this.saveIntervalSeconds,
     required this.debug,
     required this.ui,
+    required this.gesture,
   });
 
   static const int schemaVersion = 1;
@@ -94,6 +95,7 @@ class Balance {
           .number('intervalSeconds', min: 0, minExclusive: true),
       debug: DebugConfig.fromReader(r.object('debug')),
       ui: UiConfig.fromReader(r.object('ui')),
+      gesture: GestureConfig.fromReader(r.object('gesture')),
     );
   }
 
@@ -149,6 +151,7 @@ class Balance {
   final double saveIntervalSeconds;
   final DebugConfig debug;
   final UiConfig ui;
+  final GestureConfig gesture;
 }
 
 class ComboConfig {
@@ -321,6 +324,8 @@ class UiConfig {
     required this.blinkSeconds,
     required this.purchaseFlashSeconds,
     required this.noticeSeconds,
+    required this.maxVirtualWidth,
+    required this.maxVirtualHeight,
   });
 
   factory UiConfig.fromReader(JsonReader r) => UiConfig(
@@ -329,6 +334,8 @@ class UiConfig {
     blinkSeconds: r.number('blinkSeconds', min: 0, minExclusive: true),
     purchaseFlashSeconds: r.number('purchaseFlashSeconds', min: 0),
     noticeSeconds: r.number('noticeSeconds', min: 0, minExclusive: true),
+    maxVirtualWidth: r.integer('maxVirtualWidth', min: 180),
+    maxVirtualHeight: r.integer('maxVirtualHeight', min: 320),
   );
 
   /// How long the studio splash shows before the loading screen.
@@ -345,4 +352,70 @@ class UiConfig {
 
   /// How long a short message over the arena stays.
   final double noticeSeconds;
+
+  /// The game canvas grows with the window up to this many virtual pixels
+  /// (the base design is 180 x 320); beyond that the leftover is a border.
+  final int maxVirtualWidth;
+  final int maxVirtualHeight;
+}
+
+/// The finisher gesture: two circles in opposite directions.
+class GestureConfig {
+  const GestureConfig({
+    required this.firstClockwise,
+    required this.timeLimitSeconds,
+    required this.minStrokeLength,
+    required this.sampleStep,
+    required this.loopDegrees,
+    required this.minLoopSize,
+    required this.maxLoopAspect,
+    required this.closeFraction,
+    required this.minArcDegrees,
+  });
+
+  factory GestureConfig.fromReader(JsonReader r) {
+    final direction = r.string('firstDirection');
+    if (direction != 'clockwise' && direction != 'counterclockwise') {
+      throw ContentException(
+          'balance.json: gesture.firstDirection must be "clockwise" or "counterclockwise" (found "$direction")');
+    }
+    return GestureConfig(
+      firstClockwise: direction == 'clockwise',
+      timeLimitSeconds: r.number('timeLimitSeconds', min: 0, minExclusive: true),
+      minStrokeLength: r.number('minStrokeLength', min: 0, minExclusive: true),
+      sampleStep: r.number('sampleStep', min: 0, minExclusive: true),
+      loopDegrees: r.number('loopDegrees', min: 90),
+      minLoopSize: r.number('minLoopSize', min: 0, minExclusive: true),
+      maxLoopAspect: r.number('maxLoopAspect', min: 1),
+      closeFraction: r.number('closeFraction', min: 0, minExclusive: true),
+      minArcDegrees: r.number('minArcDegrees', min: 0),
+    );
+  }
+
+  /// First circle is drawn clockwise (the second goes the other way).
+  final bool firstClockwise;
+
+  /// Seconds to finish both circles once the drawing starts.
+  final double timeLimitSeconds;
+
+  /// A touch that travels less than this (virtual pixels) is a tap, not a stroke.
+  final double minStrokeLength;
+
+  /// Samples closer than this (virtual pixels) are ignored.
+  final double sampleStep;
+
+  /// Turning angle that completes a circle.
+  final double loopDegrees;
+
+  /// Smallest circle accepted (virtual pixels across).
+  final double minLoopSize;
+
+  /// Widest/tallest ratio accepted for a circle.
+  final double maxLoopAspect;
+
+  /// A circle must end within this fraction of its size from where it started.
+  final double closeFraction;
+
+  /// A stroke lifted before turning this much is not a circle (fails at once).
+  final double minArcDegrees;
 }

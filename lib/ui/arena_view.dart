@@ -8,13 +8,13 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../game/arena_game.dart';
 import '../services/game_controller.dart';
-import 'pixel_scale.dart';
 
 /// Hosts the Flame arena. The whole arena is the tap area.
 class ArenaView extends ConsumerStatefulWidget {
-  const ArenaView({super.key, required this.virtualHeight});
+  const ArenaView({super.key, required this.virtualWidth, required this.virtualHeight});
 
-  /// Height of the arena zone in virtual pixels.
+  /// Size of the arena zone in virtual pixels.
+  final int virtualWidth;
   final double virtualHeight;
 
   @override
@@ -31,7 +31,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
     final controller = ref.read(gameControllerProvider.notifier);
     final content = ref.read(contentProvider);
     _game = ArenaGame(
-      virtualSize: Vector2(virtualWidth.toDouble(), widget.virtualHeight),
+      virtualSize: Vector2(widget.virtualWidth.toDouble(), widget.virtualHeight),
       fx: content.balance.fx,
       onTap: controller.tap,
       onLuckyTap: controller.collectLucky,

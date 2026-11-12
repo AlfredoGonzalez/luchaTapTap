@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/widgets.dart';
@@ -46,9 +48,10 @@ Future<ProviderContainer> pumpApp(
   BillingService? billing,
   AppStage stage = AppStage.game,
   Size size = const Size(1080, 1920),
+  double dpr = 3,
 }) async {
   tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 3;
+  tester.view.devicePixelRatio = dpr;
   addTearDown(tester.view.reset);
   _handles.add(tester.ensureSemantics());
   await tester.pumpWidget(ProviderScope(
@@ -116,6 +119,33 @@ Future<void> tapArena(WidgetTester tester, [int times = 1]) async {
 Future<void> scrollPanel(WidgetTester tester, double dy) async {
   await tester.drag(find.byType(ListView).first, Offset(0, dy));
   await tester.pump(const Duration(milliseconds: 50));
+}
+
+/// Draws a circle with one finger around [center] (logical pixels): [clockwise]
+/// as seen on screen, starting at [startDeg] (0 = right, 90 = bottom, 180 = left).
+Future<void> drawCircle(
+  WidgetTester tester,
+  Offset center, {
+  double radius = 40,
+  bool clockwise = true,
+  double startDeg = 180,
+  bool lift = true,
+  TestGesture? finger,
+}) async {
+  Offset at(double deg) {
+    final a = deg * math.pi / 180;
+    return center + Offset(radius * math.cos(a), radius * math.sin(a));
+  }
+
+  final g = finger ?? await tester.startGesture(at(startDeg));
+  for (var i = 1; i <= 48; i++) {
+    await g.moveTo(at(startDeg + (clockwise ? 1 : -1) * 360 * i / 48));
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+  if (lift) {
+    await g.up();
+    await tester.pump(const Duration(milliseconds: 20));
+  }
 }
 
 /// Moves the app to the background and back, with [away] of time in between.
@@ -273,11 +303,19 @@ void main() {
       'tall 1080x2340': const Size(1080, 2340),
       'very tall 1080x2560': const Size(1080, 2560),
       'wide-ish 1200x1920': const Size(1200, 1920),
+      'desktop 1920x1080 @1x': const Size(1920, 1080),
+      'narrow browser 473x990 @1x': const Size(473, 990),
+      'tablet 1536x2048': const Size(1536, 2048),
     }.entries) {
       // Any RenderFlex overflow fails the test, so this checks the layout of
       // the fight screen and of every other view with the real pixel font.
       testWidgets('layout fits on ${entry.key}', (tester) async {
-        await pumpApp(tester, size: entry.value, save: saveFrom((e) => e.debugAddCoins(Big.fromInt(1000))));
+        await pumpApp(
+          tester,
+          size: entry.value,
+          dpr: entry.key.contains('@1x') ? 1 : 3,
+          save: saveFrom((e) => e.debugAddCoins(Big.fromInt(1000))),
+        );
         expect(find.text('Pelea 1'), findsOneWidget);
         for (final tab in ['Habilidades', 'Máscaras', 'Talentos', 'Tienda', 'Mejoras']) {
           await openTab(tester, tab);
@@ -295,16 +333,81 @@ void main() {
   });
 
   group('combo and skills', () {
-    testWidgets('ten taps fill the combo and GOLPE lands a big hit', (tester) async {
+    testWidgets('a full combo asks for a gesture; two circles land the finisher', (tester) async {
       final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      expect(find.text('GOLPE'), findsOneWidget);
       await tapArena(tester, 10);
       expect(stateOf(c).comboMeter, 1);
       expect(find.text('x10'), findsWidgets); // combo count (and the buy selector)
+      expect(find.text('DIBUJA'), findsOneWidget); // the badge
+      expect(find.text('¡DIBUJA!'), findsOneWidget); // the on-screen prompt
       final hpBefore = stateOf(c).enemyHp;
-      await tapButton(tester, 'GOLPE');
+      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
+      // Clockwise from the left, then counterclockwise from the right.
+      await drawCircle(tester, center + const Offset(-30, 0), clockwise: true);
+      expect(stateOf(c).comboMeter, 1); // one circle is not enough
+      await drawCircle(tester, center + const Offset(30, 0), clockwise: false, startDeg: 0);
       expect(stateOf(c).comboMeter, 0);
-      // 20x a tap of 0.01, with the starter mask's +15%.
-      expect((hpBefore - stateOf(c).enemyHp).toDouble(), closeTo(0.01 * 1.15 * 20, 1e-9));
+      // 20x a tap of 0.01, with the starter mask's +15%, on top of the taps drawn with.
+      expect((hpBefore - stateOf(c).enemyHp).toDouble(), greaterThanOrEqualTo(0.01 * 1.15 * 20));
+      expect(find.text('¡DIBUJA!'), findsNothing);
+      expect(find.text('GOLPE'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('one continuous figure eight also works', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
+      final finger = await tester.startGesture(center + const Offset(-70, 0)); // left point of the first circle
+      await drawCircle(tester, center + const Offset(-30, 0), clockwise: true, lift: false, finger: finger);
+      await drawCircle(tester, center + const Offset(-110, 0), clockwise: false, startDeg: 0, finger: finger);
+      expect(stateOf(c).comboMeter, 0);
+      await closeApp(tester);
+    });
+
+    testWidgets('drawing the circles the wrong way resets the combo', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
+      await drawCircle(tester, center, clockwise: false); // the first one must be clockwise
+      expect(stateOf(c).comboMeter, 0);
+      expect(find.text('¡Falló el golpe!'), findsOneWidget);
+      expect(find.text('GOLPE'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('a straight swipe fails the gesture', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
+      final g = await tester.startGesture(center + const Offset(-60, 0));
+      for (var i = 1; i <= 20; i++) {
+        await g.moveTo(center + Offset(-60.0 + i * 6, 0));
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await g.up();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(stateOf(c).comboMeter, 0);
+      await closeApp(tester);
+    });
+
+    testWidgets('taps keep working while the gesture is waiting', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      await tapArena(tester, 5);
+      expect(stateOf(c).comboMeter, 1); // still ready, nothing failed
+      expect(find.text('¡DIBUJA!'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('running out of time between the circles fails', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
+      await drawCircle(tester, center, clockwise: true);
+      await elapse(tester, 6); // the limit in balance.json is 5 s
+      expect(stateOf(c).comboMeter, 0);
       await closeApp(tester);
     });
 
@@ -477,6 +580,66 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pump(_short);
       expect(find.text('¡JEFE!'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
+  group('the boss is the player\'s choice', () {
+    SaveData atGate() => saveFrom((e) => e.debugSkipFights(8));
+    void strongTaps(Map<String, Map<String, dynamic>> f) => f['balance.json']!['tap'] = {'baseDamage': 1e9};
+
+    testWidgets('beating the fight before the boss repeats it and shows the "¡JEFE!" button', (tester) async {
+      final c = await pumpApp(tester, save: atGate(), edit: strongTaps);
+      expect(find.text('¡JEFE!'), findsOneWidget);
+      await tapArena(tester, 3);
+      expect(stateOf(c).fightNumber, 9); // still farming
+      expect(stateOf(c).stat('defeats'), 3);
+      expect(find.text('Pelea 9'), findsOneWidget);
+      expect(find.text('¡JEFE!'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('there is no "¡JEFE!" button before regular fights', (tester) async {
+      await pumpApp(tester);
+      expect(find.text('¡JEFE!'), findsNothing);
+      await closeApp(tester);
+    });
+
+    testWidgets('pressing it shows the intro; "Volver" returns to the farming fight', (tester) async {
+      final c = await pumpApp(tester, save: atGate());
+      await tapButton(tester, '¡JEFE!');
+      expect(stateOf(c).fightNumber, 10);
+      expect(find.text('¡A PELEAR!'), findsOneWidget);
+      await tapButton(tester, 'Volver');
+      expect(stateOf(c).fightNumber, 9);
+      expect(find.text('¡A PELEAR!'), findsNothing);
+      expect(find.text('¡JEFE!'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('losing sends the player back to farm; nothing restarts the boss by itself', (tester) async {
+      final c = await pumpApp(tester, save: atGate());
+      await tapButton(tester, '¡JEFE!');
+      await tapButton(tester, '¡A PELEAR!');
+      for (var i = 0; i < 40 && stateOf(c).fightNumber == 10; i++) {
+        await elapse(tester, 1);
+      }
+      expect(stateOf(c).fightNumber, 9);
+      expect(find.text('¡Se acabó el tiempo!'), findsOneWidget);
+      await elapse(tester, 10);
+      expect(stateOf(c).fightNumber, 9);
+      expect(find.text('¡A PELEAR!'), findsNothing); // no new intro
+      expect(find.text('¡JEFE!'), findsOneWidget); // the choice is back
+      await closeApp(tester);
+    });
+
+    testWidgets('beating the boss moves on', (tester) async {
+      final c = await pumpApp(tester, save: atGate(), edit: strongTaps);
+      await tapButton(tester, '¡JEFE!');
+      await tapButton(tester, '¡A PELEAR!');
+      await tapArena(tester);
+      expect(stateOf(c).fightNumber, 11);
+      expect(find.text('¡JEFE!'), findsNothing);
       await closeApp(tester);
     });
   });

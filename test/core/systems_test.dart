@@ -648,4 +648,128 @@ void main() {
       expect(e.state.purchases, isEmpty);
     });
   });
+
+  group('the boss is the player\'s choice', () {
+    GameEngine atGate() {
+      final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e9});
+      e.debugSkipFights(8); // fight 9, the last one before the boss
+      return e;
+    }
+
+    test('beating the fight before the boss repeats it instead of advancing', () {
+      final e = atGate();
+      expect(e.state.fightNumber, 9);
+      expect(e.bossGateReady, isTrue);
+      final coins = e.state.coins;
+      final r = e.tap();
+      expect(r.defeats, 1);
+      expect(e.state.fightNumber, 9); // still farming
+      expect(e.isBossFight, isFalse);
+      expect(e.state.coins > coins, isTrue); // and it paid
+      expect(e.state.enemyHp, e.enemyMaxHp); // a fresh opponent
+      e.tap();
+      e.tap();
+      expect(e.state.fightNumber, 9);
+      expect(e.state.stat('defeats'), 3);
+    });
+
+    test('idle damage farms the same fight too', () {
+      final e = newEngine((f) {
+        f['balance.json']!['start'] = {'coins': 1e12, 'fightNumber': 9};
+        f['trainers.json']!['trainers'][0]['baseDps'] = 1e6;
+      });
+      e.buyTrainer('don_chuy', x1);
+      for (var i = 0; i < 50; i++) {
+        e.tick();
+      }
+      expect(e.state.fightNumber, 9);
+      expect(e.state.stat('defeats'), greaterThan(5));
+    });
+
+    test('there is no gate before regular fights', () {
+      final e = newEngine();
+      expect(e.bossGateReady, isFalse);
+      expect(e.challengeBoss(), isFalse);
+      e.debugSkipFights(3);
+      expect(e.bossGateReady, isFalse);
+    });
+
+    test('challenging the boss starts its intro; the countdown waits', () {
+      final e = atGate();
+      expect(e.challengeBoss(), isTrue);
+      expect(e.state.fightNumber, 10);
+      expect(e.isBossFight, isTrue);
+      expect(e.awaitingBossStart, isTrue);
+      expect(e.state.enemyHp, e.enemyMaxHp);
+      expect(e.state.bossTimeLeft, isNull);
+      expect(e.challengeBoss(), isFalse); // already there
+    });
+
+    test('"Volver" on the intro returns to the farming fight', () {
+      final e = atGate();
+      e.challengeBoss();
+      expect(e.abandonBoss(), isTrue);
+      expect(e.state.fightNumber, 9);
+      expect(e.bossGateReady, isTrue);
+      expect(e.abandonBoss(), isFalse);
+    });
+
+    test('losing to the boss sends the player back to farm, not into a rematch', () {
+      final e = newEngine();
+      e.debugSkipFights(8);
+      e.challengeBoss();
+      e.startBoss();
+      var timedOut = false;
+      for (var i = 0; i < 400 && !timedOut; i++) {
+        timedOut = e.tick().bossTimedOut;
+      }
+      expect(timedOut, isTrue);
+      expect(e.state.fightNumber, 9);
+      expect(e.isBossFight, isFalse);
+      expect(e.awaitingBossStart, isFalse);
+      // The boss is only fought again when the player asks.
+      for (var i = 0; i < 100; i++) {
+        e.tick();
+      }
+      expect(e.isBossFight, isFalse);
+      expect(e.bossGateReady, isTrue);
+    });
+
+    test('beating the boss moves on to the next fight', () {
+      final e = atGate();
+      e.challengeBoss();
+      e.startBoss();
+      final r = e.tap();
+      expect(r.defeats, 1);
+      expect(e.state.fightNumber, 11);
+      expect(e.state.stat('bosses'), 1);
+      expect(e.bossGateReady, isFalse);
+    });
+  });
+
+  group('combo and the finisher gesture hooks', () {
+    test('a full meter does not decay while waiting for the gesture', () {
+      final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 0.001});
+      for (var i = 0; i < 10; i++) {
+        e.tap();
+      }
+      expect(e.finisherReady, isTrue);
+      for (var i = 0; i < 600; i++) {
+        e.tick(); // a whole minute
+      }
+      expect(e.state.comboMeter, 1);
+      expect(e.finisherReady, isTrue);
+    });
+
+    test('a failed gesture resets the combo', () {
+      final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 0.001});
+      for (var i = 0; i < 10; i++) {
+        e.tap();
+      }
+      e.failFinisher();
+      expect(e.state.comboMeter, 0);
+      expect(e.finisherReady, isFalse);
+      expect(e.finisher(), isNull);
+    });
+  });
 }

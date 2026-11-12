@@ -1,29 +1,88 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/palette.dart';
+import '../services/game_controller.dart';
 import 'palette_color.dart';
 
-/// Virtual canvas width in pixels (Visual Style Guide: 180 x 320, portrait).
-const int virtualWidth = 180;
-const int virtualMinHeight = 320;
+/// Base size of the virtual canvas in pixels (Visual Style Guide): 180 wide
+/// and at least 320 tall, portrait.
+const int baseVirtualWidth = 180;
+const int baseVirtualHeight = 320;
 
-/// Tall phones grow the canvas up to this height; the extra space goes to the
-/// arena, never to stretching.
-const int virtualMaxHeight = 390;
+/// How the game fits a window: every virtual pixel is a square of a whole
+/// number of *device* pixels, and the canvas grows (up to the limits in
+/// balance.json) to use the rest of the window, so nothing is stretched or
+/// blurred and little space is wasted.
+class PixelLayout {
+  const PixelLayout({
+    required this.pixelsPerVirtual,
+    required this.virtualWidth,
+    required this.virtualHeight,
+    required this.offsetX,
+    required this.offsetY,
+    required this.devicePixelRatio,
+  });
 
-/// Size of one virtual pixel on screen, always a whole number of logical
-/// pixels so every virtual pixel stays a sharp square.
+  /// Device pixels per virtual pixel (a whole number, at least 1).
+  final int pixelsPerVirtual;
+
+  /// Size of the canvas in virtual pixels.
+  final int virtualWidth;
+  final int virtualHeight;
+
+  /// Border left around the canvas, in logical pixels (whole device pixels).
+  final double offsetX;
+  final double offsetY;
+  final double devicePixelRatio;
+
+  /// Logical pixels of one virtual pixel (`pixelsPerVirtual / devicePixelRatio`).
+  double get scale => pixelsPerVirtual / devicePixelRatio;
+
+  /// Logical size of the canvas.
+  Size get size => Size(virtualWidth * scale, virtualHeight * scale);
+
+  /// Works out the layout for a window of [width] x [height] logical pixels.
+  factory PixelLayout.compute({
+    required double width,
+    required double height,
+    required double devicePixelRatio,
+    required int maxVirtualWidth,
+    required int maxVirtualHeight,
+  }) {
+    // Small epsilon: 360.0 * 3.0 must not become 1079.9999.
+    final deviceW = (width * devicePixelRatio + 1e-6).floor();
+    final deviceH = (height * devicePixelRatio + 1e-6).floor();
+    final k = math.max(1, math.min(deviceW ~/ baseVirtualWidth, deviceH ~/ baseVirtualHeight));
+    final vw = math.max(baseVirtualWidth, math.min(maxVirtualWidth, deviceW ~/ k));
+    final vh = math.max(baseVirtualHeight, math.min(maxVirtualHeight, deviceH ~/ k));
+    return PixelLayout(
+      pixelsPerVirtual: k,
+      virtualWidth: vw,
+      virtualHeight: vh,
+      offsetX: math.max(0, (deviceW - vw * k) ~/ 2) / devicePixelRatio,
+      offsetY: math.max(0, (deviceH - vh * k) ~/ 2) / devicePixelRatio,
+      devicePixelRatio: devicePixelRatio,
+    );
+  }
+}
+
+/// Size of one virtual pixel on screen, and of the canvas, for the widgets
+/// below it.
 class PixelScale extends InheritedWidget {
   const PixelScale({
     super.key,
     required this.scale,
+    required this.virtualWidth,
     required this.virtualHeight,
     required super.child,
   });
 
-  final int scale;
+  /// Logical pixels per virtual pixel.
+  final double scale;
+  final int virtualWidth;
   final int virtualHeight;
 
   /// Logical pixels for [virtualPixels].
@@ -37,37 +96,46 @@ class PixelScale extends InheritedWidget {
 
   @override
   bool updateShouldNotify(PixelScale oldWidget) =>
-      scale != oldWidget.scale || virtualHeight != oldWidget.virtualHeight;
+      scale != oldWidget.scale ||
+      virtualWidth != oldWidget.virtualWidth ||
+      virtualHeight != oldWidget.virtualHeight;
 }
 
-/// Fits the game into the screen at an integer scale and fills the leftover
+/// Fits the game into the window (see [PixelLayout]) and fills the leftover
 /// border with Ink.
-class PixelCanvas extends StatelessWidget {
+class PixelCanvas extends ConsumerWidget {
   const PixelCanvas({super.key, required this.builder});
 
   final WidgetBuilder builder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ui = ref.watch(contentProvider).balance.ui;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return ColoredBox(
       color: Palette.ink.color,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final byWidth = constraints.maxWidth ~/ virtualWidth;
-          final byHeight = constraints.maxHeight ~/ virtualMinHeight;
-          final scale = math.max(1, math.min(byWidth, byHeight));
-          final height = math.min(
-            virtualMaxHeight,
-            math.max(virtualMinHeight, constraints.maxHeight ~/ scale),
+          final layout = PixelLayout.compute(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            devicePixelRatio: dpr,
+            maxVirtualWidth: ui.maxVirtualWidth,
+            maxVirtualHeight: ui.maxVirtualHeight,
           );
-          return Center(
-            child: SizedBox(
-              width: (virtualWidth * scale).toDouble(),
-              height: (height * scale).toDouble(),
-              child: PixelScale(
-                scale: scale,
-                virtualHeight: height,
-                child: Builder(builder: builder),
+          return Padding(
+            padding: EdgeInsets.only(left: layout.offsetX, top: layout.offsetY),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: layout.size.width,
+                height: layout.size.height,
+                child: PixelScale(
+                  scale: layout.scale,
+                  virtualWidth: layout.virtualWidth,
+                  virtualHeight: layout.virtualHeight,
+                  child: Builder(builder: builder),
+                ),
               ),
             ),
           );

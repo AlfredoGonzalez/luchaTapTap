@@ -108,20 +108,41 @@ void main() {
       expect(e.state.enemyHp.toDouble(), closeTo(f.baseHp(fight).toDouble() - budget, 1e-6));
     });
 
-    test('it stops before the next boss', () {
+    test('it stops at the fight before the boss and farms it with a division', () {
       final e = hired((f) => f['trainers.json']!['trainers'][0]['baseDps'] = 1e12);
       final f = Formulas(e.content.balance);
+      // Damage per second at the time of leaving (achievements won while
+      // away must not change what the trainers did).
+      final dps = e.damagePerSecondOf(withSkills: false).toDouble();
       final report = e.applyOffline(const Duration(hours: 8))!;
-      expect(e.state.fightNumber, 10);
-      expect(e.isBossFight, isTrue);
-      expect(e.state.enemyHp, e.enemyMaxHp); // boss untouched
-      expect(report.defeats, 9);
-      var expected = 0.0;
-      for (var n = 1; n <= 9; n++) {
-        expected += f.coinsReward(n).toDouble();
+      // The player is held at fight 9, not sent into the boss.
+      expect(e.state.fightNumber, 9);
+      expect(e.bossGateReady, isTrue);
+      expect(e.isBossFight, isFalse);
+      expect(e.state.bossTimeLeft, isNull);
+      // Fights 1 to 8 once each, then fight 9 over and over.
+      var hpBefore9 = 0.0;
+      var coins = 0.0;
+      for (var n = 1; n <= 8; n++) {
+        hpBefore9 += f.baseHp(n).toDouble();
+        coins += f.coinsReward(n).toDouble();
       }
-      expect(report.coinsEarned.toDouble(), closeTo(expected, 1e-6));
-      expect(e.state.bossTimeLeft, isNull); // the countdown has not started
+      final hp9 = f.baseHp(9).toDouble();
+      final budget = dps * 4 * 3600; // 4 h cap
+      final kills9 = 1 + ((budget - hpBefore9 - hp9) / hp9).floor();
+      coins += kills9 * f.coinsReward(9).toDouble();
+      expect(report.defeats, 8 + kills9);
+      expect(report.coinsEarned.toDouble() / coins, closeTo(1, 1e-6));
+      expect(e.state.enemyHp > Big.zero, isTrue);
+      expect(e.state.enemyHp <= e.enemyMaxHp, isTrue);
+    });
+
+    test('farming the gate for 100 hours of dps is still instant', () {
+      final e = hired((f) => f['trainers.json']!['trainers'][0]['baseDps'] = 1e30);
+      final clock = Stopwatch()..start();
+      e.applyOffline(const Duration(hours: 8));
+      expect(clock.elapsedMilliseconds, lessThan(100));
+      expect(e.state.fightNumber, 9);
     });
 
     test('while standing at a boss nothing progresses', () {

@@ -14,12 +14,12 @@ const int _stripe = 8;
 class _StripePainter extends CustomPainter {
   _StripePainter(this.scale);
 
-  final int scale;
+  final double scale;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..isAntiAlias = false;
-    final band = (_stripe * scale).toDouble();
+    final band = _stripe * scale;
     var y = 0.0;
     var i = 0;
     while (y < size.height) {
@@ -77,14 +77,14 @@ class BossIntro extends ConsumerWidget {
         Positioned.fill(
           child: Column(
           children: [
-            SizedBox(height: scale.px(32)),
+            SizedBox(height: scale.px(12)),
             PixelText(
               strings.t('boss_intro_title'),
               size: 16,
               color: Palette.marigold.color,
               shadow: Palette.ink.color,
             ),
-            SizedBox(height: scale.px(6)),
+            SizedBox(height: scale.px(4)),
             PixelText(
               strings.t('boss_intro_where', {
                 'l': info.league.order,
@@ -92,7 +92,7 @@ class BossIntro extends ConsumerWidget {
               }),
               shadow: Palette.ink.color,
             ),
-            SizedBox(height: scale.px(10)),
+            SizedBox(height: scale.px(6)),
             DecoratedBox(
               decoration: BoxDecoration(
                 color: Palette.ink.color,
@@ -109,7 +109,7 @@ class BossIntro extends ConsumerWidget {
                 ),
               ),
             ),
-            SizedBox(height: scale.px(8)),
+            SizedBox(height: scale.px(6)),
             SizedBox(
               width: double.infinity,
               height: scale.px(20),
@@ -132,7 +132,7 @@ class BossIntro extends ConsumerWidget {
                 ),
               ),
             ),
-            SizedBox(height: scale.px(6)),
+            SizedBox(height: scale.px(4)),
             PixelText(
               strings.t('boss_intro_time', {'s': seconds}),
               align: TextAlign.center,
@@ -147,7 +147,14 @@ class BossIntro extends ConsumerWidget {
               height: 28,
               onPressed: controller.startBoss,
             ),
-            SizedBox(height: scale.px(12)),
+            SizedBox(height: scale.px(4)),
+            PixelButton(
+              label: strings.t('dialog_back'),
+              style: PixelButtonStyle.secondary,
+              width: 120,
+              onPressed: controller.abandonBoss,
+            ),
+            SizedBox(height: scale.px(6)),
           ],
         ),
         ),
