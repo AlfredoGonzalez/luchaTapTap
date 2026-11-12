@@ -592,6 +592,8 @@ class UiConfig {
     required this.noticeSeconds,
     required this.maxVirtualWidth,
     required this.maxVirtualHeight,
+    required this.splashLogoMaxFraction,
+    required this.splashVideoLogoFraction,
   });
 
   factory UiConfig.fromReader(JsonReader r) => UiConfig(
@@ -602,6 +604,8 @@ class UiConfig {
     noticeSeconds: r.number('noticeSeconds', min: 0, minExclusive: true),
     maxVirtualWidth: r.integer('maxVirtualWidth', min: 180),
     maxVirtualHeight: r.integer('maxVirtualHeight', min: 320),
+    splashLogoMaxFraction: r.number('splashLogoMaxFraction', min: 0, minExclusive: true),
+    splashVideoLogoFraction: r.number('splashVideoLogoFraction', min: 0, minExclusive: true),
   );
 
   /// How long the studio splash shows before the loading screen.
@@ -623,6 +627,14 @@ class UiConfig {
   /// (the base design is 180 x 320); beyond that the leftover is a border.
   final int maxVirtualWidth;
   final int maxVirtualHeight;
+
+  /// The studio logo in the splash video may fill at most this share of the
+  /// screen width.
+  final double splashLogoMaxFraction;
+
+  /// How much of the video's width the logo spans in its last frame
+  /// (measured on the file; change it if the video is replaced).
+  final double splashVideoLogoFraction;
 }
 
 /// The finisher gesture: two circles in opposite directions.

@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 
 import '../core/palette.dart';
 import '../services/game_controller.dart';
@@ -16,10 +19,13 @@ import 'ui_state.dart';
 Duration _seconds(double s) =>
     Duration(microseconds: (s * Duration.microsecondsPerSecond).round());
 
-/// Studio splash: "AM Studios Play presenta". Tap to skip.
-///
-/// Placeholder until the studio video is ready; the video replaces the
-/// emblem and name here.
+/// Background color of the studio video (it is part of the file, not a game
+/// color), so the screen around the video matches it.
+const Color _videoBackground = Color(0xFF0E0F12);
+
+/// Studio splash: plays the studio video, then goes on. Tap to skip. If the
+/// video cannot play (no codec, a test), the old still splash shows for
+/// `splashSeconds` instead.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -29,26 +35,92 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   Timer? _timer;
+  VideoPlayerController? _video;
+  bool _done = false;
 
   @override
   void initState() {
     super.initState();
     final seconds = ref.read(contentProvider).balance.ui.splashSeconds;
+    // Safety net: if the video never starts, the still splash times out.
     _timer = Timer(_seconds(seconds), _next);
+    _startVideo();
+  }
+
+  Future<void> _startVideo() async {
+    try {
+      final controller = VideoPlayerController.asset('assets/video/studio.mp4');
+      _video = controller;
+      await controller.initialize();
+      if (!mounted) return;
+      // Browsers only allow autoplay without sound.
+      await controller.setVolume(kIsWeb ? 0 : 1);
+      controller.addListener(_onVideo);
+      await controller.play();
+      if (!mounted) return;
+      // The video is playing: replace the safety timer by its own length.
+      _timer?.cancel();
+      _timer = Timer(
+        controller.value.duration + const Duration(seconds: 2),
+        _next,
+      );
+      setState(() {});
+    } catch (e) {
+      debugPrint('Studio video not available: $e');
+    }
+  }
+
+  void _onVideo() {
+    final v = _video?.value;
+    if (v != null && v.isInitialized && v.position >= v.duration) _next();
   }
 
   void _next() {
-    if (mounted) ref.read(appStageProvider.notifier).show(AppStage.loading);
+    if (_done || !mounted) return;
+    _done = true;
+    ref.read(appStageProvider.notifier).show(AppStage.loading);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _video?.removeListener(_onVideo);
+    _video?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final video = _video;
+    final ui = ref.watch(contentProvider).balance.ui;
+    if (video != null && video.value.isInitialized) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _next,
+        child: ColoredBox(
+          color: _videoBackground,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // Size the video so the logo inside it spans at most
+              // `splashLogoMaxFraction` of the screen width (and the video
+              // still fits the screen height).
+              final aspect = video.value.aspectRatio;
+              final width = math.min(
+                box.maxWidth * ui.splashLogoMaxFraction / ui.splashVideoLogoFraction,
+                box.maxHeight * aspect,
+              );
+              return Center(
+                child: SizedBox(
+                  width: width,
+                  height: width / aspect,
+                  child: VideoPlayer(video),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
     final scale = PixelScale.of(context);
     final strings = ref.watch(stringsProvider);
     return GestureDetector(

@@ -110,7 +110,9 @@
     "purchaseFlashSeconds": 0.1,
     "noticeSeconds": 2,
     "maxVirtualWidth": 270,
-    "maxVirtualHeight": 480
+    "maxVirtualHeight": 480,
+    "splashLogoMaxFraction": 0.6,
+    "splashVideoLogoFraction": 0.88
   },
   "gesture": {
     "firstDirection": "clockwise",
