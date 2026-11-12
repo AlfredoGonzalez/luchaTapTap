@@ -283,8 +283,10 @@ def build(path):
     img = remove_background(Image.open(path))
     cell = to_cell(img, size, allow_mask=(key == "player"))
     frames = frames_for(cell)
-    sheet = Image.new("RGBA", (size * COLUMNS, size * len(ORDER)), (0, 0, 0, 0))
-    for row, anim in enumerate(ORDER):
+    # A single pose gives the five required rows; the kick row is optional.
+    rows = [a for a in ORDER if a in frames]
+    sheet = Image.new("RGBA", (size * COLUMNS, size * len(rows)), (0, 0, 0, 0))
+    for row, anim in enumerate(rows):
         for col in range(BALANCE["clips"][anim]["frames"]):
             sheet.paste(frames[anim][col], (col * size, row * size))
     OUT.mkdir(parents=True, exist_ok=True)
