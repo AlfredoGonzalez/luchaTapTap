@@ -420,6 +420,7 @@ class _Bot {
   }
 
   void _maybeChallengeBoss() {
+    engine.acknowledgeBossWin();
     if (engine.awaitingBossLossAck) {
       engine.acknowledgeBossLoss();
       return;

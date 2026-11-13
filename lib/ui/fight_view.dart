@@ -67,6 +67,7 @@ class FightView extends ConsumerWidget {
               const FinisherPrompt(),
               const _BossButton(),
               const _BossLossPanel(),
+              const _BossWinPanel(),
             ],
           ),
           ),
@@ -223,6 +224,58 @@ class _BossLossPanel extends ConsumerWidget {
                 style: PixelButtonStyle.gold,
                 width: 70,
                 onPressed: controller.acknowledgeBossLoss,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the player beats a boss: the player celebrates while the tip
+/// waits for "Continuar".
+class _BossWinPanel extends ConsumerWidget {
+  const _BossWinPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    ref.watch(gameControllerProvider);
+    final controller = ref.read(gameControllerProvider.notifier);
+    final boss = controller.engine.bossWinOpponent;
+    if (boss == null) return const SizedBox.shrink();
+    final strings = ref.watch(stringsProvider);
+    return Positioned(
+      left: scale.px(sideMargin),
+      right: scale.px(sideMargin),
+      top: scale.px(2),
+      child: PixelPanel(
+        padding: 4,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PixelText(
+              strings.t('boss_win_title'),
+              size: 16,
+              color: Palette.sunYellow.color,
+              shadow: Palette.ink.color,
+              align: TextAlign.center,
+            ),
+            SizedBox(height: scale.px(2)),
+            PixelText(
+              strings.t('boss_win_text', {'name': boss.name}),
+              wrap: true,
+              align: TextAlign.center,
+            ),
+            SizedBox(height: scale.px(3)),
+            Center(
+              child: PixelButton(
+                label: strings.t('boss_win_ok'),
+                style: PixelButtonStyle.gold,
+                width: 80,
+                onPressed: controller.acknowledgeBossWin,
               ),
             ),
           ],

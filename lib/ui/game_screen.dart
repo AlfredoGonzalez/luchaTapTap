@@ -39,7 +39,8 @@ class GameScreen extends ConsumerWidget {
         dialog == null &&
         !hasOffline &&
         !engine.awaitingBossStart &&
-        !engine.awaitingBossLossAck;
+        !engine.awaitingBossLossAck &&
+        engine.bossWinOpponent == null;
 
     final contentHeight =
         scale.virtualHeight -

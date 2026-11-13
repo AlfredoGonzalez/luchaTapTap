@@ -234,6 +234,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   final StreamController<String> _skillUsed =
       StreamController<String>.broadcast();
   final StreamController<void> _bossLost = StreamController<void>.broadcast();
+  final StreamController<void> _bossWinDone =
+      StreamController<void>.broadcast();
   final StreamController<HitEvent> _hits =
       StreamController<HitEvent>.broadcast();
   Duration _lastElapsed = Duration.zero;
@@ -256,6 +258,9 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   /// The boss timer ran out (the player lost the fight).
   Stream<void> get bossLost => _bossLost.stream;
+
+  /// The victory screen was closed (the fighters go back to idle).
+  Stream<void> get bossWinDone => _bossWinDone.stream;
 
   /// Taps, finishers and idle hits, for floating damage numbers and flashes.
   Stream<HitEvent> get hits => _hits.stream;
@@ -290,6 +295,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       _timer?.cancel();
       _hits.close();
       _bossLost.close();
+      _bossWinDone.close();
       _skillUsed.close();
       gestureTrail.dispose();
       gestureCircles.dispose();
@@ -627,6 +633,15 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _sfx(Sfx.bossIntro);
     _buzz('bossIntro');
     _publish();
+  }
+
+  /// "Continuar" on the victory screen.
+  void acknowledgeBossWin() {
+    if (!_engine.acknowledgeBossWin()) return;
+    _bossWinDone.add(null);
+    _publish();
+    // The game state itself did not change: the victory panel must go anyway.
+    ref.notifyListeners();
   }
 
   /// "Aceptar" on the defeat tip: back to the farming fight.

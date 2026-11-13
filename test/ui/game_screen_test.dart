@@ -678,6 +678,15 @@ void main() {
       await tapButton(tester, '¡A PELEAR!');
       await tapArena(tester);
       expect(stateOf(c).fightNumber, 11);
+      // A victory screen waits; the fight is paused until "Continuar".
+      expect(find.text('¡VICTORIA!'), findsOneWidget);
+      final hp = stateOf(c).enemyHp;
+      await tapArena(tester, 2);
+      expect(stateOf(c).enemyHp, hp);
+      await tapButton(tester, 'Continuar');
+      expect(find.text('¡VICTORIA!'), findsNothing);
+      await tapArena(tester);
+      expect(stateOf(c).fightNumber, 12); // the fight goes on
       expect(find.text('¡JEFE!'), findsNothing);
       await closeApp(tester);
     });

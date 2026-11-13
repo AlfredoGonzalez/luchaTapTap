@@ -31,6 +31,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   late final ArenaGame _game;
   StreamSubscription<HitEvent>? _hits;
   StreamSubscription<void>? _bossLost;
+  StreamSubscription<void>? _bossWinDone;
   StreamSubscription<String>? _skills;
 
   /// The fight number changed since the last hit event (that case already
@@ -91,6 +92,9 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       _fightChanged = false;
     });
     _bossLost = controller.bossLost.listen((_) => _game.playerDefeated());
+    _bossWinDone = controller.bossWinDone.listen(
+      (_) => _game.recoverFromDefeat(),
+    );
     _skills = controller.skillUsed.listen((id) {
       final animation = content.skills.firstWhere((s) => s.id == id).animation;
       if (animation != null) _game.playSkill(animation);
@@ -135,6 +139,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
   void dispose() {
     _hits?.cancel();
     _bossLost?.cancel();
+    _bossWinDone?.cancel();
     _skills?.cancel();
     super.dispose();
   }

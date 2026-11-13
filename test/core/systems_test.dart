@@ -771,6 +771,13 @@ void main() {
       e.startBoss();
       final r = e.tap();
       expect(r.defeats, 1);
+      // The fight waits on the victory screen until "Continuar".
+      expect(e.bossWinOpponent?.id, 'el_mariachi_furioso');
+      expect(e.tap().damageDealt.isZero, isTrue);
+      expect(e.tick().damageDealt.isZero, isTrue);
+      expect(e.acknowledgeBossWin(), isTrue);
+      expect(e.acknowledgeBossWin(), isFalse);
+      expect(e.bossWinOpponent, isNull);
       expect(e.state.fightNumber, 11);
       expect(e.state.stat('bosses'), 1);
       expect(e.bossGateReady, isFalse);

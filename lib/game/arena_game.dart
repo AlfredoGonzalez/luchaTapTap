@@ -197,9 +197,9 @@ class ArenaGame extends FlameGame {
     _enemy.getUp();
   }
 
-  /// The player celebrates (a boss fell) for the time set in the data.
+  /// The player celebrates (a boss fell) until the victory screen is closed.
   void playerVictory() {
-    if (isLoaded) _player.celebrate(animations.victorySeconds);
+    if (isLoaded) _player.celebrate(double.infinity);
   }
 
   /// Shows (or removes) the lucky pickup at a fractional position.
@@ -433,7 +433,8 @@ class _Fighter extends PositionComponent {
   void removeAfter(double seconds) => _removeLeft = seconds;
 
   void punch({bool kick = false}) {
-    if (_fallen) return;
+    // A fighter that is down or celebrating does not throw punches.
+    if (_fallen || _celebrateLeft > 0) return;
     // Sheets without the kick row (placeholders) punch instead.
     final useKick = kick && sheet?.has('kick') == true;
     if (useKick) {
