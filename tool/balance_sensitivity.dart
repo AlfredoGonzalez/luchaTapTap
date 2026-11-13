@@ -19,13 +19,13 @@ void main(List<String> args) {
   });
   final length = Duration(minutes: (hours * 60).round());
 
-  BotProfile p(String name, {double taps = 4, double finisher = 0.8, double gesture = 2.5, double stall = 5, double lucky = 0.6, double? session, double? every}) =>
+  BotProfile p(String name, {double taps = 4, double finisher = 0.8, double kick = 3.5, double stall = 5, double lucky = 0.6, double? session, double? every}) =>
       BotProfile(
         name: name,
         tapsPerSecond: taps,
         actEverySeconds: 2,
         finisherSuccess: finisher,
-        gestureSeconds: gesture,
+        kickSeconds: kick,
         luckyCatch: lucky,
         stallMinutesBeforePrestige: stall,
         sessionMinutes: session,
@@ -37,7 +37,7 @@ void main(List<String> args) {
     p('toca 2/s', taps: 2),
     p('toca 6/s', taps: 6),
     p('gesto 40% de acierto', finisher: 0.4),
-    p('nunca hace el gesto', finisher: 0, gesture: 0),
+    p('nunca da la patada', finisher: 0, kick: 0),
     p('no atrapa suerte', lucky: 0),
     p('prestigia tras 2 min', stall: 2),
     p('prestigia tras 10 min', stall: 10),

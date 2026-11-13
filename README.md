@@ -22,7 +22,7 @@ All in [`docs/`](docs/). The Technical Spec is the entry point for building; if 
 - **M3:** save and load (atomic write, backup, migrations), offline earnings with the pop-up and a rewarded-ad double, debug panel.
 - **M4:** the 14 screens of the UI mockups with the Press Start 2P font and pixel icons: studio splash, loading, fight, boss intro, upgrades, skills, masks, talents, prestige, offline pop-up, shop, settings and credits. Store purchases and ads run on fake services until M7/M8.
 - **M5:** the economy was retuned with a bot that plays the real engine (`dart run tool/balance_report.dart`), and milestone multipliers were added. See [`docs/BALANCE.md`](docs/BALANCE.md).
-- **After playtesting M4:** the boss is chosen with a "¡JEFE!" button, the screen adapts to any window size, and the finisher is a two-circle gesture.
+- **After playtesting M4:** the boss is chosen with a "¡JEFE!" button, the screen adapts to any window size, and the finisher is a kick: tap 5 shrinking circles before they vanish.
 
 ## Play it in the browser
 

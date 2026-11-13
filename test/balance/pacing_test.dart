@@ -81,11 +81,11 @@ void main() {
       expect(r.prestigeMinutes.first, lessThan(60));
     });
 
-    test('a player who never draws the gesture is only a little slower', () {
+    test('a player who never lands the kick is only a little slower', () {
       final base = simulate(content, BotProfile.active.withLuckyCatch(0), length: threeHours);
       final none = simulate(
         content,
-        const BotProfile(name: 'sin gesto', tapsPerSecond: 4, actEverySeconds: 2, finisherSuccess: 0, gestureSeconds: 0, luckyCatch: 0),
+        const BotProfile(name: 'sin gesto', tapsPerSecond: 4, actEverySeconds: 2, finisherSuccess: 0, kickSeconds: 0, luckyCatch: 0),
         length: threeHours,
       );
       expect(none.prestigeMinutes.first, lessThan(base.prestigeMinutes.first * 1.6));

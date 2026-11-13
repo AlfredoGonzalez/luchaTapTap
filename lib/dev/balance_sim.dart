@@ -18,7 +18,7 @@ class BotProfile {
     required this.tapsPerSecond,
     required this.actEverySeconds,
     this.finisherSuccess = 0.8,
-    this.gestureSeconds = 2.5,
+    this.kickSeconds = 3.5,
     this.luckyCatch = 0.6,
     this.stallMinutesBeforePrestige = 5,
     this.sessionMinutes,
@@ -34,12 +34,12 @@ class BotProfile {
   /// screen this often).
   final double actEverySeconds;
 
-  /// Chance that the finisher gesture is drawn correctly.
+  /// Chance that the kick circles are all tapped in time.
   final double finisherSuccess;
 
-  /// Seconds spent drawing the gesture (no taps meanwhile). Zero means the
+  /// Seconds spent on the kick circles (no taps meanwhile). Zero means the
   /// player never tries it.
-  final double gestureSeconds;
+  final double kickSeconds;
 
   /// Chance that a lucky pickup is caught.
   final double luckyCatch;
@@ -60,7 +60,7 @@ class BotProfile {
         tapsPerSecond: tapsPerSecond,
         actEverySeconds: actEverySeconds,
         finisherSuccess: finisherSuccess,
-        gestureSeconds: gestureSeconds,
+        kickSeconds: kickSeconds,
         luckyCatch: chance,
         stallMinutesBeforePrestige: stallMinutesBeforePrestige,
         sessionMinutes: sessionMinutes,
@@ -185,7 +185,7 @@ class _Bot {
   double? firstSkillMinute;
   double t = 0; // seconds
   double _tapDebt = 0;
-  double _busyUntil = 0; // drawing the gesture: no taps until then
+  double _busyUntil = 0; // tapping the kick circles: no taps until then
   bool _pendingFinisher = false;
   double _lastActAt = -1e9;
   double _lastProgressAt = 0;
@@ -236,7 +236,7 @@ class _Bot {
       _lastActAt = t;
       _act();
     }
-    // Taps for this tick (none while the finger draws the gesture).
+    // Taps for this tick (none while the finger goes for the kick circles).
     if (t >= _busyUntil) {
       _tapDebt += profile.tapsPerSecond * _tickSeconds;
       while (_tapDebt >= 1) {
@@ -260,10 +260,10 @@ class _Bot {
     if (!_pendingFinisher &&
         engine.finisherReady &&
         !engine.awaitingBossStart &&
-        profile.gestureSeconds > 0 &&
+        profile.kickSeconds > 0 &&
         t >= _busyUntil) {
-      // Drawing the two circles takes a moment, without tapping.
-      _busyUntil = t + profile.gestureSeconds;
+      // Tapping the circles takes a moment, without tapping the opponent.
+      _busyUntil = t + profile.kickSeconds;
       _pendingFinisher = true;
     }
     if (engine.state.lucky != null && rng.nextDouble() < profile.luckyCatch * _tickSeconds * 2) {

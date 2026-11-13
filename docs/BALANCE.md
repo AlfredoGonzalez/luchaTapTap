@@ -4,7 +4,7 @@ How the economy was tuned, how to measure it, and what it can and cannot tell yo
 
 ## Measuring: the balance simulator
 
-`lib/dev/balance_sim.dart` is a bot that plays the real `GameEngine` (it is not part of the app): it taps, buys what pays back best, learns and uses skills, catches lucky pickups, draws the finisher gesture (taking a moment during which it does not tap), challenges the boss when it has enough damage, spends Belts and changes mask when its run has stalled.
+`lib/dev/balance_sim.dart` is a bot that plays the real `GameEngine` (it is not part of the app): it taps, buys what pays back best, learns and uses skills, catches lucky pickups, goes for the kick circles (taking a moment during which it does not tap), challenges the boss when it has enough damage, spends Belts and changes mask when its run has stalled.
 
 ```bash
 dart run tool/balance_report.dart 3                      # 3 hours, three player types, milestone table
@@ -27,7 +27,7 @@ From the Game Design Document, plus two I added after the first measurements:
 | New things early | an upgrade, trainer or skill every 1 to 3 minutes for the first 15 minutes (GDD asks for 30 to 60 seconds; the prototype has only 9 items to hand out) |
 | No permanent wall | the best fight keeps growing over hours |
 | Lucky pickups | a bonus, never a requirement (added) |
-| The finisher gesture | a bonus, never a requirement (added) |
+| The kick circles | a bonus, never a requirement (added) |
 
 The tuning was done against the **worst case** (a player who never catches a lucky pickup), found by an automatic search over the economy parameters with these targets as the objective, then rounded by hand and checked.
 
@@ -53,7 +53,7 @@ The starting numbers (HP x1.55 per fight, costs x1.15 per level, +1 damage per l
 
 Belts per prestige used to be 1 to 4 (+2% to +8% damage), which could not beat a boss that has 10 times the HP. The divisor and the minimum are now separate levers: `minBelts` says *when* the player may change mask, the divisor says *how much* it pays. The +2% per Belt from the documents is unchanged.
 
-## Results (active player, 4 taps per second, 80% gesture success, does not catch lucky pickups)
+## Results (active player, 4 taps per second, 80% kick success, does not catch lucky pickups)
 
 | | Minute |
 | --- | --- |
@@ -82,11 +82,11 @@ casual 5 min cada 30          64    90   120   150      60      92       -      
 casual 10 min cada 2 h       122   126     -     -     120     129       -        1       39
 ```
 
-The pacing does not depend on one exact player: tap rate, gesture skill and when to prestige move the first prestige by a few minutes, and catching lucky pickups makes it about 30% faster.
+The pacing does not depend on one exact player: tap rate, kick skill and when to prestige move the first prestige by a few minutes, and catching lucky pickups makes it about 30% faster.
 
 ## Limits: read before trusting these numbers
 
-- **It is a bot.** Real players are slower to decide, forget skills, misdraw gestures and take breaks. The targets are for an attentive player; the casual rows show a calmer one.
+- **It is a bot.** Real players are slower to decide, forget skills, miss kick circles and take breaks. The targets are for an attentive player; the casual rows show a calmer one.
 - **The M5 numbers above were measured with the prototype content** (2 trainers, 2 masks, 1 league). They are kept as history; the launch content changed the curve, see the M7 section.
 - **The wall is the boss.** Every tenth fight has 10 times the HP, so progress comes in steps; players will feel it and the "¡JEFE!" button is where they decide.
 - **Casual play is slow** (first prestige at about 1 hour 30 for 5 minutes every half hour). Offline earnings help but the 4 hour cap and trainers-only damage limit them. A designer call: is that the desired pace for a casual player?
@@ -112,4 +112,4 @@ What I did about it, in order of how much it mattered:
 2. **Trainers 3 to 6 are expensive and late** (cost 10^8, 10^10, 10^12, 10^14; unlock at fights 32, 48, 64, 80). I tried cheaper and earlier tiers: they made the second prestige 10 minutes faster and the best fight at one hour 109.
 3. **Masks:** the extra bonuses (+20% tap, +30% trainers...) also shorten the second run by a few minutes; I left them.
 
-Open: how deep should three hours go? Nothing in the GDD says. The pacing test now requires the best fight to be at least 35 after an hour (it was 40) and growing after that. A bigger `loopScale` makes the loop steeper, a smaller one lets it run away. **Not re-run after M7:** the full sensitivity table (tap rate, gesture, prestige policy); only the headline profiles above.
+Open: how deep should three hours go? Nothing in the GDD says. The pacing test now requires the best fight to be at least 35 after an hour (it was 40) and growing after that. A bigger `loopScale` makes the loop steeper, a smaller one lets it run away. **Not re-run after M7:** the full sensitivity table (tap rate, kick, prestige policy); only the headline profiles above.

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
@@ -7,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/big.dart';
 import '../core/buy_amount.dart';
 import '../core/fixed_step.dart';
-import '../core/finisher_gesture.dart';
+import '../core/kick_challenge.dart';
 import '../core/game_engine.dart';
 import '../core/game_state.dart';
 import '../core/rng.dart';
@@ -154,6 +155,16 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 }
 
+/// A kick circle on screen: where (fractions of the area) and how much of its
+/// life is left (1 to 0).
+class KickView {
+  const KickView({required this.x, required this.y, required this.remaining});
+
+  final double x;
+  final double y;
+  final double remaining;
+}
+
 /// Result of using a store item.
 enum ShopResult { done, cancelled, cooldown, noAd }
 
@@ -232,7 +243,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   late final GameEngine _engine;
   late final FixedStepper _stepper;
-  late final FinisherGesture _gesture;
+  late final KickChallenge _kick;
+  Duration _lastKickAt = Duration.zero;
   late final SaveCodec _codec;
   late final SaveStore _store;
   // `clock.stopwatch()` is the real clock in the app and the fake clock in
@@ -254,11 +266,12 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   GameEngine get engine => _engine;
 
-  /// Points of the finisher gesture being drawn (virtual pixels), for the trail.
-  final ValueNotifier<List<Offset>> gestureTrail = ValueNotifier(const []);
+  /// The kick's circle on screen (null when there is none), refreshed every
+  /// poll; the screen draws it.
+  final ValueNotifier<KickView?> kickView = ValueNotifier(null);
 
-  /// Circles of the finisher gesture already done (0 to 2).
-  final ValueNotifier<int> gestureCircles = ValueNotifier(0);
+  /// Circles of the kick already tapped.
+  final ValueNotifier<int> kickHits = ValueNotifier(0);
 
   /// A skill was used (its id), for its animation.
   Stream<String> get skillUsed => _skillUsed.stream;
@@ -289,7 +302,10 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       _engine.applyOffline(clock.now().toUtc().difference(save.lastSeen));
     }
 
-    _gesture = FinisherGesture(content.balance.gesture);
+    _kick = KickChallenge(
+      content.balance.kick.settings,
+      SeededRng(DateTime.now().microsecondsSinceEpoch),
+    );
     _stepper = FixedStepper(
       ticksPerSecond: content.balance.ticksPerSecond,
       maxCatchUpTicks: content.balance.maxCatchUpTicks,
@@ -304,8 +320,8 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       _bossLost.close();
       _bossWinDone.close();
       _skillUsed.close();
-      gestureTrail.dispose();
-      gestureCircles.dispose();
+      kickView.dispose();
+      kickHits.dispose();
     });
     // Purchases that finished while no purchase was open (paid, then the app
     // closed) are granted when the store reports them.
@@ -336,7 +352,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
         balance.saveIntervalSeconds * Duration.microsecondsPerSecond) {
       saveNow();
     }
-    _pollGesture(now);
+    _pollKick(now);
     final ticks = _stepper.advance(now - _lastElapsed);
     _lastElapsed = now;
     if (ticks == 0) return;
@@ -366,62 +382,54 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
   double _seconds(Duration d) => d.inMicroseconds / Duration.microsecondsPerSecond;
 
   // ---------------------------------------------------------------------------
-  // Finisher gesture: two circles in opposite directions
+  // The kick: circles to tap once the combo bar is full
 
-  /// A finger went down in the arena (position in virtual pixels). The gesture
-  /// only counts while the combo meter is full.
-  void gesturePointerDown(double x, double y) {
-    if (!_engine.finisherReady || _engine.awaitingBossStart) return;
-    _gesture.pointerDown(x, y, _seconds(_clock.elapsed));
-    _afterGesture();
-  }
-
-  void gesturePointerMove(double x, double y) {
-    if (!_engine.finisherReady) return;
-    _gesture.pointerMove(x, y, _seconds(_clock.elapsed));
-    _afterGesture();
-  }
-
-  void gesturePointerUp() {
-    if (!_engine.finisherReady) return;
-    _gesture.pointerUp(_seconds(_clock.elapsed));
-    _afterGesture();
-  }
-
-  void _pollGesture(Duration now) {
-    if (!_engine.finisherReady) {
-      if (_gesture.status != GestureStatus.idle) _resetGesture();
+  /// Moves the kick forward: it starts by itself when the bar is full, and ends
+  /// in the kick (every circle tapped) or in a failure (a circle vanished).
+  void _pollKick(Duration now) {
+    // A long pause (the app was away) must not eat the circles at once.
+    final dt = math.min(0.1, _seconds(now - _lastKickAt));
+    _lastKickAt = now;
+    final canKick = _engine.finisherReady && !_engine.awaitingBossStart;
+    if (!canKick) {
+      if (_kick.status != KickStatus.idle) _resetKick();
       return;
     }
-    if (_gesture.isDrawing) {
-      _gesture.tick(_seconds(now));
-      _afterGesture();
-    }
-  }
-
-  void _resetGesture() {
-    _gesture.reset();
-    gestureTrail.value = const [];
-    gestureCircles.value = 0;
-  }
-
-  void _afterGesture() {
-    switch (_gesture.status) {
-      case GestureStatus.success:
-        _resetGesture();
+    if (_kick.status == KickStatus.idle) _kick.start();
+    _kick.tick(dt);
+    switch (_kick.status) {
+      case KickStatus.success:
+        _resetKick();
         finisher();
-      case GestureStatus.failed:
-        _resetGesture();
+      case KickStatus.failed:
+        _resetKick();
         _engine.failFinisher();
         _sfx(Sfx.error);
         _publish();
-        ref.read(noticeProvider.notifier).show('gesture_failed');
-      case GestureStatus.drawing:
-        gestureTrail.value = [for (final p in _gesture.trail) Offset(p.x, p.y)];
-        gestureCircles.value = _gesture.circlesDone;
-      case GestureStatus.idle:
+        ref.read(noticeProvider.notifier).show('kick_failed');
+      case KickStatus.active:
+        kickHits.value = _kick.hits;
+        kickView.value = _kick.circleVisible
+            ? KickView(x: _kick.x, y: _kick.y, remaining: _kick.remaining)
+            : null;
+      case KickStatus.idle:
         break;
     }
+  }
+
+  void _resetKick() {
+    _kick.reset();
+    kickView.value = null;
+    kickHits.value = 0;
+  }
+
+  /// The player tapped the kick's circle.
+  void kickCircleTapped() {
+    if (!_kick.hit()) return;
+    _sfx(Sfx.tap);
+    _buzz('tap');
+    kickHits.value = _kick.hits;
+    kickView.value = null;
   }
 
   @override

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flame/game.dart';
@@ -18,6 +17,7 @@ import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
 import 'package:lucha_tap_tap/services/tutorial_controller.dart';
 import 'package:lucha_tap_tap/ui/intro_screens.dart';
+import 'package:lucha_tap_tap/ui/kick_layer.dart';
 import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
 import 'package:lucha_tap_tap/ui/ui_state.dart';
 
@@ -125,31 +125,15 @@ Future<void> scrollPanel(WidgetTester tester, double dy) async {
   await tester.pump(const Duration(milliseconds: 50));
 }
 
-/// Draws a circle with one finger around [center] (logical pixels): [clockwise]
-/// as seen on screen, starting at [startDeg] (0 = right, 90 = bottom, 180 = left).
-Future<void> drawCircle(
-  WidgetTester tester,
-  Offset center, {
-  double radius = 40,
-  bool clockwise = true,
-  double startDeg = 180,
-  bool lift = true,
-  TestGesture? finger,
-}) async {
-  Offset at(double deg) {
-    final a = deg * math.pi / 180;
-    return center + Offset(radius * math.cos(a), radius * math.sin(a));
+/// Waits (in small steps) until the kick shows a circle and returns where it
+/// is, or null if none shows up in [seconds].
+Future<Offset?> waitForKickCircle(WidgetTester tester, {double seconds = 3}) async {
+  final finder = find.descendant(of: find.byType(KickCircles), matching: find.byType(CustomPaint));
+  for (var t = 0.0; t < seconds; t += 0.05) {
+    if (finder.evaluate().isNotEmpty) return tester.getCenter(finder.first);
+    await tester.pump(const Duration(milliseconds: 50));
   }
-
-  final g = finger ?? await tester.startGesture(at(startDeg));
-  for (var i = 1; i <= 48; i++) {
-    await g.moveTo(at(startDeg + (clockwise ? 1 : -1) * 360 * i / 48));
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  if (lift) {
-    await g.up();
-    await tester.pump(const Duration(milliseconds: 20));
-  }
+  return null;
 }
 
 /// Moves the app to the background and back, with [away] of time in between.
@@ -376,81 +360,63 @@ void main() {
   });
 
   group('combo and skills', () {
-    testWidgets('a full combo asks for a gesture; two circles land the finisher', (tester) async {
+    testWidgets('a full combo shows the kick; tapping every circle lands it', (tester) async {
       final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
       expect(find.text('GOLPE'), findsOneWidget);
       await tapArena(tester, 10);
       expect(stateOf(c).comboMeter, 1);
       expect(find.text('x10'), findsWidgets); // combo count (and the buy selector)
-      expect(find.text('DIBUJA'), findsOneWidget); // the badge
-      expect(find.text('¡DIBUJA!'), findsOneWidget); // the on-screen prompt
+      expect(find.text('PATADA'), findsOneWidget); // the badge
+      expect(find.text('¡PATADA!'), findsOneWidget); // the on-screen prompt
       final hpBefore = stateOf(c).enemyHp;
-      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
-      // Clockwise from the left, then counterclockwise from the right.
-      await drawCircle(tester, center + const Offset(-30, 0), clockwise: true);
-      expect(stateOf(c).comboMeter, 1); // one circle is not enough
-      await drawCircle(tester, center + const Offset(30, 0), clockwise: false, startDeg: 0);
-      expect(stateOf(c).comboMeter, 0);
-      // 20x a tap of 0.01, with the starter mask's +15%, on top of the taps drawn with.
-      expect((hpBefore - stateOf(c).enemyHp).toDouble(), greaterThanOrEqualTo(0.01 * 1.15 * 20));
-      expect(find.text('¡DIBUJA!'), findsNothing);
-      expect(find.text('GOLPE'), findsOneWidget);
-      await closeApp(tester);
-    });
-
-    testWidgets('one continuous figure eight also works', (tester) async {
-      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
-      await tapArena(tester, 10);
-      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
-      final finger = await tester.startGesture(center + const Offset(-70, 0)); // left point of the first circle
-      await drawCircle(tester, center + const Offset(-30, 0), clockwise: true, lift: false, finger: finger);
-      await drawCircle(tester, center + const Offset(-110, 0), clockwise: false, startDeg: 0, finger: finger);
-      expect(stateOf(c).comboMeter, 0);
-      await closeApp(tester);
-    });
-
-    testWidgets('drawing the circles the wrong way resets the combo', (tester) async {
-      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
-      await tapArena(tester, 10);
-      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
-      await drawCircle(tester, center, clockwise: false); // the first one must be clockwise
-      expect(stateOf(c).comboMeter, 0);
-      expect(find.text('¡Falló el golpe!'), findsOneWidget);
-      expect(find.text('GOLPE'), findsOneWidget);
-      await closeApp(tester);
-    });
-
-    testWidgets('a straight swipe fails the gesture', (tester) async {
-      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
-      await tapArena(tester, 10);
-      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
-      final g = await tester.startGesture(center + const Offset(-60, 0));
-      for (var i = 1; i <= 20; i++) {
-        await g.moveTo(center + Offset(-60.0 + i * 6, 0));
-        await tester.pump(const Duration(milliseconds: 20));
+      final targets = c.read(contentProvider).balance.kick.targets;
+      for (var i = 0; i < targets; i++) {
+        final at = await waitForKickCircle(tester);
+        expect(at, isNotNull, reason: 'circle ${i + 1} of $targets');
+        expect(stateOf(c).comboMeter, 1); // not landed before the last one
+        final taps = stateOf(c).stat('taps');
+        await tester.tapAt(at!);
+        await tester.pump(const Duration(milliseconds: 30));
+        expect(stateOf(c).stat('taps'), taps); // a circle tap is not an arena tap
       }
-      await g.up();
-      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(stateOf(c).comboMeter, 0);
+      // 20x a tap of 0.01, with the starter mask's +15%, on top of the taps.
+      expect((hpBefore - stateOf(c).enemyHp).toDouble(), greaterThanOrEqualTo(0.01 * 1.15 * 20));
+      expect(find.text('¡PATADA!'), findsNothing);
+      expect(find.text('GOLPE'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('a circle that vanishes loses the kick and empties the bar', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      expect(await waitForKickCircle(tester), isNotNull);
+      await elapse(tester, 2); // a circle lasts 1.1 s in balance.json
+      expect(stateOf(c).comboMeter, 0);
+      expect(find.text('¡Fallaste la patada!'), findsOneWidget);
+      expect(find.text('GOLPE'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('missing the second circle fails after the first was tapped', (tester) async {
+      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
+      await tapArena(tester, 10);
+      final at = await waitForKickCircle(tester);
+      await tester.tapAt(at!);
+      await tester.pump(const Duration(milliseconds: 30));
+      expect(await waitForKickCircle(tester), isNotNull); // the next one
+      await elapse(tester, 2);
       expect(stateOf(c).comboMeter, 0);
       await closeApp(tester);
     });
 
-    testWidgets('taps keep working while the gesture is waiting', (tester) async {
+    testWidgets('taps keep working while the kick waits', (tester) async {
       final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
       await tapArena(tester, 10);
-      await tapArena(tester, 5);
+      await tapArena(tester, 2);
       expect(stateOf(c).comboMeter, 1); // still ready, nothing failed
-      expect(find.text('¡DIBUJA!'), findsOneWidget);
-      await closeApp(tester);
-    });
-
-    testWidgets('running out of time between the circles fails', (tester) async {
-      final c = await pumpApp(tester, edit: (f) => f['balance.json']!['tap'] = {'baseDamage': 0.01});
-      await tapArena(tester, 10);
-      final center = tester.getCenter(find.byType(GameWidget<ArenaGame>));
-      await drawCircle(tester, center, clockwise: true);
-      await elapse(tester, 6); // the limit in balance.json is 5 s
-      expect(stateOf(c).comboMeter, 0);
+      expect(find.text('¡PATADA!'), findsOneWidget);
       await closeApp(tester);
     });
 

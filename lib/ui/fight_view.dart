@@ -10,7 +10,7 @@ import '../services/game_controller.dart';
 import 'arena_view.dart';
 import 'art_icon.dart';
 import 'ui_state.dart';
-import 'gesture_layer.dart';
+import 'kick_layer.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -54,17 +54,16 @@ class FightView extends ConsumerWidget {
             id: 'arena',
             child: Stack(
             children: [
-              FinisherGestureLayer(
-                // A new arena is built when the window changes size.
-                child: ArenaView(
-                  key: ValueKey('${scale.virtualWidth}x$arenaHeight'),
-                  virtualWidth: scale.virtualWidth,
-                  virtualHeight: arenaHeight,
-                ),
+              // A new arena is built when the window changes size.
+              ArenaView(
+                key: ValueKey('${scale.virtualWidth}x$arenaHeight'),
+                virtualWidth: scale.virtualWidth,
+                virtualHeight: arenaHeight,
               ),
+              const KickCircles(),
               const _BossName(),
               const _NoticeBanner(),
-              const FinisherPrompt(),
+              const KickPrompt(),
               const _BossButton(),
               const _BossLossPanel(),
               const _BossWinPanel(),
@@ -376,7 +375,7 @@ class _ComboRow extends ConsumerWidget {
 }
 
 /// Shows whether the finisher is ready: "GOLPE" when the combo is filling and
-/// "DIBUJA" when the gesture can be drawn. It is not a button.
+/// "PATADA" when the circles can be tapped. It is not a button.
 class _FinisherBadge extends ConsumerWidget {
   const _FinisherBadge({required this.ready});
 
@@ -386,7 +385,7 @@ class _FinisherBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scale = PixelScale.of(context);
     final strings = ref.watch(stringsProvider);
-    final text = strings.t(ready ? 'combo_draw' : 'combo_button');
+    final text = strings.t(ready ? 'combo_kick' : 'combo_button');
     return Semantics(
       label: text,
       excludeSemantics: true,

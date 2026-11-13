@@ -1,4 +1,5 @@
 import '../core/big.dart';
+import '../core/kick_challenge.dart';
 import 'content_exception.dart';
 import 'json_reader.dart';
 
@@ -34,7 +35,7 @@ class Balance {
     required this.saveIntervalSeconds,
     required this.debug,
     required this.ui,
-    required this.gesture,
+    required this.kick,
     required this.milestones,
     required this.animations,
     required this.monetization,
@@ -101,7 +102,7 @@ class Balance {
           .number('intervalSeconds', min: 0, minExclusive: true),
       debug: DebugConfig.fromReader(r.object('debug')),
       ui: UiConfig.fromReader(r.object('ui')),
-      gesture: GestureConfig.fromReader(r.object('gesture')),
+      kick: KickConfig.fromReader(r.object('kick')),
       animations: AnimationConfig.fromReader(r.object('animations')),
       monetization: MonetizationConfig.fromReader(r.object('monetization')),
       audio: r.has('audio')
@@ -168,7 +169,7 @@ class Balance {
   final double saveIntervalSeconds;
   final DebugConfig debug;
   final UiConfig ui;
-  final GestureConfig gesture;
+  final KickConfig kick;
 
   /// Level milestones of upgrades and trainers (the GDD's "milestone levels").
   final MilestoneConfig milestones;
@@ -732,63 +733,65 @@ class UiConfig {
   final double splashVideoLogoFraction;
 }
 
-/// The finisher gesture: two circles in opposite directions.
-class GestureConfig {
-  const GestureConfig({
-    required this.firstClockwise,
-    required this.timeLimitSeconds,
-    required this.minStrokeLength,
-    required this.sampleStep,
-    required this.loopDegrees,
-    required this.minLoopSize,
-    required this.maxLoopAspect,
-    required this.closeFraction,
-    required this.minArcDegrees,
+/// The kick: circles to tap once the combo bar is full (see `KickChallenge`).
+class KickConfig {
+  const KickConfig({
+    required this.targets,
+    required this.circleSeconds,
+    required this.startDelaySeconds,
+    required this.gapSeconds,
+    required this.minMoveFraction,
+    required this.circleRadius,
+    required this.minHitSize,
+    required this.edgeMargin,
+    required this.topMargin,
   });
 
-  factory GestureConfig.fromReader(JsonReader r) {
-    final direction = r.string('firstDirection');
-    if (direction != 'clockwise' && direction != 'counterclockwise') {
-      throw ContentException(
-          'balance.json: gesture.firstDirection must be "clockwise" or "counterclockwise" (found "$direction")');
-    }
-    return GestureConfig(
-      firstClockwise: direction == 'clockwise',
-      timeLimitSeconds: r.number('timeLimitSeconds', min: 0, minExclusive: true),
-      minStrokeLength: r.number('minStrokeLength', min: 0, minExclusive: true),
-      sampleStep: r.number('sampleStep', min: 0, minExclusive: true),
-      loopDegrees: r.number('loopDegrees', min: 90),
-      minLoopSize: r.number('minLoopSize', min: 0, minExclusive: true),
-      maxLoopAspect: r.number('maxLoopAspect', min: 1),
-      closeFraction: r.number('closeFraction', min: 0, minExclusive: true),
-      minArcDegrees: r.number('minArcDegrees', min: 0),
-    );
-  }
+  factory KickConfig.fromReader(JsonReader r) => KickConfig(
+    targets: r.integer('targets', min: 1),
+    circleSeconds: r.number('circleSeconds', min: 0, minExclusive: true),
+    startDelaySeconds: r.number('startDelaySeconds', min: 0),
+    gapSeconds: r.number('gapSeconds', min: 0),
+    minMoveFraction: r.number('minMoveFraction', min: 0),
+    circleRadius: r.number('circleRadius', min: 4),
+    minHitSize: r.number('minHitSize', min: 24),
+    edgeMargin: r.number('edgeMargin', min: 0),
+    topMargin: r.number('topMargin', min: 0),
+  );
 
-  /// First circle is drawn clockwise (the second goes the other way).
-  final bool firstClockwise;
+  /// Circles to tap, one after the other.
+  final int targets;
 
-  /// Seconds to finish both circles once the drawing starts.
-  final double timeLimitSeconds;
+  /// Seconds a circle takes to shrink to nothing.
+  final double circleSeconds;
 
-  /// A touch that travels less than this (virtual pixels) is a tap, not a stroke.
-  final double minStrokeLength;
+  /// Wait between the full combo bar and the first circle.
+  final double startDelaySeconds;
 
-  /// Samples closer than this (virtual pixels) are ignored.
-  final double sampleStep;
+  /// Wait between a tapped circle and the next one.
+  final double gapSeconds;
 
-  /// Turning angle that completes a circle.
-  final double loopDegrees;
+  /// Each circle appears at least this fraction of the area away from the
+  /// previous one.
+  final double minMoveFraction;
 
-  /// Smallest circle accepted (virtual pixels across).
-  final double minLoopSize;
+  /// Radius of a circle when it appears, in virtual pixels.
+  final double circleRadius;
 
-  /// Widest/tallest ratio accepted for a circle.
-  final double maxLoopAspect;
+  /// The tappable area never gets smaller than this (touch targets are at
+  /// least 24 virtual pixels), however small the circle has shrunk.
+  final double minHitSize;
 
-  /// A circle must end within this fraction of its size from where it started.
-  final double closeFraction;
+  /// Circles stay this far from the sides of the arena, and from its top (room
+  /// for the boss clock and the prompt), in virtual pixels.
+  final double edgeMargin;
+  final double topMargin;
 
-  /// A stroke lifted before turning this much is not a circle (fails at once).
-  final double minArcDegrees;
+  KickSettings get settings => KickSettings(
+    targets: targets,
+    circleSeconds: circleSeconds,
+    startDelaySeconds: startDelaySeconds,
+    gapSeconds: gapSeconds,
+    minMoveFraction: minMoveFraction,
+  );
 }

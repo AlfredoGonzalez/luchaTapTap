@@ -58,9 +58,9 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | --- | --- | --- |
 | Boss on demand | The fight before a boss (fight 9) repeats forever, paying coins, until the player presses "¡JEFE!". Losing the boss returns to that fight and nothing restarts the boss by itself. The intro has a "Volver" button. Offline earnings farm that fight too (one division, not a loop). | `GameEngine.bossGateReady`, `challengeBoss` |
 | Responsive screen | The canvas keeps whole *device* pixels per virtual pixel but now grows to fill the window: wider and taller than 180 x 320, up to 270 x 480 virtual pixels (the rest is a border). A narrow browser window or a tablet no longer leaves big empty bands. | `PixelLayout`, `balance.json` `ui` |
-| Finisher gesture | The GOLPE button is replaced by a gesture once the combo is full: a clockwise circle, then a counterclockwise one (one stroke as a figure eight, or two strokes). Success lands the finisher; a wrong circle, a straight swipe or running out of time (5 s) resets the combo. A full combo no longer decays while it waits. Short taps keep fighting. | `finisher_gesture.dart`, `balance.json` `gesture` |
+| Finisher (the kick) | Replaced the two-circle gesture (too hard to draw): once the combo bar is full, 5 circles appear one at a time at random places in the arena; each shrinks and vanishes in 1.1 s. Tapping all of them lands the kick; letting one vanish resets the combo. A circle tap does not count as an arena tap. A full combo does not decay while it waits. | `kick_challenge.dart`, `kick_layer.dart`, `balance.json` `kick` |
 
-**Interpretation to confirm:** "de izquierda a derecha y de derecha a izquierda" was read as clockwise first, then counterclockwise (both go over the top, which makes a figure eight when drawn without lifting). To swap the order, set `gesture.firstDirection` to `counterclockwise` in `balance.json`. The size, roundness and time tolerances are in the same block.
+**Kick tuning:** `kick.targets`, `circleSeconds`, `gapSeconds`, `startDelaySeconds`, `minMoveFraction` (distance between circles) and the margins are in `balance.json`. One at a time was chosen over all at once so the player always has one clear target and the time pressure stays fair.
 
 ## M5: balance pass
 
@@ -70,7 +70,7 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | Pacing targets | GDD windows (first prestige 20 to 35 min, second 32 to 60) measured for an attentive active player. These were not confirmed by the designer. | `docs/BALANCE.md` |
 | Worst case | Tuned for a player who never catches lucky pickups; lucky pickups were cut from 8x to 0.75x so they are a bonus. | `balance.json` `lucky` |
 | Prestige | `minBelts` (when) and `beltCoinDivisor` (how much) are now separate levers; the +2% per Belt is unchanged. | `balance.json` |
-| Gesture value | The finisher is worth a little (about 10% speed) but is not needed; the bot loses its taps while drawing. | `lib/dev/balance_sim.dart` |
+| Kick value | The kick is worth a little (about 10% speed) but is not needed; the bot loses its taps while going for the circles. | `lib/dev/balance_sim.dart` |
 | Tests | The rules tests use a frozen copy of the economy (`test/fixtures/data/`) so tuning never breaks them; a separate pacing test guards the shipped numbers. | `test/test_content.dart` |
 
 ## M6/M7 start: milestones in the UI and talents
@@ -100,8 +100,8 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 
 ## Ideas for later (not built)
 
-- **One gesture per wrestler or mask, harder gesture = more damage** (designer idea after playtesting M4). Today every finisher is the same two circles for 20x tap damage. The recognizer is already pure Dart and its tolerances live in `balance.json`, so the natural step is to describe each gesture as data (a list of loops or shapes, each with a direction) and give each one a damage multiplier, tied to the equipped mask or the player's wrestler.
-- Questions to settle before building it: which shapes exist besides circles (zigzag, triangle, swipes?), how difficulty is measured (number of shapes, tighter tolerances, shorter time), whether the gesture belongs to the mask, to the wrestler or to both, and how the on-screen guide shows a harder gesture.
+- **A different kick challenge per wrestler or mask, harder challenge = more damage** (designer idea after playtesting M4). Today every kick is the same 5 circles for the finisher multiplier. The challenge is pure Dart with its settings in `balance.json`, so each mask could carry its own settings (more circles, faster shrinking) and a damage multiplier.
+- Questions to settle before building it: how difficulty is measured (number of circles, shrink time, moving circles), whether the challenge belongs to the mask, to the wrestler or to both, and how a harder challenge is shown.
 
 ## Still open (designer decides)
 

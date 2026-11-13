@@ -106,17 +106,18 @@
     "loadingFrames": 4,
     "loadingFps": 3
   },
-  "gesture": {
-    "firstDirection": "clockwise",
-    "timeLimitSeconds": 5,
-    "minStrokeLength": 10,
-    "sampleStep": 2,
-    "loopDegrees": 300,
-    "minLoopSize": 14,
-    "maxLoopAspect": 2.2,
-    "closeFraction": 0.8,
-    "minArcDegrees": 120
+  "kick": {
+    "targets": 5,
+    "circleSeconds": 1.1,
+    "startDelaySeconds": 0.6,
+    "gapSeconds": 0.2,
+    "minMoveFraction": 0.3,
+    "circleRadius": 14,
+    "minHitSize": 28,
+    "edgeMargin": 20,
+    "topMargin": 52
   },
+
   "animations": {
     "order": [
       "idle",
