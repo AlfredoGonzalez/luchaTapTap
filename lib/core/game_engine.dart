@@ -318,14 +318,22 @@ class GameEngine {
 
   /// Idle damage per second from all hired trainers. With [withSkills] false
   /// the active skills do not count (they pause while the app is closed).
-  Big damagePerSecondOf({required bool withSkills}) {
+  /// [withCombo] counts the trainers whose damage grows with the combo bar
+  /// (it is live only while the app is open, like the skills).
+  Big damagePerSecondOf({required bool withSkills, bool? withCombo}) {
+    final useCombo = withCombo ?? withSkills;
     var total = Big.zero;
     for (final trainer in content.trainers) {
       final level = _state.trainerLevel(trainer.id);
       if (level > 0) {
-        total +=
+        var own =
             Big.fromDouble(trainer.baseDps).mulDouble(level.toDouble()) *
             _balance.milestones.factorAt(level);
+        final special = trainer.special;
+        if (useCombo && special?.type == TrainerSpecialType.comboDamage) {
+          own = own.mulDouble(1 + special!.bonus * _state.comboMeter);
+        }
+        total += own;
       }
     }
     if (total.isZero) return total;
@@ -351,7 +359,38 @@ class GameEngine {
     return factor;
   }
 
+  /// Coin factor from the trainers with a coin special: the sum of the
+  /// per-level bonuses, times the flat multipliers of those hired.
+  double get _trainerCoinMultiplier {
+    var bonus = 0.0;
+    var factor = 1.0;
+    for (final trainer in content.trainers) {
+      final special = trainer.special;
+      final level = _state.trainerLevel(trainer.id);
+      if (special == null || level <= 0) continue;
+      if (special.type == TrainerSpecialType.coinGain) {
+        bonus += special.bonusAt(level);
+      } else if (special.type == TrainerSpecialType.coinMultiplier) {
+        factor *= special.multiplier;
+      }
+    }
+    return (1 + bonus) * factor;
+  }
+
+  /// Share of the skills' cooldown the trainers take off.
+  double get _trainerCooldownReduction {
+    var bonus = 0.0;
+    for (final trainer in content.trainers) {
+      final special = trainer.special;
+      if (special?.type == TrainerSpecialType.skillCooldown) {
+        bonus += special!.bonusAt(_state.trainerLevel(trainer.id));
+      }
+    }
+    return bonus;
+  }
+
   double get coinMultiplier =>
+      _trainerCoinMultiplier *
       (1 + _talentSum(TalentEffect.coinGainMultiplier)) *
       (1 + _maskBonus(MaskBonusType.coinGainMultiplier)) *
       _purchaseCoinMultiplier *
@@ -802,7 +841,8 @@ class GameEngine {
   /// Cooldown of [skill] after talent reductions, in seconds.
   double cooldownOf(SkillDef skill) {
     final reduction = math.min(
-      _talentSum(TalentEffect.skillCooldownReduction),
+      _talentSum(TalentEffect.skillCooldownReduction) +
+          _trainerCooldownReduction,
       _balance.skillCooldownReductionCap,
     );
     return skill.cooldown * (1 - reduction);
@@ -1090,7 +1130,8 @@ class GameEngine {
     final capSeconds = offlineCapHours * 3600;
     final applied = math.min(awaySeconds, capSeconds);
 
-    final dps = damagePerSecondOf(withSkills: false);
+    // Away from the game the skills and the combo bar do not count.
+    final dps = damagePerSecondOf(withSkills: false, withCombo: false);
     if (dps.isZero || isBossFight) return null;
 
     var budget = dps.mulDouble(applied);

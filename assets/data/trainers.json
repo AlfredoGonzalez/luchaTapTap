@@ -26,7 +26,12 @@
       "baseCost": 100000000,
       "baseDps": 600000,
       "unlockFight": 32,
-      "description": "La manager que consigue las peleas. Cada nivel suma {d} de daño por segundo."
+      "description": "La manager que consigue las peleas. Cada nivel suma {d} de daño por segundo.",
+      "special": {
+        "type": "coinGain",
+        "perLevel": 0.05,
+        "maxBonus": 1.0
+      }
     },
     {
       "id": "las_porras",
@@ -35,7 +40,11 @@
       "baseCost": 10000000000,
       "baseDps": 50000000,
       "unlockFight": 48,
-      "description": "El club de fans que no deja de gritar. Cada nivel suma {d} de daño por segundo."
+      "description": "El club de fans que no deja de gritar. Cada nivel suma {d} de daño por segundo.",
+      "special": {
+        "type": "comboDamage",
+        "bonus": 1.0
+      }
     },
     {
       "id": "tortilleria_el_puno",
@@ -44,7 +53,11 @@
       "baseCost": 1000000000000,
       "baseDps": 4000000000,
       "unlockFight": 64,
-      "description": "Tu patrocinador: tortillas y puñetazos. Cada nivel suma {d} de daño por segundo."
+      "description": "Tu patrocinador: tortillas y puñetazos. Cada nivel suma {d} de daño por segundo.",
+      "special": {
+        "type": "coinMultiplier",
+        "multiplier": 2.0
+      }
     },
     {
       "id": "doctor_vendajes",
@@ -53,7 +66,12 @@
       "baseCost": 100000000000000,
       "baseDps": 300000000000,
       "unlockFight": 80,
-      "description": "Te vende vendas y te cura a golpes. Cada nivel suma {d} de daño por segundo."
+      "description": "Te vende vendas y te cura a golpes. Cada nivel suma {d} de daño por segundo.",
+      "special": {
+        "type": "skillCooldown",
+        "perLevel": 0.01,
+        "maxBonus": 0.3
+      }
     }
   ]
 }

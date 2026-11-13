@@ -139,6 +139,73 @@ class LeagueDef {
   final double loopScale;
 }
 
+/// What a trainer does besides dealing damage per second.
+enum TrainerSpecialType {
+  /// More coins from fights: `perLevel` per level, at most `maxBonus`.
+  coinGain,
+
+  /// Its own damage grows with the combo meter: up to `bonus` extra at a full
+  /// bar.
+  comboDamage,
+
+  /// Coins from fights times `multiplier` while the trainer is hired.
+  coinMultiplier,
+
+  /// Skills recharge faster: `perLevel` per level, at most `maxBonus`.
+  skillCooldown,
+}
+
+class TrainerSpecial {
+  const TrainerSpecial({
+    required this.type,
+    this.perLevel = 0,
+    this.maxBonus = 0,
+    this.bonus = 0,
+    this.multiplier = 1,
+  });
+
+  factory TrainerSpecial.fromReader(JsonReader r, String trainerId) {
+    final name = r.string('type');
+    final type = TrainerSpecialType.values.where((t) => t.name == name);
+    if (type.isEmpty) {
+      throw ContentException(
+        'trainers.json: "$trainerId" has unknown special "$name" '
+        '(known: ${TrainerSpecialType.values.map((t) => t.name).join(', ')})',
+      );
+    }
+    switch (type.first) {
+      case TrainerSpecialType.coinGain:
+      case TrainerSpecialType.skillCooldown:
+        return TrainerSpecial(
+          type: type.first,
+          perLevel: r.number('perLevel', min: 0, minExclusive: true),
+          maxBonus: r.number('maxBonus', min: 0, minExclusive: true),
+        );
+      case TrainerSpecialType.comboDamage:
+        return TrainerSpecial(
+          type: type.first,
+          bonus: r.number('bonus', min: 0, minExclusive: true),
+        );
+      case TrainerSpecialType.coinMultiplier:
+        return TrainerSpecial(
+          type: type.first,
+          multiplier: r.number('multiplier', min: 1, minExclusive: true),
+        );
+    }
+  }
+
+  final TrainerSpecialType type;
+  final double perLevel;
+  final double maxBonus;
+  final double bonus;
+  final double multiplier;
+
+  /// The bonus of a trainer at [level] for the per-level kinds.
+  double bonusAt(int level) => level <= 0
+      ? 0
+      : (perLevel * level < maxBonus ? perLevel * level : maxBonus);
+}
+
 class TrainerDef {
   const TrainerDef({
     required this.id,
@@ -148,6 +215,7 @@ class TrainerDef {
     required this.baseDps,
     required this.unlockFight,
     required this.description,
+    this.special,
   });
 
   factory TrainerDef.fromReader(JsonReader r) => TrainerDef(
@@ -158,10 +226,16 @@ class TrainerDef {
     baseDps: r.number('baseDps', min: 0, minExclusive: true),
     unlockFight: r.integer('unlockFight', min: 1),
     description: r.string('description'),
+    special: r.has('special')
+        ? TrainerSpecial.fromReader(r.object('special'), r.string('id'))
+        : null,
   );
 
   /// What it does, in Spanish; `{d}` is the damage per second per level.
   final String description;
+
+  /// Its extra effect, if it has one (see [TrainerSpecialType]).
+  final TrainerSpecial? special;
 
   final String id;
   final String name;

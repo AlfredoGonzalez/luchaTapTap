@@ -245,6 +245,20 @@ void main() {
       await closeApp(tester);
     });
 
+    testWidgets('a trainer with a special says what it does', (tester) async {
+      await pumpApp(tester, edit: (f) {
+        f['trainers.json']!['trainers'][0]['special'] = {'type': 'coinGain', 'perLevel': 0.05, 'maxBonus': 1.0};
+      });
+      await tester.drag(find.text('Puño duro'), const Offset(0, -400));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(buttonLabelled('Información Don Chuy'));
+      await tester.pump(_short);
+      expect(find.textContaining('Especial: cada nivel suma 5% de monedas (máximo 100%)'), findsOneWidget);
+      await tester.tap(buttonLabelled('Cerrar'));
+      await tester.pump(_short);
+      await closeApp(tester);
+    });
+
     testWidgets('a locked trainer says in which fight it unlocks', (tester) async {
       await pumpApp(tester);
       await tester.drag(find.text('Puño duro'), const Offset(0, -400));

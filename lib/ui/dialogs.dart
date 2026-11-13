@@ -442,6 +442,25 @@ class InfoDialog extends ConsumerWidget {
             formatBigShort(Big.fromDouble(t.baseDps)),
           ),
         );
+        final special = t.special;
+        if (special != null) {
+          String n(double v) => v == v.roundToDouble()
+              ? v.round().toString()
+              : v.toStringAsFixed(1);
+          line(
+            strings.t('trainer_special_${special.type.name}', {
+              'n': n(
+                special.type == TrainerSpecialType.coinMultiplier
+                    ? special.multiplier
+                    : (special.type == TrainerSpecialType.comboDamage
+                          ? special.bonus * 100
+                          : special.perLevel * 100),
+              ),
+              'm': n(special.maxBonus * 100),
+            }),
+            color: Palette.marigold.color,
+          );
+        }
         levelAndMilestone(engine.state.trainerLevel(t.id));
       }
     }
