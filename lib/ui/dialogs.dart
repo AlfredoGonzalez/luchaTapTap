@@ -6,8 +6,10 @@ import '../core/big.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
 import 'pixel_icons.dart';
@@ -427,6 +429,13 @@ class InfoDialog extends ConsumerWidget {
         line(strings.t('info_locked', {'n': t.unlockFight}));
       } else {
         title = t.name;
+        final portrait = ref
+            .watch(spriteLibraryProvider)
+            .icon(SpriteLibrary.portraitBigKey(t.portrait));
+        if (portrait != null) {
+          body.add(Center(child: ArtIcon(portrait, size: 48)));
+          body.add(const SizedBox(height: 4));
+        }
         line(
           t.description.replaceAll(
             '{d}',

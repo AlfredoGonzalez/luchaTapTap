@@ -24,6 +24,9 @@ const int _gridColumns = 3;
 const int _gridSlots = 12;
 const double _tileHeight = 32;
 
+/// Mask pictures are 24 x 24 here (the old glyphs are 16 x 16).
+const double _maskArtSize = 24;
+
 String _plain(double v) => v == v.roundToDouble()
     ? v.round().toString()
     : v.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
@@ -41,7 +44,10 @@ Widget maskIcon(WidgetRef ref, MaskDef mask) {
   final art = ref
       .watch(spriteLibraryProvider)
       .icon(SpriteLibrary.maskIconKey(mask.id));
-  if (art != null) return ArtIcon(art); // already in the mask's colors
+  if (art != null) {
+    // Already in the mask's colors.
+    return ArtIcon(art, size: _maskArtSize);
+  }
   final data = PixelIcons.byKey(mask.icon) ?? PixelIcons.maskJaguar;
   return PixelIcon(
     data,
@@ -51,6 +57,15 @@ Widget maskIcon(WidgetRef ref, MaskDef mask) {
       Palette.lilac: Palette.byId[mask.slotColors[2]]!,
     },
   );
+}
+
+/// Whether the mask pictures exist (otherwise the small glyphs and names show).
+bool _hasArt(WidgetRef ref) {
+  final first = ref.watch(contentProvider).masks.first;
+  return ref
+          .watch(spriteLibraryProvider)
+          .icon(SpriteLibrary.maskIconKey(first.id)) !=
+      null;
 }
 
 /// "MÁSCARAS": the collection grid (locked masks are `???`) and a detail panel
@@ -134,12 +149,18 @@ class MasksView extends ConsumerWidget {
     String selectedId,
   ) {
     if (slot >= content.masks.length) {
-      return const _Tile(name: null, icon: null, selected: false);
+      return _Tile(
+        name: null,
+        icon: null,
+        selected: false,
+        showName: !_hasArt(ref),
+      );
     }
     final mask = content.masks[slot];
     final owned = engine.ownsMask(mask.id);
     return _Tile(
       name: owned ? mask.name : null,
+      showName: !_hasArt(ref),
       icon: owned ? maskIcon(ref, mask) : null,
       selected: mask.id == selectedId,
       equipped: engine.state.equippedMask == mask.id,
@@ -154,12 +175,17 @@ class _Tile extends StatelessWidget {
     required this.name,
     required this.icon,
     required this.selected,
+    required this.showName,
     this.equipped = false,
     this.semanticLabel,
     this.onTap,
   });
 
   final String? name;
+
+  /// False when the masks have pictures: the 24 x 24 picture fills the tile
+  /// and the name shows in the detail panel.
+  final bool showName;
   final Widget? icon;
   final bool selected;
   final bool equipped;
@@ -193,14 +219,15 @@ class _Tile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               icon ?? const PixelIcon(PixelIcons.maskLocked),
-              SizedBox(height: scale.px(3)),
-              ClipRect(
-                child: PixelText(
-                  name ?? '???',
-                  color: (name == null ? Palette.dust : Palette.bone).color,
-                  align: TextAlign.center,
+              if (showName) SizedBox(height: scale.px(2)),
+              if (showName)
+                ClipRect(
+                  child: PixelText(
+                    name ?? '???',
+                    color: (name == null ? Palette.dust : Palette.bone).color,
+                    align: TextAlign.center,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -280,11 +307,13 @@ class _Detail extends ConsumerWidget {
         Row(
           children: [
             SizedBox(
-              width: scale.px(16),
-              height: scale.px(16),
-              child: owned
-                  ? maskIcon(ref, mask)
-                  : const PixelIcon(PixelIcons.maskLocked),
+              width: scale.px(_maskArtSize),
+              height: scale.px(_maskArtSize),
+              child: Center(
+                child: owned
+                    ? maskIcon(ref, mask)
+                    : const PixelIcon(PixelIcons.maskLocked),
+              ),
             ),
             SizedBox(width: scale.px(4)),
             Expanded(

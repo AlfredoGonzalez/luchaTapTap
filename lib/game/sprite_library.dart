@@ -106,6 +106,9 @@ class SpriteLibrary {
   /// (the generic glyph is drawn).
   ui.Image? icon(String key) => _icons[key];
 
+  /// Key of the big (info pop-up) picture of the trainer portrait [portrait].
+  static String portraitBigKey(String portrait) => '${portrait}_big';
+
   /// Key of mask [maskId]'s icon in [icon] (already in the mask's colors).
   static String maskIconKey(String maskId) => 'mask_$maskId';
 
@@ -207,6 +210,7 @@ class SpriteLibrary {
     final plainKeys = {
       for (final s in content.skills) s.icon,
       for (final t in content.trainers) t.portrait,
+      for (final t in content.trainers) portraitBigKey(t.portrait),
       for (final u in content.upgrades) u.icon,
       for (final t in content.talents) t.icon,
     };

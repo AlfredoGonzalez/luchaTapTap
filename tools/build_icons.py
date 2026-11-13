@@ -3,9 +3,10 @@
 
   <skill>_Icon.webp    -> assets/icons/<skill's icon key>.png (plancha_Icon.webp
                           -> sk_plancha.png; the key is `icon` in skills.json)
-  mask_<id>.webp       -> assets/icons/mask_<id>.png   (keeps the three mask
-                          purples: the game recolors them per mask)
-  tr_<id>.webp         -> assets/icons/tr_<id>.png     (trainer portraits)
+  mask_<id>.webp       -> assets/icons/mask_<id>.png   (24 x 24; keeps the three
+                          mask purples: the game recolors them per mask)
+  tr_<id>.webp         -> assets/icons/tr_<id>.png (16 x 16, list rows) and
+                          tr_<id>_big.png (48 x 48, info pop-up)
   up_<id>.webp         -> assets/icons/up_<id>.png     (upgrade icons)
   tl_<name>.webp       -> assets/icons/tl_<name>.png   (talent icons)
 
@@ -33,6 +34,8 @@ ROOT = Path(__file__).resolve().parent.parent
 INPUT = ROOT / "art" / "input"
 OUT = ROOT / "assets" / "icons"
 SIZE = 16
+MASK_SIZE = 24  # the masks grid draws them bigger
+PORTRAIT_SIZE = 48  # trainer portrait in the info pop-up
 TILT = 30  # degrees, clockwise (head down and to the right)
 
 skills = {s["id"]: s["icon"] for s in json.loads((ROOT / "assets/data/skills.json").read_text())["skills"]}
@@ -57,7 +60,7 @@ def _shrink(fig, w, h):
     return Image.fromarray(out, "RGBA")
 
 
-def build(path, key, tilt=False, pool=True):
+def build(path, key, tilt=False, pool=True, size=SIZE):
     img = remove_background(Image.open(path))
     box = img.getchannel("A").point(lambda v: 255 if v > 0 else 0).getbbox()
     fig = img.crop(box)
@@ -66,7 +69,7 @@ def build(path, key, tilt=False, pool=True):
     if tilt and fig.width > 1.8 * fig.height:
         fig = fig.rotate(-TILT, resample=Image.BICUBIC, expand=True)
         fig = fig.crop(fig.getchannel("A").point(lambda v: 255 if v > 0 else 0).getbbox())
-    scale = min(SIZE / fig.width, SIZE / fig.height)
+    scale = min(size / fig.width, size / fig.height)
     w, h = max(1, round(fig.width * scale)), max(1, round(fig.height * scale))
     # Objects keep flat colors (most common color per pixel); faces keep their
     # small features (eyes) with a smooth shrink snapped to the palette.
@@ -75,8 +78,8 @@ def build(path, key, tilt=False, pool=True):
     rgb = snap(a[:, :, :3], True)
     rgb[(a[:, :, :3].astype(int).sum(axis=2) < 200) & edge_mask(alpha)] = PALETTE["ink"]
     rgb[alpha == 0] = 0
-    canvas = np.zeros((SIZE, SIZE, 4), np.uint8)
-    x, y = (SIZE - w) // 2, (SIZE - h) // 2
+    canvas = np.zeros((size, size, 4), np.uint8)
+    x, y = (size - w) // 2, (size - h) // 2
     canvas[y:y + h, x:x + w] = np.dstack([rgb, alpha])
     OUT.mkdir(parents=True, exist_ok=True)
     Image.fromarray(canvas, "RGBA").save(OUT / f"{key}.png")
@@ -113,9 +116,10 @@ def main():
             else:
                 print(f"SKIP {p.name}: no skill '{skill}' in skills.json")
         elif stem.startswith("mask_") and stem[5:] in masks:
-            build(p, stem, pool=False)
+            build(p, stem, pool=False, size=MASK_SIZE)
         elif stem.startswith("tr_") and stem[3:] in trainers:
-            build(p, stem, pool=False)
+            build(p, stem, pool=False)  # list rows
+            build(p, stem + "_big", pool=False, size=PORTRAIT_SIZE)  # info pop-up
         elif stem.startswith("up_") and stem[3:] in upgrades:
             build(p, stem)
         elif stem.startswith("tl_") and stem in talent_icons:
