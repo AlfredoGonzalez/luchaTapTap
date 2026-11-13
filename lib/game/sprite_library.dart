@@ -102,8 +102,12 @@ class SpriteLibrary {
   SkillStrip? skillStrip(String name, String? maskId) =>
       _strips['$name:${maskId ?? ''}'] ?? _strips['$name:'];
 
-  /// The picture of a skill icon, or null (the generic glyph is drawn).
+  /// The picture of an icon (skill, trainer, upgrade, talent or mask), or null
+  /// (the generic glyph is drawn).
   ui.Image? icon(String key) => _icons[key];
+
+  /// Key of mask [maskId]'s icon in [icon] (already in the mask's colors).
+  static String maskIconKey(String maskId) => 'mask_$maskId';
 
   /// The arena picture of league [order] for a canvas [virtualWidth] pixels
   /// wide: the 270-wide variant on wide canvases, otherwise the 180 one. Null
@@ -187,17 +191,45 @@ class SpriteLibrary {
         await add(mask.id, recolorMask(rgba.bytes, slotColors: colors));
       }
     }
+    // 16 x 16 icon pictures: skills, trainers, upgrades, talents and masks.
     final icons = <String, ui.Image>{};
-    for (final skill in content.skills) {
-      final path = 'assets/icons/${skill.icon}.png';
-      if (listed != null && !listed.contains(path)) continue;
+    Future<Uint8List?> iconFile(String key) async {
+      final path = 'assets/icons/$key.png';
+      if (listed != null && !listed.contains(path)) return null;
       try {
         final data = await assets.load(path);
-        final codec = await ui.instantiateImageCodec(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-        );
-        icons[skill.icon] = (await codec.getNextFrame()).image;
+        return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final plainKeys = {
+      for (final s in content.skills) s.icon,
+      for (final t in content.trainers) t.portrait,
+      for (final u in content.upgrades) u.icon,
+      for (final t in content.talents) t.icon,
+    };
+    for (final key in plainKeys) {
+      final file = await iconFile(key);
+      if (file == null) continue;
+      try {
+        final codec = await ui.instantiateImageCodec(file);
+        icons[key] = (await codec.getNextFrame()).image;
       } catch (_) {}
+    }
+    // Mask icons are drawn in the three mask tones, then recolored per mask.
+    for (final mask in content.masks) {
+      final key = maskIconKey(mask.id);
+      final file = await iconFile(key);
+      final rgba = file == null ? null : await _rgba(file);
+      if (rgba == null) continue;
+      final colors = [for (final id in mask.slotColors) _argb(id)];
+      icons[key] = await _fromRgba(
+        recolorMask(rgba.bytes, slotColors: colors),
+        rgba.width,
+        rgba.height,
+      );
     }
     final arenas = <String, ui.Image>{};
     for (final league in content.leagues) {

@@ -7,6 +7,7 @@ import '../core/game_engine.dart';
 import '../core/number_format.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'pixel_icons.dart';
 import 'pixel_scale.dart';
@@ -86,6 +87,12 @@ class _BuySelector extends ConsumerWidget {
   }
 }
 
+/// The icon picture for [key], or null while there is none (the glyph shows).
+Widget? _art(WidgetRef ref, String key) {
+  final image = ref.watch(spriteLibraryProvider).icon(key);
+  return image == null ? null : ArtIcon(image);
+}
+
 class _UpgradeRow extends ConsumerWidget {
   const _UpgradeRow({required this.upgrade, required this.engine});
 
@@ -104,6 +111,7 @@ class _UpgradeRow extends ConsumerWidget {
       value: level,
       child: ListRow(
         icon: PixelIcons.byKey(upgrade.icon),
+        iconWidget: _art(ref, upgrade.icon),
         onInfo: () => ref
             .read(infoTargetProvider.notifier)
             .show(InfoTarget(InfoKind.upgrade, upgrade.id)),
@@ -165,6 +173,7 @@ class _TrainerRow extends ConsumerWidget {
       value: level,
       child: ListRow(
         icon: PixelIcons.byKey(trainer.portrait) ?? PixelIcons.trainer,
+        iconWidget: _art(ref, trainer.portrait),
         onInfo: () => ref
             .read(infoTargetProvider.notifier)
             .show(InfoTarget(InfoKind.trainer, trainer.id)),

@@ -6,8 +6,10 @@ import '../data/content_bundle.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -35,7 +37,11 @@ String maskBonusText(Strings strings, MaskDef mask) {
 }
 
 /// The mask's icon recolored with its own three slot colors.
-Widget maskIcon(MaskDef mask) {
+Widget maskIcon(WidgetRef ref, MaskDef mask) {
+  final art = ref
+      .watch(spriteLibraryProvider)
+      .icon(SpriteLibrary.maskIconKey(mask.id));
+  if (art != null) return ArtIcon(art); // already in the mask's colors
   final data = PixelIcons.byKey(mask.icon) ?? PixelIcons.maskJaguar;
   return PixelIcon(
     data,
@@ -134,7 +140,7 @@ class MasksView extends ConsumerWidget {
     final owned = engine.ownsMask(mask.id);
     return _Tile(
       name: owned ? mask.name : null,
-      icon: owned ? maskIcon(mask) : null,
+      icon: owned ? maskIcon(ref, mask) : null,
       selected: mask.id == selectedId,
       equipped: engine.state.equippedMask == mask.id,
       semanticLabel: owned ? mask.name : strings.t('mask_locked'),
@@ -277,7 +283,7 @@ class _Detail extends ConsumerWidget {
               width: scale.px(16),
               height: scale.px(16),
               child: owned
-                  ? maskIcon(mask)
+                  ? maskIcon(ref, mask)
                   : const PixelIcon(PixelIcons.maskLocked),
             ),
             SizedBox(width: scale.px(4)),

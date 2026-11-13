@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -143,6 +146,7 @@ class _Branch extends ConsumerWidget {
             height: scale.px(_nodeHeight),
             child: _Node(
               talent: t,
+              art: ref.watch(spriteLibraryProvider).icon(t.icon),
               state: _stateOf(t),
               level: engine.state.talentLevel(t.id),
               selected: t.id == selectedId,
@@ -163,6 +167,7 @@ class _Branch extends ConsumerWidget {
 class _Node extends StatelessWidget {
   const _Node({
     required this.talent,
+    required this.art,
     required this.state,
     required this.level,
     required this.selected,
@@ -171,6 +176,7 @@ class _Node extends StatelessWidget {
   });
 
   final TalentDef talent;
+  final ui.Image? art;
   final _NodeState state;
   final int level;
   final bool selected;
@@ -210,17 +216,20 @@ class _Node extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PixelIcon(
-                locked
-                    ? PixelIcons.locked
-                    : (PixelIcons.byKey(talent.icon) ?? PixelIcons.skillStar),
-                color: switch (state) {
-                  _NodeState.maxed => Palette.sunYellow,
-                  _NodeState.owned => Palette.bone,
-                  _NodeState.available => Palette.fog,
-                  _NodeState.locked => Palette.dust,
-                }.color,
-              ),
+              if (art != null && !locked)
+                ArtIcon(art!)
+              else
+                PixelIcon(
+                  locked
+                      ? PixelIcons.locked
+                      : (PixelIcons.byKey(talent.icon) ?? PixelIcons.skillStar),
+                  color: switch (state) {
+                    _NodeState.maxed => Palette.sunYellow,
+                    _NodeState.owned => Palette.bone,
+                    _NodeState.available => Palette.fog,
+                    _NodeState.locked => Palette.dust,
+                  }.color,
+                ),
               SizedBox(height: scale.px(2)),
               PixelText(
                 label,
