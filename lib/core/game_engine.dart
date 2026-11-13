@@ -418,7 +418,10 @@ class GameEngine {
   DamageOutcome? finisher() {
     if (!finisherReady || awaitingBossStart || _blocked) return null;
     final damage = tapDamage.mulDouble(_balance.combo.finisherMultiplier);
-    _state = _state.copyWith(comboMeter: 0);
+    _state = _state.copyWith(
+      comboMeter: 0,
+      stats: _bump(_state.stats, 'finishers', 1),
+    );
     final outcome = _applyDamage(damage, carryOver: false);
     _awardAchievements();
     return DamageOutcome(

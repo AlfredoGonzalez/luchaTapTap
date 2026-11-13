@@ -59,6 +59,7 @@ class AppSettings {
     this.vibration = false,
     this.notices = false,
     this.tutorialStep,
+    this.tutorialDone,
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -67,6 +68,7 @@ class AppSettings {
     vibration: map['vibration'] as bool? ?? false,
     notices: map['notices'] as bool? ?? false,
     tutorialStep: (map['tutorialStep'] as num?)?.toInt(),
+    tutorialDone: (map['tutorialDone'] as List?)?.cast<String>(),
   );
 
   final bool sound;
@@ -77,16 +79,20 @@ class AppSettings {
   /// notifications themselves arrive in a later milestone).
   final bool notices;
 
-  /// Next tutorial step to show; past the last one means finished. Null on a
-  /// save that never saw the tutorial (decided when the game starts).
+  /// How far the first version of the tutorial went (steps in file order). Only
+  /// read to carry an old save over to [tutorialDone].
   final int? tutorialStep;
+
+  /// Ids of the tutorial steps already shown. Null on a save that never saw
+  /// the tutorial (decided when the game starts).
+  final List<String>? tutorialDone;
 
   Map<String, dynamic> toMap() => {
     'sound': sound,
     'music': music,
     'vibration': vibration,
     'notices': notices,
-    if (tutorialStep != null) 'tutorialStep': tutorialStep,
+    if (tutorialDone != null) 'tutorialDone': tutorialDone,
   };
 
   AppSettings copyWith({
@@ -94,13 +100,14 @@ class AppSettings {
     bool? music,
     bool? vibration,
     bool? notices,
-    int? tutorialStep,
+    List<String>? tutorialDone,
   }) => AppSettings(
     sound: sound ?? this.sound,
     music: music ?? this.music,
     vibration: vibration ?? this.vibration,
     notices: notices ?? this.notices,
-    tutorialStep: tutorialStep ?? this.tutorialStep,
+    tutorialStep: tutorialStep,
+    tutorialDone: tutorialDone ?? this.tutorialDone,
   );
 
   AppSettings toggled(String name) => switch (name) {
@@ -140,9 +147,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void reset() => state = const AppSettings();
 
-  /// Remembers how far the tutorial went (saved with the game).
-  void setTutorialStep(int step) {
-    state = state.copyWith(tutorialStep: step);
+  /// Remembers which tutorial steps were shown (saved with the game).
+  void setTutorialDone(List<String> done) {
+    state = state.copyWith(tutorialDone: done);
     ref.read(gameControllerProvider.notifier).saveNow();
   }
 }

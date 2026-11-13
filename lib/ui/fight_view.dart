@@ -72,7 +72,10 @@ class FightView extends ConsumerWidget {
           ),
           ),
         ),
-        SizedBox(height: scale.px(comboRowHeight), child: const _ComboRow()),
+        SizedBox(
+          height: scale.px(comboRowHeight),
+          child: const TutorialTarget(id: 'comboRow', child: _ComboRow()),
+        ),
         SizedBox(height: scale.px(skillsRowHeight), child: const _SkillsRow()),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: scale.px(sideMargin)),
@@ -300,11 +303,14 @@ class _BossButton extends ConsumerWidget {
     return Positioned(
       top: scale.px(2),
       right: scale.px(2),
-      child: PixelButton(
-        label: strings.t('boss_button'),
-        style: PixelButtonStyle.gold,
-        width: 52,
-        onPressed: controller.challengeBoss,
+      child: TutorialTarget(
+        id: 'bossButton',
+        child: PixelButton(
+          label: strings.t('boss_button'),
+          style: PixelButtonStyle.gold,
+          width: 52,
+          onPressed: controller.challengeBoss,
+        ),
       ),
     );
   }

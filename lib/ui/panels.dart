@@ -186,12 +186,16 @@ class _TrainerRow extends ConsumerWidget {
                 'd': formatBigShort(dps),
               }),
         progress: next == null ? null : milestones.progressAt(level),
-        trailing: CostButton(
-          cost: formatBigShort(quote.cost),
-          enabled: quote.canBuy,
-          semanticLabel: trainer.name,
-          onPressed: () =>
-              ref.read(gameControllerProvider.notifier).buyTrainer(trainer.id),
+        trailing: TutorialTarget(
+          id: 'trainer:${trainer.id}',
+          child: CostButton(
+            cost: formatBigShort(quote.cost),
+            enabled: quote.canBuy,
+            semanticLabel: trainer.name,
+            onPressed: () => ref
+                .read(gameControllerProvider.notifier)
+                .buyTrainer(trainer.id),
+          ),
         ),
       ),
     );

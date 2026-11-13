@@ -1109,7 +1109,7 @@ void tutorialTests() {
       await tapButton(tester, 'Entendido');
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('El Profe'), findsNothing);
-      expect(c.read(settingsProvider).tutorialStep, 4);
+      expect(c.read(settingsProvider).tutorialDone, containsAll(['tap', 'defeat', 'upgrade', 'panel']));
       await closeApp(tester);
     });
 
@@ -1129,6 +1129,53 @@ void tutorialTests() {
       await closeApp(tester);
     });
 
+    SaveData withTutorialDone(List<String> done, void Function(GameEngine e) play) {
+      final e = GameEngine(content: loadTestContent());
+      play(e);
+      return SaveData(
+        saveVersion: 1,
+        lastSeen: clock.now().toUtc(),
+        rngState: e.rng.state,
+        state: e.state,
+        settings: {'tutorialDone': done},
+      );
+    }
+
+    const intro = ['tap', 'defeat', 'upgrade', 'panel'];
+
+    testWidgets('a trainer step shows when one can be hired and ends when hired', (tester) async {
+      final c = await pumpApp(
+        tester,
+        tutorial: true,
+        save: withTutorialDone(intro, (e) => e.debugAddCoins(Big.fromInt(100000))),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('contratar a Don Chuy'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Don Chuy').last);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('contratar a Don Chuy'), findsNothing);
+      expect(c.read(settingsProvider).tutorialDone, contains('trainer'));
+      await closeApp(tester);
+    });
+
+    testWidgets('a full combo bar gets its step, with the kick', (tester) async {
+      final c = await pumpApp(
+        tester,
+        tutorial: true,
+        save: withTutorialDone([...intro, 'trainer'], (e) {
+          for (var i = 0; i < 60; i++) {
+            e.tap();
+          }
+        }),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(stateOf(c).comboMeter, closeTo(1, 1e-9));
+      expect(find.textContaining('Barra llena'), findsOneWidget);
+      await closeApp(tester);
+    });
+
     testWidgets('"Tutorial" in the settings plays it again', (tester) async {
       final c = await pumpApp(tester, tutorial: true);
       await tester.pump(const Duration(milliseconds: 100));
@@ -1139,7 +1186,7 @@ void tutorialTests() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('El Profe'), findsOneWidget);
-      expect(c.read(settingsProvider).tutorialStep, 0);
+      expect(c.read(settingsProvider).tutorialDone, isEmpty);
       await closeApp(tester);
     });
   });

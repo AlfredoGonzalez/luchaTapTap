@@ -27,6 +27,10 @@ class GameScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scale = PixelScale.of(context);
     final view = ref.watch(viewProvider);
+    ref.listen(
+      viewProvider,
+      (_, next) => ref.read(tutorialProvider.notifier).viewOpened(next.name),
+    );
     final dialog = ref.watch(dialogProvider);
     final state = ref.watch(gameControllerProvider);
     final engine = ref.read(gameControllerProvider.notifier).engine;

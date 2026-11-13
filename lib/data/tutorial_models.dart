@@ -12,8 +12,41 @@ enum TutorialAdvance {
   /// The player buys a level of upgrade [TutorialStep.itemId].
   upgradeBought,
 
+  /// The player hires a level of trainer [TutorialStep.itemId].
+  trainerBought,
+
+  /// The player lands a finisher (the kick).
+  finisherUsed,
+
+  /// The player opens the screen called [TutorialStep.itemId] (a tab).
+  viewOpened,
+
   /// The player presses the "Entendido" button.
   ok,
+}
+
+/// When a step may begin (besides its `after` step being done).
+enum TutorialWhen {
+  /// At once.
+  start,
+
+  /// The player can afford some trainer.
+  trainerAffordable,
+
+  /// The combo meter is full.
+  comboFull,
+
+  /// A lucky belt is on screen.
+  luckyAppears,
+
+  /// A skill has become available.
+  skillUnlocked,
+
+  /// The player stands in front of a boss and may challenge it.
+  bossGate,
+
+  /// Changing the mask is worth a belt.
+  canPrestige,
 }
 
 /// One step: everything dark except [targets], a text from the coach, and
@@ -24,6 +57,8 @@ class TutorialStep {
     required this.targets,
     required this.textKey,
     required this.advance,
+    this.when = TutorialWhen.start,
+    this.after,
     this.count = 1,
     this.itemId,
     this.ensureAffordable,
@@ -38,6 +73,13 @@ class TutorialStep {
         'tutorial.json: unknown advance type "$type" in "${r.string('id')}"',
       );
     }
+    final whenName = r.has('when') ? r.string('when') : 'start';
+    final when = TutorialWhen.values.where((w) => w.name == whenName);
+    if (when.isEmpty) {
+      throw ContentException(
+        'tutorial.json: unknown "when" "$whenName" in "${r.string('id')}"',
+      );
+    }
     final targets = r.strings('targets');
     if (targets.isEmpty) {
       throw ContentException(
@@ -49,6 +91,8 @@ class TutorialStep {
       targets: targets,
       textKey: r.string('text'),
       advance: kind.first,
+      when: when.first,
+      after: r.optionalString('after'),
       count: advance.has('count') ? advance.integer('count', min: 1) : 1,
       itemId: advance.optionalString('id'),
       ensureAffordable: r.optionalString('ensureAffordable'),
@@ -61,6 +105,11 @@ class TutorialStep {
   final List<String> targets;
   final String textKey;
   final TutorialAdvance advance;
+
+  /// What has to be true for the step to begin, and the step that must be
+  /// finished before it (the intro steps chain with `after`).
+  final TutorialWhen when;
+  final String? after;
   final int count;
   final String? itemId;
 
@@ -87,9 +136,20 @@ class TutorialDef {
       if (!seen.add(s.id)) {
         throw ContentException('tutorial.json: duplicate step id "${s.id}"');
       }
-      if (s.advance == TutorialAdvance.upgradeBought && s.itemId == null) {
+      final needsId =
+          s.advance == TutorialAdvance.upgradeBought ||
+          s.advance == TutorialAdvance.trainerBought ||
+          s.advance == TutorialAdvance.viewOpened;
+      if (needsId && s.itemId == null) {
         throw ContentException(
-          'tutorial.json: step "${s.id}" needs advance.id (the upgrade)',
+          'tutorial.json: step "${s.id}" needs advance.id',
+        );
+      }
+    }
+    for (final s in steps) {
+      if (s.after != null && !seen.contains(s.after)) {
+        throw ContentException(
+          'tutorial.json: step "${s.id}" comes after unknown step "${s.after}"',
         );
       }
     }

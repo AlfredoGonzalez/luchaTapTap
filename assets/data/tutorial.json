@@ -10,28 +10,127 @@
   "steps": [
     {
       "id": "tap",
-      "targets": ["arena"],
+      "when": "start",
+      "targets": [
+        "arena"
+      ],
       "text": "tut_tap",
-      "advance": { "type": "taps", "count": 3 }
+      "advance": {
+        "type": "taps",
+        "count": 3
+      }
     },
     {
       "id": "defeat",
-      "targets": ["hudCoins", "opponentBar"],
+      "after": "tap",
+      "targets": [
+        "hudCoins",
+        "opponentBar"
+      ],
       "text": "tut_defeat",
-      "advance": { "type": "ok" }
+      "advance": {
+        "type": "ok"
+      }
     },
     {
       "id": "upgrade",
-      "targets": ["upgrade:puno_duro"],
+      "after": "defeat",
+      "targets": [
+        "upgrade:puno_duro"
+      ],
       "text": "tut_upgrade",
       "ensureAffordable": "puno_duro",
-      "advance": { "type": "upgradeBought", "id": "puno_duro" }
+      "advance": {
+        "type": "upgradeBought",
+        "id": "puno_duro"
+      }
     },
     {
       "id": "panel",
-      "targets": ["upgradesPanel"],
+      "after": "upgrade",
+      "targets": [
+        "upgradesPanel"
+      ],
       "text": "tut_panel",
-      "advance": { "type": "ok" }
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "trainer",
+      "when": "trainerAffordable",
+      "after": "panel",
+      "targets": [
+        "trainer:don_chuy"
+      ],
+      "text": "tut_trainer",
+      "advance": {
+        "type": "trainerBought",
+        "id": "don_chuy"
+      }
+    },
+    {
+      "id": "combo",
+      "when": "comboFull",
+      "after": "panel",
+      "targets": [
+        "comboRow",
+        "arena"
+      ],
+      "text": "tut_combo",
+      "advance": {
+        "type": "finisherUsed"
+      }
+    },
+    {
+      "id": "lucky",
+      "when": "luckyAppears",
+      "after": "panel",
+      "targets": [
+        "arena"
+      ],
+      "text": "tut_lucky",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "skill",
+      "when": "skillUnlocked",
+      "after": "panel",
+      "targets": [
+        "nav:skills"
+      ],
+      "text": "tut_skill",
+      "advance": {
+        "type": "viewOpened",
+        "id": "skills"
+      }
+    },
+    {
+      "id": "boss",
+      "when": "bossGate",
+      "after": "panel",
+      "targets": [
+        "bossButton"
+      ],
+      "text": "tut_boss",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "prestige",
+      "when": "canPrestige",
+      "after": "panel",
+      "targets": [
+        "nav:talents"
+      ],
+      "text": "tut_prestige",
+      "advance": {
+        "type": "viewOpened",
+        "id": "talents"
+      }
     }
   ]
 }

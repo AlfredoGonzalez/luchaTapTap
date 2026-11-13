@@ -144,6 +144,7 @@ void main() {
       final r = e.finisher()!;
       expect(r.damageDealt.toDouble(), closeTo(0.02, 1e-12));
       expect(e.state.comboMeter, 0);
+      expect(e.state.stat('finishers'), 1); // the tutorial follows it
       expect(e.finisher(), isNull);
     });
 

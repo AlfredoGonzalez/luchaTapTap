@@ -42,16 +42,16 @@ class HudBar extends ConsumerWidget {
                 child: TutorialTarget(
                   id: 'hudCoins',
                   child: Row(
-                  children: [
-                    const PixelIcon(PixelIcons.coin),
-                    SizedBox(width: scale.px(3)),
-                    Flexible(
-                      child: PixelText(
-                        formatBigShort(state.coins),
-                        color: Palette.sunYellow.color,
+                    children: [
+                      const PixelIcon(PixelIcons.coin),
+                      SizedBox(width: scale.px(3)),
+                      Flexible(
+                        child: PixelText(
+                          formatBigShort(state.coins),
+                          color: Palette.sunYellow.color,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
                   ),
                 ),
               ),
@@ -157,37 +157,42 @@ class NavBar extends ConsumerWidget {
         children: [
           for (final (view, icon, labelKey) in _tabs)
             Expanded(
-              child: Semantics(
-                button: true,
-                selected: view == selected,
-                label: strings.t(labelKey),
-                excludeSemantics: true,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => ref.read(viewProvider.notifier).show(view),
-                  child: ColoredBox(
-                    color:
-                        (view == selected ? Palette.nightPurple : Palette.ink)
-                            .color,
-                    child: Stack(
-                      children: [
-                        if (view == selected)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            top: 0,
-                            height: scale.px(1),
-                            child: ColoredBox(color: Palette.marigold.color),
+              child: TutorialTarget(
+                id: 'nav:${view.name}',
+                child: Semantics(
+                  button: true,
+                  selected: view == selected,
+                  label: strings.t(labelKey),
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => ref.read(viewProvider.notifier).show(view),
+                    child: ColoredBox(
+                      color:
+                          (view == selected ? Palette.nightPurple : Palette.ink)
+                              .color,
+                      child: Stack(
+                        children: [
+                          if (view == selected)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              height: scale.px(1),
+                              child: ColoredBox(color: Palette.marigold.color),
+                            ),
+                          Center(
+                            child: PixelIcon(
+                              icon,
+                              color:
+                                  (view == selected
+                                          ? Palette.bone
+                                          : Palette.fog)
+                                      .color,
+                            ),
                           ),
-                        Center(
-                          child: PixelIcon(
-                            icon,
-                            color:
-                                (view == selected ? Palette.bone : Palette.fog)
-                                    .color,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

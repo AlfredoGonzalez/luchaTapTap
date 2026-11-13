@@ -52,6 +52,9 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
   final Stopwatch _talk = Stopwatch()..start();
   String? _talkStep;
 
+  /// The step whose targets were already scrolled into view.
+  String? _scrolledFor;
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +84,16 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
     final step = ref.read(tutorialProvider).step;
     final me = context.findRenderObject();
     if (step == null || me is! RenderBox || !me.attached) return null;
+    // A target inside a list (a trainer row) may be scrolled out of sight.
+    if (_scrolledFor != step.id) {
+      final ctx = _targetKeys[step.targets.first]?.currentContext;
+      if (ctx != null && ctx.mounted) {
+        _scrolledFor = step.id;
+        Scrollable.maybeOf(ctx) == null
+            ? null
+            : Scrollable.ensureVisible(ctx, alignment: 0.5);
+      }
+    }
     Rect? union;
     for (final id in step.targets) {
       final target = _targetKeys[id]?.currentContext?.findRenderObject();
