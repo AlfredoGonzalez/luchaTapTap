@@ -11,7 +11,7 @@ class ClipPlayer {
   double _time = 0;
   String? _after = 'idle';
   bool _finished = false;
-  bool _reverse = false;
+  int? _holdAt;
 
   /// Name of the clip being played.
   String get clip => _clip;
@@ -25,24 +25,33 @@ class ClipPlayer {
   int get frame {
     final c = config.clips[_clip]!;
     final index = (_time * c.fps).floor();
-    final shown = c.loop ? index % c.frames : index.clamp(0, c.frames - 1);
-    return _reverse ? c.frames - 1 - shown : shown;
+    return c.loop ? index % c.frames : index.clamp(0, c.frames - 1);
   }
 
   /// Starts [name] from its first frame. When it ends (clips that do not loop)
   /// the player goes to [then]; null holds the last frame.
-  /// [reverse] plays the frames from last to first (a pulled-back leg).
-  void play(String name, {String? then = 'idle', bool reverse = false}) {
+  /// [holdAt] freezes the clip on that frame until [release] (a kick held
+  /// with the leg stretched out).
+  void play(String name, {String? then = 'idle', int? holdAt}) {
     _clip = name;
-    _reverse = reverse;
+    _holdAt = holdAt;
     _after = then;
     _time = 0;
     _finished = false;
   }
 
+  /// Lets a held clip go on from the frame it is frozen on.
+  void release() => _holdAt = null;
+
   void update(double dt) {
     _time += dt;
     final c = config.clips[_clip]!;
+    final hold = _holdAt;
+    if (hold != null) {
+      final at = (hold + 0.5) / c.fps;
+      if (_time > at) _time = at;
+      return;
+    }
     if (!c.loop && _time >= c.seconds) {
       final next = _after;
       if (next == null) {

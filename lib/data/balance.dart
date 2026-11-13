@@ -274,6 +274,7 @@ class AnimationConfig {
     required this.victorySeconds,
     required this.defeatedHoldSeconds,
     required this.playerDownSeconds,
+    required this.kickHoldFrame,
     required this.kickHoldSeconds,
     required this.kickGlowBlinkSeconds,
     required this.kickEnemyFlashSeconds,
@@ -319,6 +320,7 @@ class AnimationConfig {
       victorySeconds: r.number('victorySeconds', min: 0),
       defeatedHoldSeconds: r.number('defeatedHoldSeconds', min: 0),
       playerDownSeconds: r.number('playerDownSeconds', min: 0),
+      kickHoldFrame: r.integer('kickHoldFrame', min: 0),
       kickHoldSeconds: r.number('kickHoldSeconds', min: 0),
       kickGlowBlinkSeconds: r.number(
         'kickGlowBlinkSeconds',
@@ -355,6 +357,9 @@ class AnimationConfig {
 
   /// How long the player stays on the floor after the boss timer runs out.
   final double playerDownSeconds;
+
+  /// The kick freezes on this frame (0-based): the leg stretched out.
+  final int kickHoldFrame;
 
   /// The kick stays extended this long before the leg is pulled back.
   final double kickHoldSeconds;

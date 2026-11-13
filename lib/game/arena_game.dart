@@ -438,8 +438,11 @@ class _Fighter extends PositionComponent {
     final useKick = kick && sheet?.has('kick') == true;
     if (useKick) {
       // Reach, hold the leg out, then pull it back (see update).
-      _clips?.play('kick', then: null);
-      _kickLeft = animations.clips['kick']!.seconds + animations.kickHoldSeconds;
+      final kick = animations.clips['kick']!;
+      _clips?.play('kick', holdAt: animations.kickHoldFrame);
+      // Time to reach the held frame, then the hold itself.
+      _kickLeft = (animations.kickHoldFrame + 0.5) / kick.fps +
+          animations.kickHoldSeconds;
       _kickRetracting = false;
       _glowTime = 0;
       return;
@@ -486,11 +489,12 @@ class _Fighter extends PositionComponent {
       _glowTime += dt;
       _kickLeft -= dt;
       if (_kickLeft <= 0) {
-        // Leg held long enough: pull it back (the clip plays in reverse).
         if (!_kickRetracting) {
+          // Leg held long enough: the rest of the clip pulls it back.
+          final kick = animations.clips['kick']!;
           _kickRetracting = true;
-          _kickLeft = animations.clips['kick']!.seconds;
-          _clips?.play('kick', reverse: true);
+          _kickLeft = (kick.frames - animations.kickHoldFrame - 0.5) / kick.fps;
+          _clips?.release();
         } else {
           _kickLeft = 0;
           _kickRetracting = false;

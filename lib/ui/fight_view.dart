@@ -194,35 +194,34 @@ class _BossLossPanel extends ConsumerWidget {
     final controller = ref.read(gameControllerProvider.notifier);
     if (!controller.engine.awaitingBossLossAck) return const SizedBox.shrink();
     final strings = ref.watch(stringsProvider);
+    // At the top of the arena, so the fighters on the floor stay in view.
     return Positioned(
       left: scale.px(sideMargin),
       right: scale.px(sideMargin),
-      bottom: scale.px(4),
+      top: scale.px(2),
       child: PixelPanel(
-        padding: 6,
+        padding: 4,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             PixelText(
               strings.t('boss_lost_title'),
-              size: 16,
               color: Palette.coral.color,
-              shadow: Palette.ink.color,
               align: TextAlign.center,
             ),
-            SizedBox(height: scale.px(3)),
+            SizedBox(height: scale.px(2)),
             PixelText(
               strings.t('boss_lost_tip'),
               wrap: true,
               align: TextAlign.center,
             ),
-            SizedBox(height: scale.px(5)),
+            SizedBox(height: scale.px(3)),
             Center(
               child: PixelButton(
                 label: strings.t('boss_lost_ok'),
                 style: PixelButtonStyle.gold,
-                width: 80,
+                width: 70,
                 onPressed: controller.acknowledgeBossLoss,
               ),
             ),

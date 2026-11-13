@@ -48,10 +48,16 @@ void main() {
     expect(p.frame, 0);
   });
 
-  test('a reversed clip starts on its last frame and ends on the first', () {
-    final p = ClipPlayer(anim)..play('kick', reverse: true);
-    expect(p.frame, anim.clips['kick']!.frames - 1);
-    p.update(anim.clips['kick']!.seconds - 0.01);
-    expect(p.frame, 0);
+  test('a held clip freezes on its frame until it is released', () {
+    final p = ClipPlayer(anim)..play('kick', holdAt: 2);
+    p.update(5);
+    expect(p.clip, 'kick');
+    expect(p.frame, 2);
+    expect(p.finished, isFalse);
+    p.release();
+    p.update(1 / anim.clips['kick']!.fps);
+    expect(p.frame, 3); // the leg comes back
+    p.update(1);
+    expect(p.clip, 'idle');
   });
 }
