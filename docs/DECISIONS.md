@@ -145,3 +145,9 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - UI text: `strings_en.json` has the same keys as `strings_es.json`. Data text: the data files stay in Spanish and `strings_en.json` translates them with `data.<file>.<id>.<field>` keys (`branches` for talent branches, `credits` keyed by the Spanish text). Missing English text falls back to Spanish; tests check that nothing is missing and that placeholders match.
 - Wrestler, mask and trainer names stay in Spanish (they are characters); the coach is "El Profe" in both.
 - The English text is a first draft by Claude; a native speaker should review it. Settings now scroll on small screens (one row more).
+
+## Event mask: Nochebuena
+
+- New mask unlock rule `event`: the mask is the `rewardMask` of one event in `goals.json`, won by reaching all of the event's `goals` while it runs. Progress counts from the first time the game sees the event running (`GameState.daily.eventBase`), and the mask can only be claimed while the event is on.
+- Nochebuena (wine, red, coral; +30% boss coins) is the reward of "Lucha navideña" (Dec 20 to Jan 6): beat 10 bosses, claim 7 daily rewards and land 50 kicks. The Goals screen shows an event section at the top while it runs. Note: La Calaverita (3 Belts) already gives +50% boss coins, so Nochebuena is a collector's mask more than an upgrade.
+- An event reused in a later year needs a new id (the progress base is kept per event id).

@@ -196,6 +196,14 @@ class SaveCodec {
         for (final e in savedDaily.base.entries)
           if (counters.contains(e.key)) e.key: e.value,
       },
+      eventBase: {
+        for (final e in savedDaily.eventBase.entries)
+          if (content.goals.events.any((ev) => ev.id == e.key))
+            e.key: {
+              for (final c in e.value.entries)
+                if (counters.contains(c.key)) c.key: c.value,
+            },
+      },
     );
 
     final lucky = s['lucky'] as Map?;

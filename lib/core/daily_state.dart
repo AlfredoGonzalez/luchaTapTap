@@ -9,6 +9,7 @@ class DailyState {
     this.chestClaimed = false,
     this.loginDay,
     this.loginIndex = 0,
+    this.eventBase = const {},
   });
 
   /// Day the current goals belong to; null before the first day starts.
@@ -31,6 +32,10 @@ class DailyState {
   /// reset it: the streak only pauses.
   final int loginIndex;
 
+  /// Counter values when each event with goals was first seen running:
+  /// event id to counter name to value. Event progress is the difference.
+  final Map<String, Map<String, int>> eventBase;
+
   DailyState copyWith({
     int? day,
     List<String>? goals,
@@ -39,6 +44,7 @@ class DailyState {
     bool? chestClaimed,
     int? loginDay,
     int? loginIndex,
+    Map<String, Map<String, int>>? eventBase,
   }) => DailyState(
     day: day ?? this.day,
     goals: goals ?? this.goals,
@@ -47,6 +53,7 @@ class DailyState {
     chestClaimed: chestClaimed ?? this.chestClaimed,
     loginDay: loginDay ?? this.loginDay,
     loginIndex: loginIndex ?? this.loginIndex,
+    eventBase: eventBase ?? this.eventBase,
   );
 
   Map<String, dynamic> toJson() => {
@@ -57,6 +64,7 @@ class DailyState {
     'chestClaimed': chestClaimed,
     'loginDay': loginDay,
     'loginIndex': loginIndex,
+    'eventBase': eventBase,
   };
 
   /// Reads a saved state; unknown goal ids are dropped by the caller.
@@ -73,6 +81,13 @@ class DailyState {
     chestClaimed: json['chestClaimed'] as bool? ?? false,
     loginDay: (json['loginDay'] as num?)?.toInt(),
     loginIndex: (json['loginIndex'] as num?)?.toInt() ?? 0,
+    eventBase: {
+      for (final e in ((json['eventBase'] as Map?) ?? const {}).entries)
+        e.key as String: {
+          for (final c in (e.value as Map).entries)
+            c.key as String: (c.value as num).toInt(),
+        },
+    },
   );
 
   /// Number of the local calendar day of [time] (days since 1970-01-01).

@@ -13,6 +13,7 @@ import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'art_icon.dart';
 import 'hud.dart';
+import 'masks_view.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
 import 'pixel_icons.dart';
@@ -102,6 +103,8 @@ class GoalsView extends ConsumerWidget {
           child: ListView(
             padding: EdgeInsets.symmetric(horizontal: scale.px(sideMargin)),
             children: [
+              for (final event in controller.activeEvents)
+                if (event.goals.isNotEmpty) ..._eventSection(ref, strings, event),
               SectionHeader(strings.t('goals_login')),
               const LoginCalendar(),
               SizedBox(height: scale.px(rowGap)),
@@ -153,6 +156,45 @@ class GoalsView extends ConsumerWidget {
     );
   }
 
+  /// A running event with goals: each goal, then its mask.
+  List<Widget> _eventSection(WidgetRef ref, Strings strings, EventDef event) {
+    final controller = ref.read(gameControllerProvider.notifier);
+    final engine = controller.engine;
+    final content = ref.read(contentProvider);
+    final mask = content.mask(event.rewardMask!);
+    final done = event.goals
+        .where((g) => engine.eventProgress(event, g) >= g.target)
+        .length;
+    final owned = engine.ownsMask(mask.id);
+    return [
+      SectionHeader(strings.t('goals_event', {'name': strings.eventName(event)})),
+      for (final g in event.goals)
+        _GoalRow(
+          icon: PixelIcons.skillStar,
+          artKey: SpriteLibrary.goalKey,
+          title: goalText(strings, g.counter, g.target),
+          rewardLine: '',
+          value: engine.eventProgress(event, g),
+          target: g.target,
+          claimable: false,
+          claimed: owned,
+          onClaim: () {},
+        ),
+      _GoalRow(
+        icon: PixelIcons.trophy,
+        iconWidget: maskIcon(ref, mask),
+        title: strings.t('goals_event_mask', {'name': mask.name}),
+        subtitle: owned ? null : strings.t('goals_event_hint'),
+        rewardLine: maskBonusText(strings, mask),
+        value: done,
+        target: event.goals.length,
+        claimable: engine.eventMaskReady(event),
+        claimed: owned,
+        onClaim: () => controller.claimEventMask(event.id),
+      ),
+    ];
+  }
+
   Widget _loginButton(BuildContext context, WidgetRef ref, Strings strings) {
     final controller = ref.read(gameControllerProvider.notifier);
     final ready = controller.loginReady;
@@ -186,7 +228,7 @@ class _GoalRow extends ConsumerWidget {
   const _GoalRow({
     required this.icon,
     required this.title,
-    required this.reward,
+    this.reward,
     required this.value,
     required this.target,
     required this.claimable,
@@ -194,15 +236,23 @@ class _GoalRow extends ConsumerWidget {
     required this.onClaim,
     this.subtitle,
     this.artKey,
+    this.rewardLine,
+    this.iconWidget,
   });
 
   final PixelIconData icon;
+
+  /// Replaces the icon entirely (an event mask in its colors).
+  final Widget? iconWidget;
+
+  /// Text in place of [reward]'s (an event mask, or nothing).
+  final String? rewardLine;
 
   /// Picture shown instead of [icon] when it exists.
   final String? artKey;
   final String title;
   final String? subtitle;
-  final RewardDef reward;
+  final RewardDef? reward;
   final int value;
   final int target;
   final bool claimable;
@@ -251,7 +301,9 @@ class _GoalRow extends ConsumerWidget {
         child: Row(
           children: [
             SizedBox(width: scale.px(2)),
-            if (artKey != null &&
+            if (iconWidget != null)
+              iconWidget!
+            else if (artKey != null &&
                 ref.watch(spriteLibraryProvider).icon(artKey!) != null)
               ArtIcon(ref.watch(spriteLibraryProvider).icon(artKey!)!)
             else
@@ -276,13 +328,15 @@ class _GoalRow extends ConsumerWidget {
                       maxLines: 2,
                     ),
                   ],
-                  SizedBox(height: scale.px(2)),
-                  PixelText(
-                    rewardText(strings, engine, reward),
-                    color: (claimed ? Palette.dust : Palette.marigold).color,
-                    wrap: true,
-                    maxLines: 2,
-                  ),
+                  if (rewardLine != '') ...[
+                    SizedBox(height: scale.px(2)),
+                    PixelText(
+                      rewardLine ?? rewardText(strings, engine, reward!),
+                      color: (claimed ? Palette.dust : Palette.marigold).color,
+                      wrap: true,
+                      maxLines: 2,
+                    ),
+                  ],
                 ],
               ),
             ),

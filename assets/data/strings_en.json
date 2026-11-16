@@ -337,6 +337,10 @@
     "data.achievements.seis_mascaras.name": "A Thousand Faces",
     "data.achievements.cinco_cambios.name": "Reborn",
     "data.achievements.diez_metas.name": "Done and Done",
-    "data.achievements.siete_dias.name": "True to the Fight"
+    "data.achievements.siete_dias.name": "True to the Fight",
+    "mask_unlock_event": "Event: {name}",
+    "goals_event": "EVENT: {name}",
+    "goals_event_mask": "{name} mask",
+    "goals_event_hint": "Complete the event goals"
   }
 }

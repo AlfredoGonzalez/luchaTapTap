@@ -161,7 +161,25 @@
       "effect": "coinMultiplier",
       "value": 1.5,
       "from": "2026-12-20",
-      "to": "2027-01-06"
+      "to": "2027-01-06",
+      "goals": [
+        {
+          "id": "navidad_jefes",
+          "counter": "bosses",
+          "target": 10
+        },
+        {
+          "id": "navidad_dias",
+          "counter": "loginDays",
+          "target": 7
+        },
+        {
+          "id": "navidad_patadas",
+          "counter": "finishers",
+          "target": 50
+        }
+      ],
+      "rewardMask": "nochebuena"
     }
   ]
 }

@@ -227,6 +227,24 @@
         "blush"
       ],
       "icon": "mask_diablo"
+    },
+    {
+      "id": "nochebuena",
+      "name": "Nochebuena",
+      "rarity": "legendary",
+      "bonus": {
+        "type": "bossCoinMultiplier",
+        "value": 0.3
+      },
+      "unlock": {
+        "rule": "event"
+      },
+      "slotColors": [
+        "wine",
+        "lucha_red",
+        "coral"
+      ],
+      "icon": "mask_bull"
     }
   ]
 }

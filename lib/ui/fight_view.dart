@@ -177,6 +177,8 @@ class _EventBanner extends ConsumerWidget {
                     strings.t('event_banner', {'name': strings.eventName(e), 'text': strings.eventText(e)}),
                     color: Palette.sunYellow.color,
                     align: TextAlign.center,
+                    wrap: true,
+                    maxLines: 2,
                   ),
               ],
             ),

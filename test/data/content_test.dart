@@ -24,7 +24,7 @@ void main() {
     expect(c.talents.length, 9);
   });
 
-  test('the launch content is all there: 3 leagues, 6 opponents and a boss each, 12 masks, 6 trainers', () {
+  test('the launch content is all there: 3 leagues, 6 opponents and a boss each, 12 masks plus event masks, 6 trainers', () {
     final c = loadShippedContent();
     OpponentDef opp(String id) => c.opponents.firstWhere((o) => o.id == id);
     expect(c.leagues.length, 3);
@@ -39,7 +39,7 @@ void main() {
       }
     }
     expect(c.opponents.length, 21);
-    expect(c.masks.length, 12);
+    expect(c.masks.where((m) => m.unlockRule != MaskUnlockRule.event).length, 12);
     expect(c.trainers.length, 6);
     // Every sprite key is used once, so one sheet per opponent.
     expect(c.opponents.map((o) => o.sprite).toSet().length, c.opponents.length);
@@ -56,7 +56,7 @@ void main() {
       );
     }
     expect(c.masks.map((m) => m.bonusType).toSet().length, MaskBonusType.values.length);
-    expect(c.masks.map((m) => m.id).toSet().length, 12);
+    expect(c.masks.map((m) => m.id).toSet().length, c.masks.length);
   });
 
   test('trainers get more expensive and stronger tier by tier, and unlock later', () {
@@ -89,6 +89,16 @@ void main() {
           'shakePx': 2, 'playerFlashSeconds': 0.1, 'sfxVolume': 0.5,
         };
       }, 'maxSeconds must be at least minSeconds');
+    });
+
+    test('an event mask must be the reward of an event', () {
+      expectInvalid((f) {
+        (f['masks.json']!['masks'] as List).add({
+          'id': 'sin_evento', 'name': 'Sin evento', 'rarity': 'rare',
+          'bonus': {'type': 'coinGainMultiplier', 'value': 0.1},
+          'unlock': {'rule': 'event'}, 'slotColors': ['wine', 'lucha_red', 'coral'], 'icon': 'mask_bull',
+        });
+      }, 'must be the rewardMask of one event');
     });
 
     test('wrong schema version', () {

@@ -241,6 +241,10 @@
     "settings_language": "Idioma",
     "language_auto": "Auto",
     "language_es": "Español",
-    "language_en": "English"
+    "language_en": "English",
+    "mask_unlock_event": "Evento: {name}",
+    "goals_event": "EVENTO: {name}",
+    "goals_event_mask": "Máscara {name}",
+    "goals_event_hint": "Cumple las metas del evento"
   }
 }

@@ -761,6 +761,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
         events.length != _engine.activeEvents.length ||
         !events.every(_engine.activeEvents.contains);
     if (eventsChanged) _engine.activeEvents = List.unmodifiable(events);
+    _engine.beginEvents();
     return eventsChanged || before != _engine.state.daily.day;
   }
 
@@ -794,6 +795,13 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   bool claimDailyChest() {
     final ok = _engine.claimDailyChest() != null;
+    if (ok) _afterClaim();
+    return ok;
+  }
+
+  /// Takes the mask of event [eventId] once its goals are done.
+  bool claimEventMask(String eventId) {
+    final ok = _engine.claimEventMask(eventId);
     if (ok) _afterClaim();
     return ok;
   }

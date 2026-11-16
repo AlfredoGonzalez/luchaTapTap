@@ -316,6 +316,24 @@ class ContentBundle {
         ..expectSchemaVersion(_supportedSchemaVersion),
     );
 
+    // Event masks: each is the reward of exactly one event.
+    for (final m in masks.where((m) => m.unlockRule == MaskUnlockRule.event)) {
+      final events = goals.events.where((e) => e.rewardMask == m.id).length;
+      if (events != 1) {
+        throw ContentException(
+          '${ContentFiles.masks}: event mask "${m.id}" must be the rewardMask of one event in ${ContentFiles.goals} (found $events)',
+        );
+      }
+    }
+    for (final e in goals.events.where((e) => e.rewardMask != null)) {
+      final mask = masks.where((m) => m.id == e.rewardMask).firstOrNull;
+      if (mask == null || mask.unlockRule != MaskUnlockRule.event) {
+        throw ContentException(
+          '${ContentFiles.goals}: event "${e.id}" rewardMask "${e.rewardMask}" is not a mask with unlock rule "event"',
+        );
+      }
+    }
+
     final stringsReader = JsonReader(
       ContentFiles.strings,
       file(ContentFiles.strings),

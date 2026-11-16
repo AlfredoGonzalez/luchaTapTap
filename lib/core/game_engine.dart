@@ -876,8 +876,52 @@ class GameEngine {
     return rewards[index];
   }
 
+  /// Records where the counters stood when an event with goals is first
+  /// seen running (call after setting [activeEvents]).
+  void beginEvents() {
+    final daily = _state.daily;
+    var bases = daily.eventBase;
+    for (final e in activeEvents) {
+      if (e.goals.isEmpty || bases.containsKey(e.id)) continue;
+      bases = {
+        ...bases,
+        e.id: {for (final g in e.goals) g.counter.name: counterValue(g.counter)},
+      };
+    }
+    if (!identical(bases, daily.eventBase)) {
+      _state = _state.copyWith(daily: daily.copyWith(eventBase: bases));
+    }
+  }
+
+  /// Progress of event goal [goal] of [event], capped at its target.
+  int eventProgress(EventDef event, EventGoalDef goal) {
+    final base = _state.daily.eventBase[event.id]?[goal.counter.name];
+    if (base == null) return 0;
+    return math.max(0, math.min(goal.target, counterValue(goal.counter) - base));
+  }
+
+  /// [event] is running, its mask is not owned yet and every goal is done.
+  bool eventMaskReady(EventDef event) {
+    final mask = event.rewardMask;
+    return mask != null &&
+        activeEvents.contains(event) &&
+        !ownsMask(mask) &&
+        event.goals.every((g) => eventProgress(event, g) >= g.target);
+  }
+
+  /// Gives the mask of [eventId] when its goals are done.
+  bool claimEventMask(String eventId) {
+    final event = activeEvents.where((e) => e.id == eventId).firstOrNull;
+    if (event == null || !eventMaskReady(event)) return false;
+    _state = _state.copyWith(
+      ownedMasks: {..._state.ownedMasks, event.rewardMask!},
+    );
+    return true;
+  }
+
   /// Something on the Goals screen waits to be claimed on [day].
   bool goalsAttention(int day) =>
+      activeEvents.any(eventMaskReady) ||
       loginReady(day) ||
       dailyChestReady ||
       dailyGoals.any(dailyClaimable) ||

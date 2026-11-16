@@ -595,6 +595,46 @@ void main() {
       expect(e.state.stat('loginDays'), 3);
     });
 
+    test('an event mask is won by finishing the event goals while it runs', () {
+      final e = newEngine((f) {
+        (f['masks.json']!['masks'] as List).add({
+          'id': 'navidad', 'name': 'Navidad', 'rarity': 'legendary',
+          'bonus': {'type': 'bossCoinMultiplier', 'value': 0.3},
+          'unlock': {'rule': 'event'}, 'slotColors': ['wine', 'lucha_red', 'coral'], 'icon': 'mask_bull',
+        });
+        f['goals.json']!['events'] = [
+          {
+            'id': 'fiesta', 'name': 'Fiesta', 'text': 'x2', 'effect': 'coinMultiplier', 'value': 2,
+            'from': '2026-12-20', 'to': '2027-01-06', 'rewardMask': 'navidad',
+            'goals': [
+              {'id': 'golpes', 'counter': 'taps', 'target': 3},
+              {'id': 'dias', 'counter': 'loginDays', 'target': 1},
+            ],
+          },
+        ];
+      });
+      final fiesta = e.content.goals.events.single;
+      e.tap(); // before the event: does not count
+      e.activeEvents = [fiesta];
+      e.beginEvents();
+      expect(e.eventProgress(fiesta, fiesta.goals.first), 0);
+      e.tap();
+      e.tap();
+      e.claimLogin(5);
+      expect(e.eventMaskReady(fiesta), isFalse); // 2 of 3 taps
+      e.tap();
+      expect(e.eventMaskReady(fiesta), isTrue);
+      expect(e.goalsAttention(5), isTrue);
+      e.activeEvents = const []; // the event ended: no claim
+      expect(e.claimEventMask('fiesta'), isFalse);
+      e.activeEvents = [fiesta];
+      e.beginEvents(); // the base stays from the first time
+      expect(e.claimEventMask('fiesta'), isTrue);
+      expect(e.state.ownedMasks, contains('navidad'));
+      expect(e.eventMaskReady(fiesta), isFalse); // owned now
+      expect(e.claimEventMask('fiesta'), isFalse);
+    });
+
     test('events multiply coins only while active', () {
       final e = newEngine();
       final base = e.currentReward;

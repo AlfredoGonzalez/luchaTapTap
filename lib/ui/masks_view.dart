@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'art_icon.dart';
 import 'hud.dart';
@@ -19,9 +22,10 @@ import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'ui_state.dart';
 
-/// Slots in the collection grid (3 columns by 4 rows).
+/// The collection grid: 3 columns, at least 4 rows (more when there are more
+/// masks, e.g. event masks).
 const int _gridColumns = 3;
-const int _gridSlots = 12;
+const int _gridMinSlots = 12;
 const double _tileHeight = 32;
 
 /// Mask pictures are 24 x 24 here (the old glyphs are 16 x 16).
@@ -96,11 +100,19 @@ class MasksView extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: EdgeInsets.all(scale.px(sideMargin)),
             child: Column(
               children: [
-                for (var row = 0; row < _gridSlots ~/ _gridColumns; row++) ...[
+                for (
+                  var row = 0;
+                  row <
+                      (math.max(_gridMinSlots, content.masks.length) +
+                              _gridColumns -
+                              1) ~/
+                          _gridColumns;
+                  row++
+                ) ...[
                   if (row > 0) SizedBox(height: scale.px(2)),
                   SizedBox(
                     height: scale.px(_tileHeight),
@@ -282,6 +294,20 @@ class _Detail extends ConsumerWidget {
         case MaskUnlockRule.league:
           info = strings.t('mask_unlock_league', {
             'n': _plain(mask.unlockValue),
+          });
+          button = PixelButton(
+            label: strings.t('mask_locked'),
+            onPressed: null,
+          );
+        case MaskUnlockRule.event:
+          final event = ref
+              .read(contentProvider)
+              .goals
+              .events
+              .where((e) => e.rewardMask == mask.id)
+              .firstOrNull;
+          info = strings.t('mask_unlock_event', {
+            'name': event == null ? '' : strings.eventName(event),
           });
           button = PixelButton(
             label: strings.t('mask_locked'),

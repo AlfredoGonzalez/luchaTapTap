@@ -125,6 +125,35 @@ enum EventEffect {
   }
 }
 
+/// A goal of a timed event: reach [target] more of [counter] while the event
+/// runs (counted from the first time the game sees the event).
+class EventGoalDef {
+  const EventGoalDef({
+    required this.id,
+    required this.counter,
+    required this.target,
+  });
+
+  factory EventGoalDef.fromReader(String eventId, JsonReader r) {
+    final id = r.string('id');
+    final counter = GoalCounter.parse('goals.json', id, r.string('counter'));
+    if (!counter.isStat) {
+      throw ContentException(
+        'goals.json: event "$eventId" goal "$id" needs a running counter, not "${counter.name}"',
+      );
+    }
+    return EventGoalDef(
+      id: id,
+      counter: counter,
+      target: r.integer('target', min: 1),
+    );
+  }
+
+  final String id;
+  final GoalCounter counter;
+  final int target;
+}
+
 /// A timed bonus. Active on some weekdays (1 = Monday ... 7 = Sunday) and/or
 /// between two dates (inclusive), by the phone's calendar.
 class EventDef {
@@ -137,6 +166,8 @@ class EventDef {
     this.weekdays = const [],
     this.from,
     this.to,
+    this.goals = const [],
+    this.rewardMask,
   });
 
   factory EventDef.fromReader(JsonReader r) {
@@ -163,6 +194,15 @@ class EventDef {
         'goals.json: event "$id" needs weekdays or a from/to date',
       );
     }
+    final goals = r.has('goals')
+        ? [for (final g in r.objects('goals')) EventGoalDef.fromReader(id, g)]
+        : const <EventGoalDef>[];
+    final rewardMask = r.optionalString('rewardMask');
+    if (goals.isNotEmpty != (rewardMask != null)) {
+      throw ContentException(
+        'goals.json: event "$id" needs both goals and rewardMask, or neither',
+      );
+    }
     return EventDef(
       id: id,
       name: r.string('name'),
@@ -172,6 +212,8 @@ class EventDef {
       weekdays: weekdays,
       from: from,
       to: to,
+      goals: goals,
+      rewardMask: rewardMask,
     );
   }
 
@@ -183,6 +225,12 @@ class EventDef {
   final List<int> weekdays;
   final DateTime? from;
   final DateTime? to;
+
+  /// Goals that, all reached while the event runs, win [rewardMask].
+  final List<EventGoalDef> goals;
+
+  /// Mask (unlock rule `event`) given for finishing [goals].
+  final String? rewardMask;
 
   /// Whether the event runs on the local calendar day [day] (only its year,
   /// month and day are used).

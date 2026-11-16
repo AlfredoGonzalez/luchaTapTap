@@ -514,7 +514,10 @@ enum MaskUnlockRule {
   league,
 
   /// Granted by a store purchase.
-  shop;
+  shop,
+
+  /// Won by finishing the goals of a timed event (`goals.json`).
+  event;
 
   static MaskUnlockRule parse(String id, String name) {
     for (final v in values) {
