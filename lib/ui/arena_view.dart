@@ -111,7 +111,12 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
         final league = content.fightInfo(next.fightNumber).league;
         _game.setTheme(league.theme, league: league.order);
         _game.recoverFromDefeat();
-        _game.showOpponent(controller.engine.opponent, defeated: won);
+        // A beaten boss stays on the floor while the victory screen is up.
+        _game.showOpponent(
+          controller.engine.opponent,
+          defeated: won,
+          holdFallen: bossFell,
+        );
         if (bossFell) _game.playerVictory();
       } else if (previous == null) {
         _game.showOpponent(controller.engine.opponent);

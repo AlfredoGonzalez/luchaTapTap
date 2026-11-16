@@ -127,23 +127,49 @@ class ArenaGame extends FlameGame {
   }
 
   /// Shows a new opponent. When the previous one was [defeated] it falls first
-  /// (the defeated clip) and the next one steps in after a short pause.
-  void showOpponent(OpponentDef next, {bool defeated = false}) {
+  /// (the defeated clip) and the next one steps in after a short pause. With
+  /// [holdFallen] (a boss) it stays on the floor until [releaseFallen].
+  void showOpponent(
+    OpponentDef next, {
+    bool defeated = false,
+    bool holdFallen = false,
+  }) {
     opponent = next;
     if (!isLoaded) return;
+    _releaseHeld();
     final old = _enemy;
     var delay = 0.0;
     if (defeated && old.hasSprite) {
       old.fall();
-      delay =
-          animations.clips['defeated']!.seconds +
-          animations.defeatedHoldSeconds;
-      old.removeAfter(delay);
+      if (holdFallen) {
+        _held = old;
+        delay = double.infinity;
+      } else {
+        delay =
+            animations.clips['defeated']!.seconds +
+            animations.defeatedHoldSeconds;
+        old.removeAfter(delay);
+      }
     } else {
       old.removeFromParent();
     }
     _enemy = _buildEnemy(next)..hideFor(delay);
     world.add(_enemy);
+  }
+
+  /// A fallen boss kept on the floor (see [showOpponent]).
+  _Fighter? _held;
+
+  /// The fallen boss leaves and the next opponent steps in.
+  void releaseFallen() {
+    if (!isLoaded || _held == null) return;
+    _releaseHeld();
+    _enemy.hideFor(0);
+  }
+
+  void _releaseHeld() {
+    _held?.removeFromParent();
+    _held = null;
   }
 
   /// Shows the equipped mask on the player: the recolored sheet, or the head
@@ -184,12 +210,16 @@ class ArenaGame extends FlameGame {
     if (strip == null) return;
     final cfg = strip.config;
     final startX = _player.position.x - (cfg.cellWidth - _player.size.x) / 2;
-    final endX = _enemy.position.x - cfg.cellWidth * 0.45;
+    // In place: the cell sits on the fighter's feet; else it flies over.
+    final endX = cfg.travelFrames == 0
+        ? startX
+        : _enemy.position.x - cfg.cellWidth * 0.45;
+    final y = _player.position.y + _player.size.y - cfg.cellHeight;
     _player.hideFor(cfg.seconds);
     world.add(
       _SkillFlight(
         strip: strip,
-        start: Vector2(startX.roundToDouble(), _player.position.y),
+        start: Vector2(startX.roundToDouble(), y.roundToDouble()),
         endX: endX.roundToDouble(),
       ),
     );
@@ -204,11 +234,13 @@ class ArenaGame extends FlameGame {
     _enemy.celebrate(double.infinity);
   }
 
-  /// The defeat was accepted: everybody goes back to idle.
+  /// The defeat was accepted (or the victory screen closed): everybody goes
+  /// back to idle and a fallen boss leaves.
   void recoverFromDefeat() {
     if (!isLoaded) return;
     _player.getUp();
     _enemy.getUp();
+    releaseFallen();
   }
 
   /// The player celebrates (a boss fell) until the victory screen is closed.
@@ -228,6 +260,7 @@ class ArenaGame extends FlameGame {
     final margin = _LuckyPickup.spriteSize;
     _lucky = _LuckyPickup(
       onTap: onLuckyTap,
+      picture: sprites.icon(SpriteLibrary.luckyBeltKey),
       position: Vector2(
         (margin.x + x * (virtualSize.x - 3 * margin.x)).roundToDouble(),
         (margin.y + y * (_floorY - 3 * margin.y)).roundToDouble(),
@@ -687,6 +720,7 @@ class _SkillFlight extends PositionComponent {
       removeFromParent();
       return;
     }
+    if (cfg.travelFrames == 0) return; // plays where the fighter stands
     final travel = cfg.travelFrames / cfg.fps;
     final t = (_age / travel).clamp(0.0, 1.0);
     final eased = 1 - (1 - t) * (1 - t); // fast start, soft landing
@@ -719,16 +753,38 @@ class _TapArea extends PositionComponent with TapCallbacks {
 
 /// A floating belt that pays coins when tapped quickly.
 class _LuckyPickup extends PositionComponent with TapCallbacks {
-  _LuckyPickup({required this.onTap, required Vector2 position})
-    : super(position: position, size: spriteSize.clone(), priority: 20);
+  _LuckyPickup({
+    required this.onTap,
+    required Vector2 position,
+    this.picture,
+  }) : super(position: position, size: spriteSize.clone(), priority: 20);
 
   static final Vector2 spriteSize = Vector2(14, 8);
 
   final void Function() onTap;
 
+  /// The belt's art (16 x 16, centered on the pickup); null draws a plain one.
+  final Image? picture;
+
   @override
   void render(Canvas canvas) {
     final paint = Paint()..isAntiAlias = false;
+    final art = picture;
+    if (art != null) {
+      final w = art.width.toDouble(), h = art.height.toDouble();
+      canvas.drawImageRect(
+        art,
+        Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(
+          ((size.x - w) / 2).roundToDouble(),
+          ((size.y - h) / 2).roundToDouble(),
+          w,
+          h,
+        ),
+        paint..filterQuality = FilterQuality.none,
+      );
+      return;
+    }
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.x, size.y),
       paint..color = Palette.ink.color,

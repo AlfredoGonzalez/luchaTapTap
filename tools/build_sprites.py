@@ -149,10 +149,15 @@ def frames_for(cell):
 # frames are picked from each grid (data below), shrunk with one common scale
 # so the character keeps its size, and put in the game's sheet layout.
 ANIM_WORDS = {"idle": "idle", "punch": "attack", "attack": "attack", "hurt": "hit", "hit": "hit",
-              "defeated": "defeated", "victory": "victory", "kick": "kick", "plancha": "plancha"}
+              "defeated": "defeated", "victory": "victory", "kick": "kick", "plancha": "plancha",
+              "fury": "furia", "lucky": "suerte", "shout": "grito", "llave": "llave"}
 PICK = {"idle": [0, 6, 12, 18], "attack": [6, 12, 19], "hit": [8, 12], "defeated": [10, 17, 22],
         "victory": [4, 16], "kick": [6, 9, 12, 17],
-        "plancha": [3, 6, 8, 11, 13, 14, 18, 23]}
+        "plancha": [3, 6, 8, 11, 13, 14, 18, 23],
+        "furia": [1, 2, 3, 4, 5, 7, 10, 13, 16, 19, 22, 24],
+        "suerte": [5, 8, 10, 11, 12, 13, 15, 17, 19, 20, 21, 24],
+        "grito": [1, 5, 9, 10, 12, 13, 15, 16, 17, 19, 21, 24],
+        "llave": [1, 2, 3, 6, 8, 11, 12, 13, 14, 16, 22, 24]}
 GRID = 5
 
 
@@ -198,6 +203,30 @@ def build_skill_clip(key, name, grid, scale, ref_cell):
     f = scale * (ref[3] - ref[1]) / (first[3] - first[1])
     ground = first[3]
     out = Image.new("RGBA", (cw * cfg["frames"], ch), (0, 0, 0, 0))
+    if cfg["travelFrames"] == 0:
+        # Played where the fighter stands: one scale and one anchor (the ready
+        # stance's center and feet) for every frame, so the body never jumps;
+        # effects outside the cell are cut.
+        anchor = (first[0] + first[2]) / 2
+        for col, index in enumerate(PICK[name][: cfg["frames"]]):
+            cell = grid_cell(grid, index)
+            big = cell.resize((max(1, round(cell.width * f)), max(1, round(cell.height * f))), Image.BOX)
+            a = np.array(big)
+            alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
+            rgb = snap(a[:, :, :3], True)
+            rgb[(a[:, :, :3].astype(int).sum(axis=2) < 200) & edge_mask(alpha)] = PALETTE["ink"]
+            rgb[alpha == 0] = 0
+            frame = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+            x0 = round(cw / 2 - anchor * f)
+            y0 = round(ch - 1 - ground * f)
+            tile = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+            tile.paste(frame, (x0, y0), frame)
+            out.paste(tile, (col * cw, 0), tile)
+        OUT.mkdir(parents=True, exist_ok=True)
+        dest = OUT / f"{key}_{name}.png"
+        out.save(dest)
+        print(f"{key}: {name} -> {dest.relative_to(ROOT)} ({cfg['frames']} frames of {cw}x{ch}, in place)")
+        return
     for col, index in enumerate(PICK[name][: cfg["frames"]]):
         cell = grid_cell(grid, index)
         box = bbox_of(cell)
@@ -238,8 +267,11 @@ def build_from_grids(key, files):
     # Rows: the five required clips, then the optional ones that have art.
     anims = REQUIRED + [a for a in ORDER[5:] if a in grids]
     out = Image.new("RGBA", (size * COLUMNS, size * len(anims)), (0, 0, 0, 0))
-    if "plancha" in grids and key == "player":
-        build_skill_clip(key, "plancha", grids["plancha"], scale, grid_cell(grids["punch" if "punch" in grids else "attack"], 0))
+    if key == "player":
+        ref = grid_cell(grids["punch" if "punch" in grids else "attack"], 0)
+        for name in SKILL_CLIPS:
+            if name in grids:
+                build_skill_clip(key, name, grids[name], scale, ref)
     for row, anim in enumerate(anims):
         for col, index in enumerate(PICK[anim]):
             cell = grid_cell(grids[anim], index)
@@ -274,6 +306,106 @@ def build_from_grids(key, files):
     return True
 
 
+# ---- extra poses for a single-pose character (bosses) -------------------------
+# Next to `<key>.webp`, a boss may have `<key>-defeated.webp` (lying knocked
+# out) and `<key>-victory.webp` (celebrating), drawn at the same scale as the
+# main pose, and a punch grid (any file whose name has "punch" and starts with
+# the character's name). These replace the derived rows.
+ATTACK_PICK = {
+    "opp_el_mariachi_furioso": (5, [3, 5, 6]),
+    "opp_el_rey_del_tianguis": (5, [5, 6, 10]),
+    "opp_el_emperador_obsidiana": (7, [9, 22, 24]),
+}
+
+
+def figure_scale(img, size):
+    """The scale to_cell uses for [img] (background already removed)."""
+    bbox = img.getchannel("A").point(lambda v: 255 if v > 0 else 0).getbbox()
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    return min((size - 8) / w, (size - 4) / h)
+
+
+def pose_cell(img, scale, size, allow_mask, anchor_x=None):
+    """[img] cropped, shrunk by [scale] (less if it would not fit), snapped to
+    the palette and placed in a cell with the feet on the bottom. [anchor_x]
+    (in source pixels) lands on the cell's center; else it is centered."""
+    a_full = img.getchannel("A").point(lambda v: 255 if v > 8 else 0)
+    bbox = a_full.getbbox()
+    fig = img.crop(bbox)
+    f = min(scale, (size - 2) / fig.width, (size - 2) / fig.height)
+    w, h = max(1, round(fig.width * f)), max(1, round(fig.height * f))
+    small = fig.resize((w, h), Image.BOX)
+    a = np.array(small)
+    alpha = np.where(a[:, :, 3] >= 128, 255, 0).astype(np.uint8)
+    rgb = snap(a[:, :, :3], allow_mask)
+    rgb[(a[:, :, :3].astype(int).sum(axis=2) < 200) & edge_mask(alpha)] = PALETTE["ink"]
+    rgb[alpha == 0] = 0
+    frame = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+    if anchor_x is None:
+        x = (size - w) // 2
+    else:
+        x = round(size / 2 - (anchor_x - bbox[0]) * f)
+    x = min(max(x, 0), size - w)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.paste(frame, (x, size - 1 - h), frame)
+    return out
+
+
+def clear_background(path, tol=60):
+    """Like remove_background, but also clears background-colored pixels in
+    closed gaps (between an arm and the head) that the flood fill misses."""
+    src = Image.open(path).convert("RGBA")
+    a = np.array(src).astype(np.int32)
+    border = np.concatenate([a[0, :, :3], a[-1, :, :3], a[:, 0, :3], a[:, -1, :3]])
+    bg = np.median(border, axis=0)
+    out = np.array(remove_background(src))
+    close = np.abs(a[:, :, :3] - bg).sum(axis=2) <= tol
+    out[close, 3] = 0
+    return Image.fromarray(out, "RGBA")
+
+
+def extra_poses(key, size, scale, allow_mask):
+    """Rows built from the extra pose files of [key], by animation name."""
+    rows = {}
+    base = key[len("opp_"):] if key.startswith("opp_") else key
+    for p in INPUT.iterdir():
+        if p.suffix.lower() not in (".png", ".webp", ".jpg", ".jpeg"):
+            continue
+        k = key_of(p)
+        k = k[len("opp_"):] if k.startswith("opp_") else k
+        if not k.startswith(base) or k == base:
+            continue
+        rest = k[len(base):]
+        img = None
+        if "defeated" in rest:
+            img = clear_background(p)
+            # Lying down, the body is as long as it was tall: fill the width.
+            ko = pose_cell(img, size, size, allow_mask)
+            rows["defeated"] = ("pose", ko)
+        elif "victory" in rest:
+            img = clear_background(p)
+            v = pose_cell(img, scale, size, allow_mask)
+            rows["victory"] = ("pose", v)
+    # Punch grid: its name has "punch" and starts with the character's name.
+    if key in ATTACK_PICK:
+        grid_n, picks = ATTACK_PICK[key]
+        words = base.split("_")
+        for p in INPUT.iterdir():
+            stem = re.sub(r"[^a-z0-9]+", "_", p.stem.lower())
+            if "punch" in stem and stem.startswith("_".join(words)):
+                grid = Image.open(p).convert("RGBA")
+                cw = grid.width // grid_n
+                cell = lambda i: grid.crop(((i % grid_n) * cw, (i // grid_n) * cw, (i % grid_n + 1) * cw, (i // grid_n + 1) * cw))
+                first = cell(0)
+                fb = bbox_of(first)
+                # The grid's ready stance has the main pose's height in the cell.
+                f = (size - 4) / (fb[3] - fb[1])
+                anchor = (fb[0] + fb[2]) / 2
+                rows["attack"] = ("frames", [pose_cell(cell(i), f, size, allow_mask, anchor_x=anchor) for i in picks])
+                break
+    return rows
+
+
 def build(path):
     key = key_of(path)
     if key not in SIZES:
@@ -283,6 +415,18 @@ def build(path):
     img = remove_background(Image.open(path))
     cell = to_cell(img, size, allow_mask=(key == "player"))
     frames = frames_for(cell)
+    k = max(1, round(size / 48))
+    extras = extra_poses(key, size, figure_scale(img, size), key == "player")
+    if "defeated" in extras:
+        # Two frames of the fall, then the knocked-out pose.
+        frames["defeated"] = [fallen(cell, 30), fallen(cell, 60), extras["defeated"][1]]
+    if "victory" in extras:
+        v = extras["victory"][1]
+        frames["victory"] = [shifted(v, 0, -k), v]
+    if "attack" in extras:
+        frames["attack"] = extras["attack"][1]
+    if extras:
+        print(f"{key}: own art for {', '.join(sorted(extras))}")
     # A single pose gives the five required rows; the kick row is optional.
     rows = [a for a in ORDER if a in frames]
     sheet = Image.new("RGBA", (size * COLUMNS, size * len(rows)), (0, 0, 0, 0))

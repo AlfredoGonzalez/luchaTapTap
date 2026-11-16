@@ -7,12 +7,14 @@ import '../data/content_models.dart';
 import '../services/game_controller.dart';
 import '../services/localized_text.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'rows.dart';
+import 'ui_state.dart';
 
 /// Price text of a shop item, from the billing service (never hard-coded).
 final shopPriceProvider = FutureProvider.family<String?, String>((
@@ -146,8 +148,10 @@ class _ShopViewState extends ConsumerState<ShopView> {
           onPressed: wait > 0 || _busy ? null : () => _use(item),
         );
     }
+    final art = ref.watch(spriteLibraryProvider).icon(item.icon);
     return ListRow(
       icon: icon,
+      iconWidget: art == null ? null : ArtIcon(art),
       title: strings.shopName(item),
       subtitle: detail,
       trailing: button,

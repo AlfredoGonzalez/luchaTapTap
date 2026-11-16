@@ -215,6 +215,34 @@
         "cellWidth": 72,
         "cellHeight": 48,
         "travelFrames": 5
+      },
+      "furia": {
+        "frames": 12,
+        "fps": 12,
+        "cellWidth": 96,
+        "cellHeight": 96,
+        "travelFrames": 0
+      },
+      "suerte": {
+        "frames": 12,
+        "fps": 12,
+        "cellWidth": 96,
+        "cellHeight": 96,
+        "travelFrames": 0
+      },
+      "grito": {
+        "frames": 12,
+        "fps": 12,
+        "cellWidth": 96,
+        "cellHeight": 96,
+        "travelFrames": 0
+      },
+      "llave": {
+        "frames": 12,
+        "fps": 12,
+        "cellWidth": 96,
+        "cellHeight": 96,
+        "travelFrames": 0
       }
     }
   },

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/number_format.dart';
 import '../core/palette.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
+import 'art_icon.dart';
 import 'dialogs.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
@@ -46,6 +48,7 @@ class HudBar extends ConsumerWidget {
                     child: PixelButton(
                       label: '',
                       icon: PixelIcons.trophy,
+                      iconWidget: _artIcon(ref, SpriteLibrary.trophyKey),
                       width: 24,
                       semanticLabel: strings.t('goals_open'),
                       style: PixelButtonStyle.flat,
@@ -131,6 +134,12 @@ Set<GameView> _attention(WidgetRef ref) {
         content.talents.any((t) => engine.quoteTalent(t.id).canBuy))
       GameView.talents,
   };
+}
+
+/// The picture for [key], or null while there is none (the glyph shows).
+Widget? _artIcon(WidgetRef ref, String key) {
+  final image = ref.watch(spriteLibraryProvider).icon(key);
+  return image == null ? null : ArtIcon(image);
 }
 
 /// A small red square on the top-right corner of [child] when [show]: there

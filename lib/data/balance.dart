@@ -259,7 +259,8 @@ class SkillClipConfig {
   final int cellHeight;
 
   /// The first this many frames carry the fighter across the arena to the
-  /// opponent (the rest play where it landed).
+  /// opponent (the rest play where it landed). 0: the whole clip plays where
+  /// the fighter stands (furia, suerte, grito, llave).
   final int travelFrames;
 
   double get seconds => frames / fps;
@@ -326,7 +327,7 @@ class AnimationConfig {
           fps: c.number('fps', min: 0, minExclusive: true),
           cellWidth: c.integer('cellWidth', min: 16),
           cellHeight: c.integer('cellHeight', min: 16),
-          travelFrames: c.integer('travelFrames', min: 1),
+          travelFrames: c.integer('travelFrames', min: 0),
         );
       }
     }

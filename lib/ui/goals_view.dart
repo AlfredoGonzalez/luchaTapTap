@@ -7,9 +7,11 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../data/goals_models.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import '../services/localized_text.dart';
 import '../services/strings.dart';
+import 'art_icon.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'pixel_icon.dart';
@@ -58,6 +60,14 @@ PixelIconData rewardIcon(RewardDef reward) => reward.belts > 0
     ? PixelIcons.belt
     : (reward.fightCoins > 0 ? PixelIcons.coin : PixelIcons.shopDouble);
 
+/// The 8-pixel picture of a calendar reward (the boost has art).
+Widget _rewardPicture(WidgetRef ref, RewardDef reward) {
+  final icon = rewardIcon(reward);
+  final art = ref.watch(spriteLibraryProvider).icon(SpriteLibrary.boostSmallKey);
+  if (icon == PixelIcons.shopDouble && art != null) return ArtIcon(art, size: 8);
+  return PixelIcon(icon, size: 8);
+}
+
 /// "METAS": the 7-day calendar, today's goals with their chest, and the
 /// achievements.
 class GoalsView extends ConsumerWidget {
@@ -100,6 +110,7 @@ class GoalsView extends ConsumerWidget {
               for (final g in goals)
                 _GoalRow(
                   icon: PixelIcons.skillStar,
+                  artKey: SpriteLibrary.goalKey,
                   title: goalText(strings, g.counter, g.target),
                   reward: g.reward,
                   value: engine.dailyProgress(g),
@@ -111,6 +122,7 @@ class GoalsView extends ConsumerWidget {
               if (goals.isNotEmpty)
                 _GoalRow(
                   icon: PixelIcons.chest,
+                  artKey: SpriteLibrary.chestKey,
                   title: strings.t('goals_chest'),
                   reward: content.goals.chest,
                   value: goals.where(engine.dailyClaimed).length,
@@ -123,6 +135,7 @@ class GoalsView extends ConsumerWidget {
               for (final a in achievements)
                 _GoalRow(
                   icon: PixelIcons.trophy,
+                  artKey: SpriteLibrary.trophyKey,
                   title: strings.achievementName(a),
                   subtitle: goalText(strings, a.counter, a.target),
                   reward: a.reward,
@@ -180,9 +193,13 @@ class _GoalRow extends ConsumerWidget {
     required this.claimed,
     required this.onClaim,
     this.subtitle,
+    this.artKey,
   });
 
   final PixelIconData icon;
+
+  /// Picture shown instead of [icon] when it exists.
+  final String? artKey;
   final String title;
   final String? subtitle;
   final RewardDef reward;
@@ -234,7 +251,11 @@ class _GoalRow extends ConsumerWidget {
         child: Row(
           children: [
             SizedBox(width: scale.px(2)),
-            PixelIcon(icon, color: Palette.bone.color),
+            if (artKey != null &&
+                ref.watch(spriteLibraryProvider).icon(artKey!) != null)
+              ArtIcon(ref.watch(spriteLibraryProvider).icon(artKey!)!)
+            else
+              PixelIcon(icon, color: Palette.bone.color),
             SizedBox(width: scale.px(4)),
             Expanded(
               child: Column(
@@ -341,7 +362,7 @@ class LoginCalendar extends ConsumerWidget {
                   SizedBox(height: scale.px(2)),
                   Opacity(
                     opacity: i < next ? 0.4 : 1,
-                    child: PixelIcon(rewardIcon(rewards[i]), size: 8),
+                    child: _rewardPicture(ref, rewards[i]),
                   ),
                 ],
               ),

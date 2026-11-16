@@ -9,6 +9,10 @@
                           tr_<id>_big.png (48 x 48, info pop-up)
   up_<id>.webp         -> assets/icons/up_<id>.png     (upgrade icons)
   tl_<name>.webp       -> assets/icons/tl_<name>.png   (talent icons)
+  shop_<name>.webp     -> assets/icons/shop_<name>.png (store items; `icon` in shop.json)
+  ui_<name>.webp       -> assets/icons/ui_<name>.png   (trophy, chest, goal, boost;
+                          ui_boost also as ui_boost_8.png for the calendar)
+  lucky_belt.webp      -> assets/icons/lucky_belt.png  (the lucky pickup in the arena)
 
 The names after the prefix must match ids in the data files; anything else is
 skipped.
@@ -60,8 +64,56 @@ def _shrink(fig, w, h):
     return Image.fromarray(out, "RGBA")
 
 
-def build(path, key, tilt=False, pool=True, size=SIZE):
+def strip_tile(img, tol=70, rounds=4):
+    """Removes a square tile drawn behind the figure (a dark or cream box the
+    image generator sometimes adds): while the edge of the figure is all one
+    color, that color is flood-filled away from the edge."""
+    from collections import deque
+    a = np.array(img).copy()
+    # The magenta halo the background removal leaves around a box.
+    rgb = a[:, :, :3].astype(int)
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+    # Magenta at any brightness (red and blue alike, little green); the
+    # palette's own magenta (#D12FA0) has much less blue and is kept.
+    a[(r > g + 60) & (b > g + 60) & (np.abs(r - b) < 30), 3] = 0
+    for _ in range(rounds):
+        alpha = a[:, :, 3] > 0
+        ys, xs = np.nonzero(alpha)
+        if len(xs) == 0:
+            break
+        x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+        ring = np.concatenate([a[y0, x0:x1 + 1, :3], a[y1, x0:x1 + 1, :3], a[y0:y1 + 1, x0, :3], a[y0:y1 + 1, x1, :3]]).astype(int)
+        ring_alpha = np.concatenate([alpha[y0, x0:x1 + 1], alpha[y1, x0:x1 + 1], alpha[y0:y1 + 1, x0], alpha[y0:y1 + 1, x1]])
+        if ring_alpha.mean() < 0.6:
+            break  # not a box: the figure itself touches the edge here and there
+        med = np.median(ring[ring_alpha], axis=0)
+        if (np.abs(ring[ring_alpha] - med).sum(axis=1) <= tol).mean() < 0.7:
+            break
+        close = alpha & (np.abs(a[:, :, :3].astype(int) - med).sum(axis=2) <= tol)
+        seen = np.zeros(alpha.shape, bool)
+        q = deque()
+        for y in range(y0, y1 + 1):
+            for x in (x0, x1):
+                if close[y, x] and not seen[y, x]:
+                    seen[y, x] = True; q.append((y, x))
+        for x in range(x0, x1 + 1):
+            for y in (y0, y1):
+                if close[y, x] and not seen[y, x]:
+                    seen[y, x] = True; q.append((y, x))
+        while q:
+            y, x = q.popleft()
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < a.shape[0] and 0 <= nx < a.shape[1] and close[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True; q.append((ny, nx))
+        a[seen, 3] = 0
+    return Image.fromarray(a, "RGBA")
+
+
+def build(path, key, tilt=False, pool=True, size=SIZE, tile=False):
     img = remove_background(Image.open(path))
+    if tile:
+        img = strip_tile(img)
     box = img.getchannel("A").point(lambda v: 255 if v > 0 else 0).getbbox()
     fig = img.crop(box)
     # A long flat figure would be only a few pixels tall: tilt it as if
@@ -101,6 +153,7 @@ def main():
     masks = _ids("masks.json")
     trainers = _ids("trainers.json")
     upgrades = _ids("upgrades.json")
+    shop_icons = {i["icon"] for i in json.loads((ROOT / "assets/data/shop.json").read_text())["items"]}
     talent_icons = set()
     for b in json.loads((ROOT / "assets/data/talents.json").read_text())["branches"]:
         talent_icons |= {n["icon"] for n in b["nodes"]}
@@ -123,6 +176,14 @@ def main():
         elif stem.startswith("up_") and stem[3:] in upgrades:
             build(p, stem)
         elif stem.startswith("tl_") and stem in talent_icons:
+            build(p, stem)
+        elif stem.startswith("shop_") and stem in shop_icons:
+            build(p, stem, tile=True)
+        elif stem.startswith("ui_"):
+            build(p, stem, tile=True)
+            if stem == "ui_boost":
+                build(p, stem + "_8", size=8, tile=True)
+        elif stem == "lucky_belt":
             build(p, stem)
 
 

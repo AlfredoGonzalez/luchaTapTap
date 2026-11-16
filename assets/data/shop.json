@@ -24,7 +24,7 @@
       "kind": "beltPack",
       "name": "Puñado",
       "detail": "+20",
-      "icon": "belt",
+      "icon": "shop_belts_small",
       "belts": 20
     },
     {
@@ -33,7 +33,7 @@
       "kind": "beltPack",
       "name": "Montón",
       "detail": "+100",
-      "icon": "belt",
+      "icon": "shop_belts_medium",
       "belts": 100
     },
     {
@@ -42,7 +42,7 @@
       "kind": "beltPack",
       "name": "Baúl",
       "detail": "+500",
-      "icon": "belt",
+      "icon": "shop_belts_big",
       "belts": 500
     },
     {
@@ -62,7 +62,7 @@
       "kind": "adBelt",
       "name": "Cinturón",
       "detail": "+1",
-      "icon": "belt",
+      "icon": "shop_free_belt",
       "belts": 1,
       "cooldownSeconds": 1800
     }

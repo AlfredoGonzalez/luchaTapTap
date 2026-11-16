@@ -106,6 +106,22 @@ class SpriteLibrary {
   /// (the generic glyph is drawn).
   ui.Image? icon(String key) => _icons[key];
 
+  /// Interface pictures that are not tied to a data entry.
+  static const String trophyKey = 'ui_trophy';
+  static const String chestKey = 'ui_chest';
+  static const String goalKey = 'ui_goal';
+  static const String boostKey = 'ui_boost';
+  static const String boostSmallKey = 'ui_boost_8';
+  static const String luckyBeltKey = 'lucky_belt';
+  static const List<String> uiIconKeys = [
+    trophyKey,
+    chestKey,
+    goalKey,
+    boostKey,
+    boostSmallKey,
+    luckyBeltKey,
+  ];
+
   /// Key of the big (info pop-up) picture of the trainer portrait [portrait].
   static String portraitBigKey(String portrait) => '${portrait}_big';
 
@@ -213,6 +229,8 @@ class SpriteLibrary {
       for (final t in content.trainers) portraitBigKey(t.portrait),
       for (final u in content.upgrades) u.icon,
       for (final t in content.talents) t.icon,
+      for (final i in content.shopItems) i.icon,
+      ...uiIconKeys,
     };
     for (final key in plainKeys) {
       final file = await iconFile(key);
