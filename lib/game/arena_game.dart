@@ -32,7 +32,15 @@ class ArenaGame extends FlameGame {
     SpriteLibrary? sprites,
     this.playerMaskId,
     this.playerMaskColor = Palette.violet,
+    this.enemyMayAttack,
+    this.onEnemyAttackLanded,
   }) : sprites = sprites ?? SpriteLibrary.empty();
+
+  /// Asked before each cosmetic opponent attack (null: always allowed).
+  final bool Function()? enemyMayAttack;
+
+  /// The opponent's attack reached the player (for the sound).
+  final void Function()? onEnemyAttackLanded;
 
   final AnimationConfig animations;
 
@@ -61,6 +69,12 @@ class ArenaGame extends FlameGame {
   _LuckyPickup? _lucky;
   late _Fighter _enemy;
   int _hitCount = 0;
+
+  /// Seconds to the opponent's next cosmetic attack, and to its impact.
+  double? _attackIn;
+  double? _impactIn;
+  double _shakeLeft = 0;
+  double _shakeTime = 0;
 
   /// Floor line: fighters stand with their feet here.
   double get _floorY => virtualSize.y - _floorHeight;
@@ -223,6 +237,55 @@ class ArenaGame extends FlameGame {
   }
 
   final math.Random _random = math.Random();
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _updateEnemyAttack(dt);
+  }
+
+  double _nextAttackWait(EnemyAttackConfig c) =>
+      c.minSeconds + _random.nextDouble() * (c.maxSeconds - c.minSeconds);
+
+  /// The opponent throws a punch now and then and the player flinches, with
+  /// a short screen shake. Only a show: nothing in the fight changes.
+  void _updateEnemyAttack(double dt) {
+    final config = animations.enemyAttack;
+    if (config == null || !isLoaded) return;
+    final impact = _impactIn;
+    if (impact != null) {
+      _impactIn = impact - dt;
+      if (_impactIn! <= 0) {
+        _impactIn = null;
+        if (_player.canFlinch) {
+          _player.reactToHit();
+          _player.flash(config.playerFlashSeconds);
+          _shakeLeft = config.shakeSeconds;
+          _shakeTime = 0;
+          onEnemyAttackLanded?.call();
+        }
+      }
+    }
+    if (_shakeLeft > 0) {
+      _shakeLeft = math.max(0, _shakeLeft - dt);
+      _shakeTime += dt;
+      // Whole-pixel jolts that alternate sides, then back to rest.
+      final step = (_shakeTime / _shakeStepSeconds).floor();
+      final px = _shakeLeft == 0 ? 0 : (step.isEven ? 1 : -1) * config.shakePx;
+      camera.viewfinder.position = Vector2(px.toDouble(), 0);
+    }
+    final wait = _attackIn ??= _nextAttackWait(config);
+    _attackIn = wait - dt;
+    if (_attackIn! > 0) return;
+    _attackIn = _nextAttackWait(config);
+    final allowed = enemyMayAttack?.call() ?? true;
+    if (!allowed || !_enemy.canStrike || !_player.canFlinch) return;
+    _enemy.strike();
+    _impactIn = config.impactSeconds;
+  }
+
+  /// One shake jolt lasts this long (a frame at 20 fps).
+  static const double _shakeStepSeconds = 0.05;
 
   /// Reaction to a hit. A tap flashes the opponent white and floats the damage
   /// number above it; [isBig] (critical hits, finishers) uses the large yellow
@@ -463,6 +526,22 @@ class _Fighter extends PositionComponent {
   void reactToHit() {
     if (!_fallen && _celebrateLeft == 0) _clips?.play('hit');
   }
+
+  bool get _busy =>
+      _fallen ||
+      _celebrateLeft > 0 ||
+      _hiddenLeft > 0 ||
+      _removeLeft != null ||
+      _kickLeft > 0;
+
+  /// Free to throw the cosmetic attack (drawn, standing, not kicking).
+  bool get canStrike => hasSprite && !_busy;
+
+  /// Free to flinch at the opponent's attack.
+  bool get canFlinch => !_busy;
+
+  /// The cosmetic attack: the attack clip, nothing else.
+  void strike() => _clips?.play('attack');
 
   void fall() {
     _fallen = true;

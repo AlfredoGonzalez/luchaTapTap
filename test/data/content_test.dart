@@ -81,6 +81,15 @@ void main() {
       );
     });
 
+    test('opponent attack: max wait below min', () {
+      expectInvalid((f) {
+        (f['balance.json']!['animations'] as Map<String, dynamic>)['enemyAttack'] = {
+          'minSeconds': 5, 'maxSeconds': 2, 'impactSeconds': 0.1, 'shakeSeconds': 0.2,
+          'shakePx': 2, 'playerFlashSeconds': 0.1, 'sfxVolume': 0.5,
+        };
+      }, 'maxSeconds must be at least minSeconds');
+    });
+
     test('wrong schema version', () {
       expectInvalid((f) => f['opponents.json']!['schemaVersion'] = 99, 'schemaVersion');
     });

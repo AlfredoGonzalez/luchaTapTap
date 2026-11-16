@@ -498,13 +498,31 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   // Sound, music and vibration -------------------------------------------
 
-  void _sfx(Sfx sfx) {
+  void _sfx(Sfx sfx, {double factor = 1}) {
     if (!ref.read(settingsProvider).sound) return;
     final audio = ref.read(contentProvider).balance.audio;
     ref
         .read(audioServiceProvider)
-        .playSfx(sfx, volume: (audio.master * audio.sfx).clamp(0.0, 1.0));
+        .playSfx(
+          sfx,
+          volume: (audio.master * audio.sfx * factor).clamp(0.0, 1.0),
+        );
   }
+
+  /// The opponent's cosmetic attack landed on the player (sound only).
+  void enemyAttackLanded() {
+    final attack = ref.read(contentProvider).balance.animations.enemyAttack;
+    if (attack != null) _sfx(Sfx.hit, factor: attack.sfxVolume);
+  }
+
+  /// Whether the opponent may throw its cosmetic attack now: not during the
+  /// boss intro, the kick or the result screens.
+  bool get enemyMayAttack =>
+      !engine.awaitingBossStart &&
+      !engine.awaitingBossLossAck &&
+      engine.bossWinOpponent == null &&
+      kickView.value == null &&
+      !engine.finisherReady;
 
   void _buzz(String event) {
     if (!ref.read(settingsProvider).vibration) return;

@@ -198,6 +198,15 @@
     "kickHoldSeconds": 2,
     "kickGlowBlinkSeconds": 0.12,
     "kickEnemyFlashSeconds": 0.5,
+    "enemyAttack": {
+      "minSeconds": 3,
+      "maxSeconds": 6,
+      "impactSeconds": 0.16,
+      "shakeSeconds": 0.2,
+      "shakePx": 2,
+      "playerFlashSeconds": 0.1,
+      "sfxVolume": 0.6
+    },
     "skillClips": {
       "plancha": {
         "frames": 8,

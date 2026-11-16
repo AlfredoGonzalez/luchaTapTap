@@ -67,6 +67,8 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       sprites: ref.read(spriteLibraryProvider),
       playerMaskId: controller.engine.equippedMaskDef?.id,
       playerMaskColor: _maskColor(controller),
+      enemyMayAttack: () => controller.enemyMayAttack,
+      onEnemyAttackLanded: controller.enemyAttackLanded,
     );
     _hits = controller.hits.listen((e) {
       if (e.isTap) {

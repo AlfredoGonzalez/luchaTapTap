@@ -294,6 +294,7 @@ class AnimationConfig {
     required this.kickHoldSeconds,
     required this.kickGlowBlinkSeconds,
     required this.kickEnemyFlashSeconds,
+    this.enemyAttack,
   });
 
   factory AnimationConfig.fromReader(JsonReader r) {
@@ -344,6 +345,9 @@ class AnimationConfig {
         minExclusive: true,
       ),
       kickEnemyFlashSeconds: r.number('kickEnemyFlashSeconds', min: 0),
+      enemyAttack: r.has('enemyAttack')
+          ? EnemyAttackConfig.fromReader(r.object('enemyAttack'))
+          : null,
     );
   }
 
@@ -386,11 +390,63 @@ class AnimationConfig {
   /// How long the opponent stays flashing after a kick lands.
   final double kickEnemyFlashSeconds;
 
+  /// The opponent's cosmetic attacks; null turns them off.
+  final EnemyAttackConfig? enemyAttack;
+
   int rowOf(String clip) => order.indexOf(clip);
 
   /// Frames of the longest clip: the number of columns of a sheet.
   int get columns =>
       clips.values.map((c) => c.frames).reduce((a, b) => a > b ? a : b);
+}
+
+/// The opponent attacks every now and then and the player flinches. Only a
+/// show: it changes nothing in the fight.
+class EnemyAttackConfig {
+  const EnemyAttackConfig({
+    required this.minSeconds,
+    required this.maxSeconds,
+    required this.impactSeconds,
+    required this.shakeSeconds,
+    required this.shakePx,
+    required this.playerFlashSeconds,
+    required this.sfxVolume,
+  });
+
+  factory EnemyAttackConfig.fromReader(JsonReader r) {
+    final min = r.number('minSeconds', min: 0, minExclusive: true);
+    final max = r.number('maxSeconds', min: 0, minExclusive: true);
+    if (max < min) {
+      throw ContentException(
+        'balance.json: animations.enemyAttack.maxSeconds must be at least minSeconds',
+      );
+    }
+    return EnemyAttackConfig(
+      minSeconds: min,
+      maxSeconds: max,
+      impactSeconds: r.number('impactSeconds', min: 0),
+      shakeSeconds: r.number('shakeSeconds', min: 0),
+      shakePx: r.integer('shakePx', min: 0),
+      playerFlashSeconds: r.number('playerFlashSeconds', min: 0),
+      sfxVolume: r.number('sfxVolume', min: 0),
+    );
+  }
+
+  /// Random wait between two attacks.
+  final double minSeconds;
+  final double maxSeconds;
+
+  /// From the start of the opponent's attack clip to the player's flinch.
+  final double impactSeconds;
+
+  /// Screen shake on impact: length and size in whole virtual pixels.
+  final double shakeSeconds;
+  final int shakePx;
+
+  final double playerFlashSeconds;
+
+  /// Volume of the impact sound relative to the other effects.
+  final double sfxVolume;
 }
 
 /// Volume mix. The player's own switches in Ajustes turn music and effects on
