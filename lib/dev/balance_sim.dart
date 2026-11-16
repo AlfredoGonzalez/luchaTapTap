@@ -305,6 +305,14 @@ class _Bot {
 
   void _act() {
     _useSkills();
+    // Claims finished achievements (the daily goals and calendar depend on
+    // the real calendar and are left out: the bot plays without them).
+    for (final a in content.achievements) {
+      if (engine.achievementClaimable(a)) {
+        engine.claimAchievement(a.id);
+        _log('logro ${a.id}');
+      }
+    }
     _shop();
     _spendBelts();
     _equipBestMask();

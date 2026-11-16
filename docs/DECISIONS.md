@@ -67,7 +67,7 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 | Topic | What was done | Where |
 | --- | --- | --- |
 | Milestone multipliers | Added from the GDD (the spec is silent): upgrades and trainers are multiplied (x2) at levels 10, 25, 50, 100, 150, ... Without them the economy hit a wall at fight 19 that no constants could move. | `balance.json` `milestones` |
-| Pacing targets | GDD windows (first prestige 20 to 35 min, second 32 to 60) measured for an attentive active player. These were not confirmed by the designer. | `docs/BALANCE.md` |
+| Pacing targets | GDD windows (first prestige 20 to 35 min, second 32 to 60) measured for an attentive active player. These were not confirmed by the designer. With the goals screen (achievement rewards) the first prestige comes at about 18 minutes; the test accepts 15 to 35 until the designer decides. | `docs/BALANCE.md` |
 | Worst case | Tuned for a player who never catches lucky pickups; lucky pickups were cut from 8x to 0.75x so they are a bonus. | `balance.json` `lucky` |
 | Prestige | `minBelts` (when) and `beltCoinDivisor` (how much) are now separate levers; the +2% per Belt is unchanged. | `balance.json` |
 | Kick value | The kick is worth a little (about 10% speed) but is not needed; the bot loses its taps while going for the circles. | `lib/dev/balance_sim.dart` |
@@ -122,3 +122,14 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - The coach's portrait is a placeholder wrestler until `assets/ui/coach.png` exists (it is picked up automatically).
 - Ten steps: tap, bars, gifted upgrade, panel (a chain with `after`), then situational ones that begin when their `when` holds and the panel step is done: a trainer can be hired (`trainerAffordable`), the combo bar is full (`comboFull`, ends with a finisher), a lucky belt appears, a skill unlocks (ends by opening the Habilidades tab), the boss gate (`bossGate`) and the first prestige (`canPrestige`, ends by opening Talentos). Only one step shows at a time, the first pending one in file order.
 - Progress is saved as the list of finished step ids (`tutorialDone` in the settings); the first version's `tutorialStep` is migrated. A target inside a list is scrolled into view automatically.
+
+## Goals, daily reward and events
+
+- **Metas** (the trophy at the top left, with a red dot when something can be claimed): the 7-day calendar, today's goals with their chest, and the achievements.
+- **Achievements** (`achievements.json`) are no longer paid automatically: a reached one waits for "Cobrar". The reward is `rewardBelts` or a `reward` object. Counters: taps, defeats, bosses, prestiges, finishers, lucky belts, skills used, upgrade and trainer levels bought, daily goals, calendar days, best fight and masks owned (`GoalCounter`).
+- **Daily goals** (`goals.json` `daily`): `count` goals a day drawn from the pool with the day as the seed; progress counts from the start of the day; the chest opens when all of them are claimed.
+- **Calendar** (`goals.json` `login`): one reward per day; a missed day does not reset the streak (it only pauses), after the last day it starts over. A pop-up offers it once the player has won `ui.dailyPopupMinDefeats` fights; "Después" hides it until the next start.
+- **Rewards**: Belts, coins as a number of the current fight's rewards (so they keep up with progress; they do not count towards the Belts of a mask change) and temporary coin boosts.
+- **Events** (`goals.json` `events`): weekdays and/or a date range; effects `coinMultiplier` and `bossCoinMultiplier`; a strip at the bottom of the arena names them.
+- **Time** is the phone's local calendar. Moving the clock back does nothing (no new day, no second claim); moving it forward does give the next day early. Accepted for a single-player game. No notifications yet.
+- Not built yet: an event that gives an exclusive mask (needs its art).

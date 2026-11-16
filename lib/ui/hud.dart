@@ -34,67 +34,120 @@ class HudBar extends ConsumerWidget {
       height: scale.px(hudHeight),
       child: ColoredBox(
         color: Palette.nightPurple.color,
-        child: Padding(
-          padding: EdgeInsets.only(left: scale.px(sideMargin)),
-          child: Row(
-            children: [
-              Expanded(
-                child: TutorialTarget(
-                  id: 'hudCoins',
-                  child: Row(
-                    children: [
-                      const PixelIcon(PixelIcons.coin),
-                      SizedBox(width: scale.px(3)),
-                      Flexible(
-                        child: PixelText(
-                          formatBigShort(state.coins),
-                          color: Palette.sunYellow.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onLongPress: debugToolsEnabled
-                    ? () => ref
-                          .read(dialogProvider.notifier)
-                          .open(GameDialog.debug)
-                    : null,
-                child: PixelText(
-                  strings.t('hud_fight', {'n': state.fightNumber}),
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const PixelIcon(PixelIcons.belt),
-                    SizedBox(width: scale.px(3)),
-                    Flexible(
-                      child: PixelText(
-                        formatBigShort(state.belts),
-                        color: Palette.aqua.color,
-                      ),
-                    ),
-                    PixelButton(
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  AttentionDot(
+                    show: ref
+                        .read(gameControllerProvider.notifier)
+                        .goalsAttention,
+                    child: PixelButton(
                       label: '',
-                      icon: PixelIcons.gear,
+                      icon: PixelIcons.trophy,
                       width: 24,
-                      semanticLabel: strings.t('view_settings'),
+                      semanticLabel: strings.t('goals_open'),
                       style: PixelButtonStyle.flat,
-                      onPressed: () => ref
-                          .read(viewProvider.notifier)
-                          .show(GameView.settings),
+                      onPressed: () =>
+                          ref.read(viewProvider.notifier).show(GameView.goals),
                     ),
-                  ],
-                ),
+                  ),
+                  Flexible(
+                    child: TutorialTarget(
+                      id: 'hudCoins',
+                      child: Row(
+                        children: [
+                          const PixelIcon(PixelIcons.coin),
+                          SizedBox(width: scale.px(3)),
+                          Flexible(
+                            child: PixelText(
+                              formatBigShort(state.coins),
+                              color: Palette.sunYellow.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onLongPress: debugToolsEnabled
+                  ? () =>
+                        ref.read(dialogProvider.notifier).open(GameDialog.debug)
+                  : null,
+              child: PixelText(
+                strings.t('hud_fight', {'n': state.fightNumber}),
+              ),
+            ),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const PixelIcon(PixelIcons.belt),
+                  SizedBox(width: scale.px(3)),
+                  Flexible(
+                    child: PixelText(
+                      formatBigShort(state.belts),
+                      color: Palette.aqua.color,
+                    ),
+                  ),
+                  PixelButton(
+                    label: '',
+                    icon: PixelIcons.gear,
+                    width: 24,
+                    semanticLabel: strings.t('view_settings'),
+                    style: PixelButtonStyle.flat,
+                    onPressed: () =>
+                        ref.read(viewProvider.notifier).show(GameView.settings),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// A small red square on the top-right corner of [child] when [show]: there
+/// is something new there (a reward to claim, something to buy).
+class AttentionDot extends StatelessWidget {
+  const AttentionDot({super.key, required this.show, required this.child});
+
+  final bool show;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return child;
+    final scale = PixelScale.of(context);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(
+          right: scale.px(2),
+          top: scale.px(2),
+          width: scale.px(4),
+          height: scale.px(4),
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Palette.luchaRed.color,
+                border: Border.all(
+                  color: Palette.ink.color,
+                  width: scale.px(1),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:lucha_tap_tap/core/palette.dart';
 import 'package:lucha_tap_tap/data/content_bundle.dart';
 import 'package:lucha_tap_tap/data/content_exception.dart';
 import 'package:lucha_tap_tap/data/content_models.dart';
+import 'package:lucha_tap_tap/data/goals_models.dart';
 
 import '../test_content.dart';
 
@@ -192,6 +193,12 @@ void main() {
   group('dynamic Spanish strings', () {
     final content = loadTestContent();
     final strings = content.strings;
+
+    test('every goal counter has a text', () {
+      for (final c in GoalCounter.values) {
+        expect(strings.containsKey('goal_${c.name}'), isTrue, reason: 'goal_${c.name}');
+      }
+    });
 
     test('every mask bonus and talent effect has a text', () {
       // These keys are built from enum names, so the regex test above cannot see them.

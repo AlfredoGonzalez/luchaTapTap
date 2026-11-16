@@ -1,6 +1,7 @@
 import 'balance.dart';
 import 'content_exception.dart';
 import 'content_models.dart';
+import 'goals_models.dart';
 import 'json_reader.dart';
 import 'tutorial_models.dart';
 
@@ -18,6 +19,7 @@ abstract final class ContentFiles {
   static const shop = 'shop.json';
   static const credits = 'credits.json';
   static const tutorial = 'tutorial.json';
+  static const goals = 'goals.json';
   static const strings = 'strings_es.json';
 
   static const all = [
@@ -33,6 +35,7 @@ abstract final class ContentFiles {
     shop,
     credits,
     tutorial,
+    goals,
     strings,
   ];
 }
@@ -80,6 +83,7 @@ class ContentBundle {
     required this.shopItems,
     required this.credits,
     required this.tutorial,
+    required this.goals,
     required this.strings,
   });
 
@@ -301,6 +305,11 @@ class ContentBundle {
         ..expectSchemaVersion(_supportedSchemaVersion),
     );
 
+    final goals = GoalsDef.fromReader(
+      JsonReader(ContentFiles.goals, file(ContentFiles.goals))
+        ..expectSchemaVersion(_supportedSchemaVersion),
+    );
+
     final stringsReader = JsonReader(
       ContentFiles.strings,
       file(ContentFiles.strings),
@@ -320,6 +329,7 @@ class ContentBundle {
       shopItems: List.unmodifiable(shopItems),
       credits: List.unmodifiable(credits),
       tutorial: tutorial,
+      goals: goals,
       strings: Map.unmodifiable(strings),
     );
   }
@@ -352,6 +362,9 @@ class ContentBundle {
   final List<ShopItemDef> shopItems;
   final List<CreditGroup> credits;
   final TutorialDef tutorial;
+
+  /// Daily goals, chest, calendar and events (`goals.json`).
+  final GoalsDef goals;
   final Map<String, String> strings;
 
   late final Map<String, OpponentDef> _opponentById = {

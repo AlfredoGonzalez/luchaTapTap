@@ -231,7 +231,7 @@ void main() {
     test('progress feeds achievements', () {
       final e = hired((f) => f['trainers.json']!['trainers'][0]['baseDps'] = 100);
       e.applyOffline(const Duration(hours: 1));
-      expect(e.state.achievements, contains('primera_victoria'));
+      expect(e.claimAchievement('primera_victoria'), isTrue);
     });
 
     test('eight hours compute in under 100 ms', () {

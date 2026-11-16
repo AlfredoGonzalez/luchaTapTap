@@ -186,6 +186,17 @@ abstract final class PixelIcons {
     10, 3, 2, 5, _m, 3, 7, 10, 8, _m,
     7, 10, 2, 3, Palette.ink,
   ]);
+  static const trophy = PixelIconData(16, 16, [
+    4, 2, 8, 6, _m, 2, 3, 1, 4, _m, 3, 3, 1, 1, _m, 3, 6, 1, 1, _m,
+    13, 3, 1, 4, _m, 12, 3, 1, 1, _m, 12, 6, 1, 1, _m,
+    5, 8, 6, 1, _m, 6, 9, 4, 1, _m, 7, 10, 2, 2, _m, 5, 12, 6, 2, _m,
+    5, 3, 1, 3, Palette.white,
+  ]);
+  static const chest = PixelIconData(16, 16, [
+    3, 3, 10, 1, _m, 2, 4, 12, 3, _m, 2, 8, 12, 6, _m,
+    2, 7, 12, 1, Palette.ink, 7, 6, 2, 4, Palette.sunYellow,
+    7, 8, 2, 1, Palette.ink,
+  ]);
   static const logoMask = PixelIconData(16, 16, [
     4, 2, 8, 1, Palette.ink, 3, 3, 10, 1, Palette.ink,
     2, 4, 12, 8, Palette.ink, 3, 12, 10, 1, Palette.ink,

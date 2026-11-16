@@ -1,5 +1,6 @@
 import '../core/palette.dart';
 import 'content_exception.dart';
+import 'goals_models.dart';
 import 'json_reader.dart';
 
 const int regularSpriteSize = 48;
@@ -589,47 +590,39 @@ class MaskDef {
   final List<String> slotColors;
 }
 
-enum AchievementCounter {
-  taps,
-  defeats,
-  bosses,
-  prestiges;
-
-  static AchievementCounter parse(String id, String name) {
-    for (final v in values) {
-      if (v.name == name) return v;
-    }
-    throw ContentException(
-      'achievements.json: "$id" has unknown counter "$name" (known: ${values.map((e) => e.name).join(', ')})',
-    );
-  }
-}
-
 class AchievementDef {
   const AchievementDef({
     required this.id,
     required this.name,
     required this.counter,
     required this.target,
-    required this.rewardBelts,
+    required this.reward,
   });
 
+  /// The reward is `rewardBelts` (Belts only) or a full `reward` object.
   factory AchievementDef.fromReader(JsonReader r) {
     final id = r.string('id');
+    if (r.has('rewardBelts') == r.has('reward')) {
+      throw ContentException(
+        'achievements.json: "$id" needs either rewardBelts or reward',
+      );
+    }
     return AchievementDef(
       id: id,
       name: r.string('name'),
-      counter: AchievementCounter.parse(id, r.string('counter')),
+      counter: GoalCounter.parse('achievements.json', id, r.string('counter')),
       target: r.integer('target', min: 1),
-      rewardBelts: r.integer('rewardBelts', min: 0),
+      reward: r.has('reward')
+          ? RewardDef.fromReader(r.object('reward'))
+          : RewardDef(belts: r.integer('rewardBelts', min: 1)),
     );
   }
 
   final String id;
   final String name;
-  final AchievementCounter counter;
+  final GoalCounter counter;
   final int target;
-  final int rewardBelts;
+  final RewardDef reward;
 }
 
 enum ShopSection { permanent, belts, ads }

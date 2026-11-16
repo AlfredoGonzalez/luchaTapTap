@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import '../data/content_bundle.dart';
 import '../data/content_exception.dart';
+import '../data/goals_models.dart';
 import 'big.dart';
+import 'daily_state.dart';
 import 'game_state.dart';
 
 /// A save file could not be read (damaged, from a newer build, or invalid).
@@ -105,6 +107,7 @@ class SaveCodec {
         'boostLeft': s.boostLeft,
         'boostMultiplier': s.boostMultiplier,
         'adReadyAt': s.adReadyAt,
+        'daily': s.daily.toJson(),
       },
     });
   }
@@ -178,7 +181,22 @@ class SaveCodec {
     final maskIds = content.masks.map((e) => e.id).toSet();
     final achievementIds = content.achievements.map((e) => e.id).toSet();
     final shopIds = content.shopItems.map((e) => e.id).toSet();
-    const counters = {'taps', 'defeats', 'bosses', 'prestiges'};
+    final counters = {
+      for (final c in GoalCounter.values)
+        if (c.isStat) c.name,
+    };
+    final goalIds = content.goals.dailyPool.map((g) => g.id).toSet();
+    final savedDaily = s['daily'] is Map
+        ? DailyState.fromJson((s['daily'] as Map).cast<String, dynamic>())
+        : const DailyState();
+    final daily = savedDaily.copyWith(
+      goals: savedDaily.goals.where(goalIds.contains).toList(),
+      claimed: savedDaily.claimed.where(goalIds.contains).toSet(),
+      base: {
+        for (final e in savedDaily.base.entries)
+          if (counters.contains(e.key)) e.key: e.value,
+      },
+    );
 
     final lucky = s['lucky'] as Map?;
     final pending = s['pendingOffline'] as Map?;
@@ -231,6 +249,7 @@ class SaveCodec {
       boostLeft: _double(s, 'boostLeft', 0),
       boostMultiplier: _double(s, 'boostMultiplier', 1),
       adReadyAt: levels('adReadyAt', shopIds.contains),
+      daily: daily,
     );
     return SaveData(
       saveVersion: currentVersion,

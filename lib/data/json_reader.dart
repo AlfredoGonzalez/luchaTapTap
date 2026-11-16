@@ -12,6 +12,9 @@ class JsonReader {
 
   String _where(String key) => '$source: ${path.isEmpty ? key : '$path.$key'}';
 
+  /// File and path of this object, for error messages.
+  String get where => path.isEmpty ? source : '$source: $path';
+
   /// The keys present in this object.
   Iterable<String> get keys => _map.keys;
 

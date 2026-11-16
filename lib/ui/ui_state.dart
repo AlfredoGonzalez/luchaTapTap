@@ -21,7 +21,7 @@ class AppStageNotifier extends Notifier<AppStage> {
 
 /// What fills the screen between the HUD and the navigation bar. `fight` is
 /// the main screen (the "Mejoras" tab); the others replace the arena.
-enum GameView { fight, skills, masks, talents, shop, settings, credits }
+enum GameView { fight, skills, masks, talents, shop, goals, settings, credits }
 
 final viewProvider = NotifierProvider<ViewNotifier, GameView>(ViewNotifier.new);
 
@@ -100,3 +100,17 @@ class SelectionNotifier extends Notifier<String?> {
 final spriteLibraryProvider = Provider<SpriteLibrary>(
   (ref) => SpriteLibrary.empty(),
 );
+
+/// The player closed the daily reward pop-up with "Después": it stays away
+/// until the next start of the app (the trophy keeps its dot).
+final dailyPopupDismissedProvider =
+    NotifierProvider<DailyPopupDismissedNotifier, bool>(
+      DailyPopupDismissedNotifier.new,
+    );
+
+class DailyPopupDismissedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set() => state = true;
+}

@@ -1,4 +1,5 @@
 import 'big.dart';
+import 'daily_state.dart';
 
 /// A random pickup floating in the arena.
 class LuckyEvent {
@@ -67,6 +68,7 @@ class GameState {
     this.boostLeft = 0,
     this.boostMultiplier = 1,
     Map<String, int> adReadyAt = const {},
+    this.daily = const DailyState(),
   }) : upgradeLevels = Map.unmodifiable(upgradeLevels),
        trainerLevels = Map.unmodifiable(trainerLevels),
        skillLevels = Map.unmodifiable(skillLevels),
@@ -135,6 +137,9 @@ class GameState {
   /// when it can be used again.
   final Map<String, int> adReadyAt;
 
+  /// Daily goals and the 7-day calendar.
+  final DailyState daily;
+
   int upgradeLevel(String id) => upgradeLevels[id] ?? 0;
   int trainerLevel(String id) => trainerLevels[id] ?? 0;
   int skillLevel(String id) => skillLevels[id] ?? 0;
@@ -177,6 +182,7 @@ class GameState {
     double? boostLeft,
     double? boostMultiplier,
     Map<String, int>? adReadyAt,
+    DailyState? daily,
   }) => GameState(
     coins: coins ?? this.coins,
     totalCoinsEarned: totalCoinsEarned ?? this.totalCoinsEarned,
@@ -208,5 +214,6 @@ class GameState {
     boostLeft: boostLeft ?? this.boostLeft,
     boostMultiplier: boostMultiplier ?? this.boostMultiplier,
     adReadyAt: adReadyAt ?? this.adReadyAt,
+    daily: daily ?? this.daily,
   );
 }

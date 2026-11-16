@@ -62,6 +62,7 @@ class FightView extends ConsumerWidget {
               ),
               const KickCircles(),
               const _BossName(),
+              const _EventBanner(),
               const _NoticeBanner(),
               const KickPrompt(),
               const _BossButton(),
@@ -147,6 +148,44 @@ class _OpponentBar extends ConsumerWidget {
 }
 
 /// Boss name at the top of the arena, with the countdown as m:ss.
+/// The events running today (a gold weekend...), on a strip at the bottom of
+/// the arena.
+class _EventBanner extends ConsumerWidget {
+  const _EventBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(gameControllerProvider);
+    final strings = ref.watch(stringsProvider);
+    final events = ref.read(gameControllerProvider.notifier).activeEvents;
+    if (events.isEmpty) return const SizedBox.shrink();
+    final scale = PixelScale.of(context);
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        child: ColoredBox(
+          color: Palette.ink.color,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: scale.px(1)),
+            child: Column(
+              children: [
+                for (final e in events)
+                  PixelText(
+                    strings.t('event_banner', {'name': e.name, 'text': e.text}),
+                    color: Palette.sunYellow.color,
+                    align: TextAlign.center,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BossName extends ConsumerWidget {
   const _BossName();
 

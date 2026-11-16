@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/big.dart';
 import '../core/buy_amount.dart';
+import '../core/daily_state.dart';
 import '../core/fixed_step.dart';
 import '../core/kick_challenge.dart';
 import '../core/game_engine.dart';
@@ -15,6 +16,7 @@ import '../core/rng.dart';
 import '../core/save_codec.dart';
 import '../data/content_bundle.dart';
 import '../data/content_models.dart';
+import '../data/goals_models.dart';
 import 'ad_service.dart';
 import 'audio_service.dart';
 import 'billing_service.dart';
@@ -301,6 +303,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       // Cold start: everything since the last save counts as time away.
       _engine.applyOffline(clock.now().toUtc().difference(save.lastSeen));
     }
+    _refreshCalendar();
 
     _kick = KickChallenge(
       content.balance.kick.settings,
@@ -350,6 +353,7 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     final balance = ref.read(contentProvider).balance;
     if ((now - _lastSaveElapsed).inMicroseconds >=
         balance.saveIntervalSeconds * Duration.microsecondsPerSecond) {
+      if (_refreshCalendar()) _publish();
       saveNow();
     }
     _pollKick(now);
@@ -465,7 +469,11 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     _lastElapsed = _clock.elapsed;
     _active = true;
     ref.read(audioServiceProvider).resume();
-    if (left == null) return;
+    _refreshCalendar();
+    if (left == null) {
+      _publish();
+      return;
+    }
     _engine.applyOffline(clock.now().toUtc().difference(left));
     _publish();
     saveNow();
@@ -689,6 +697,69 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   void collectLucky() {
     if (_engine.collectLucky() != null) _publish();
+  }
+
+  // Goals, daily goals, calendar and events --------------------------------
+
+  /// Today's local calendar day (see [DailyState.dayNumberOf]).
+  int get today => DailyState.dayNumberOf(clock.now());
+
+  /// Starts a new day of goals when the date changed and updates the events
+  /// that run today. True when something changed.
+  bool _refreshCalendar() {
+    final now = clock.now();
+    final before = _engine.state.daily.day;
+    _engine.startDay(DailyState.dayNumberOf(now));
+    final events = [
+      for (final e in ref.read(contentProvider).goals.events)
+        if (e.activeOn(now)) e,
+    ];
+    final eventsChanged =
+        events.length != _engine.activeEvents.length ||
+        !events.every(_engine.activeEvents.contains);
+    if (eventsChanged) _engine.activeEvents = List.unmodifiable(events);
+    return eventsChanged || before != _engine.state.daily.day;
+  }
+
+  /// Events running today.
+  List<EventDef> get activeEvents => _engine.activeEvents;
+
+  /// Today's calendar reward is waiting.
+  bool get loginReady => _engine.loginReady(today);
+
+  /// Something on the Goals screen waits to be claimed.
+  bool get goalsAttention => _engine.goalsAttention(today);
+
+  void _afterClaim() {
+    _sfx(Sfx.buy);
+    _buzz('buy');
+    _publish();
+    saveNow();
+  }
+
+  bool claimAchievement(String id) {
+    final ok = _engine.claimAchievement(id);
+    if (ok) _afterClaim();
+    return ok;
+  }
+
+  bool claimDailyGoal(String id) {
+    final ok = _engine.claimDailyGoal(id) != null;
+    if (ok) _afterClaim();
+    return ok;
+  }
+
+  bool claimDailyChest() {
+    final ok = _engine.claimDailyChest() != null;
+    if (ok) _afterClaim();
+    return ok;
+  }
+
+  /// Takes today's calendar reward; null when it was already taken.
+  RewardDef? claimLogin() {
+    final reward = _engine.claimLogin(today);
+    if (reward != null) _afterClaim();
+    return reward;
   }
 
   BuyQuote buyTalent(String id) {

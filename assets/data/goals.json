@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "daily": {
+    "count": 3,
+    "pool": [
+      {
+        "id": "vence_15",
+        "counter": "defeats",
+        "target": 15,
+        "reward": {
+          "fightCoins": 2
+        }
+      },
+      {
+        "id": "vence_40",
+        "counter": "defeats",
+        "target": 40,
+        "reward": {
+          "fightCoins": 4
+        }
+      },
+      {
+        "id": "golpes_300",
+        "counter": "taps",
+        "target": 300,
+        "reward": {
+          "fightCoins": 2
+        }
+      },
+      {
+        "id": "golpes_800",
+        "counter": "taps",
+        "target": 800,
+        "reward": {
+          "fightCoins": 4
+        }
+      },
+      {
+        "id": "patadas_2",
+        "counter": "finishers",
+        "target": 2,
+        "reward": {
+          "fightCoins": 3
+        }
+      },
+      {
+        "id": "patadas_5",
+        "counter": "finishers",
+        "target": 5,
+        "reward": {
+          "fightCoins": 5
+        }
+      },
+      {
+        "id": "suerte_1",
+        "counter": "luckyCaught",
+        "target": 1,
+        "reward": {
+          "fightCoins": 3
+        }
+      },
+      {
+        "id": "suerte_3",
+        "counter": "luckyCaught",
+        "target": 3,
+        "reward": {
+          "fightCoins": 5
+        }
+      },
+      {
+        "id": "habilidades_3",
+        "counter": "skillsUsed",
+        "target": 3,
+        "reward": {
+          "fightCoins": 3
+        }
+      },
+      {
+        "id": "mejoras_10",
+        "counter": "upgradeLevels",
+        "target": 10,
+        "reward": {
+          "fightCoins": 3
+        }
+      },
+      {
+        "id": "entrenadores_5",
+        "counter": "trainerLevels",
+        "target": 5,
+        "reward": {
+          "fightCoins": 3
+        }
+      },
+      {
+        "id": "jefe_1",
+        "counter": "bosses",
+        "target": 1,
+        "reward": {
+          "belts": 1
+        }
+      }
+    ],
+    "chest": {
+      "belts": 2,
+      "boostSeconds": 600,
+      "boostMultiplier": 2
+    }
+  },
+  "login": {
+    "rewards": [
+      {
+        "fightCoins": 3
+      },
+      {
+        "fightCoins": 5
+      },
+      {
+        "belts": 1
+      },
+      {
+        "fightCoins": 8
+      },
+      {
+        "boostSeconds": 900,
+        "boostMultiplier": 2
+      },
+      {
+        "belts": 2
+      },
+      {
+        "belts": 5,
+        "fightCoins": 15
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "fin_dorado",
+      "name": "Fin de semana dorado",
+      "text": "Monedas x2 todo el fin de semana",
+      "effect": "coinMultiplier",
+      "value": 2,
+      "weekdays": [
+        6,
+        7
+      ]
+    },
+    {
+      "id": "semana_jefes",
+      "name": "Semana de jefes",
+      "text": "Los jefes pagan x3",
+      "effect": "bossCoinMultiplier",
+      "value": 3,
+      "from": "2026-12-07",
+      "to": "2026-12-13"
+    },
+    {
+      "id": "lucha_navidena",
+      "name": "Lucha navideña",
+      "text": "Monedas x1.5 hasta el Día de Reyes",
+      "effect": "coinMultiplier",
+      "value": 1.5,
+      "from": "2026-12-20",
+      "to": "2027-01-06"
+    }
+  ]
+}

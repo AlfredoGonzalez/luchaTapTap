@@ -5,6 +5,9 @@ class Strings {
 
   final Map<String, String> _map;
 
+  /// Whether [key] has a text (for optional forms such as singulars).
+  bool has(String key) => _map.containsKey(key);
+
   /// Text for [key], replacing `{name}` placeholders with [params].
   /// A missing key is a bug in the data, so it throws instead of showing blanks.
   String t(String key, [Map<String, Object> params = const {}]) {

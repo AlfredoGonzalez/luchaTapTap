@@ -16,6 +16,7 @@ import 'package:lucha_tap_tap/services/billing_service.dart';
 import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
 import 'package:lucha_tap_tap/services/tutorial_controller.dart';
+import 'package:lucha_tap_tap/ui/goals_view.dart';
 import 'package:lucha_tap_tap/ui/intro_screens.dart';
 import 'package:lucha_tap_tap/ui/kick_layer.dart';
 import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
@@ -518,7 +519,7 @@ void main() {
       final s = stateOf(c);
       expect(s.fightNumber, 1);
       expect(s.upgradeLevels, isEmpty);
-      expect(s.belts.toDouble(), 2 + 3); // earned + "Nueva cara" achievement
+      expect(s.belts.toDouble(), 2); // earned; "Nueva cara" waits on the Goals screen
       expect(find.text('¡NUEVA MÁSCARA!'), findsNothing); // dialog closed
       expect(find.text('Pelea 1'), findsOneWidget); // back to the fight
       await closeApp(tester);
@@ -845,6 +846,55 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(stateOf(c).belts, Big.zero);
       expect(find.text('No hay anuncio disponible.'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
+  group('goals', () {
+    testWidgets('the trophy opens Metas; a reached achievement is claimed there', (tester) async {
+      final c = await pumpApp(tester);
+      await tapArena(tester, 10); // first win
+      await openTab(tester, 'Metas');
+      expect(find.text('METAS'), findsOneWidget);
+      expect(find.text('RECOMPENSA DIARIA'), findsOneWidget);
+      expect(find.text('METAS DE HOY'), findsOneWidget);
+      final belts = stateOf(c).belts.toDouble();
+      await tester.scrollUntilVisible(
+        buttonLabelled('Cobrar Primera victoria'),
+        40,
+        scrollable: find.descendant(of: find.byType(GoalsView), matching: find.byType(Scrollable)),
+      );
+      await tester.pump(_short);
+      await tester.tap(buttonLabelled('Cobrar Primera victoria'));
+      await tester.pump(_short);
+      expect(stateOf(c).belts.toDouble(), belts + 1);
+      expect(stateOf(c).achievements, contains('primera_victoria'));
+      await closeApp(tester);
+    });
+
+    testWidgets('the calendar reward is taken once a day', (tester) async {
+      final c = await pumpApp(tester);
+      await openTab(tester, 'Metas');
+      final controller = c.read(gameControllerProvider.notifier);
+      expect(controller.loginReady, isTrue);
+      await tapButton(tester, 'Cobrar');
+      expect(controller.loginReady, isFalse);
+      expect(stateOf(c).stat('loginDays'), 1);
+      expect(find.text('Vuelve mañana por más'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('the daily pop-up waits for the first wins, and "Después" hides it', (tester) async {
+      final c = await pumpApp(
+        tester,
+        edit: (f) => (f['balance.json']!['ui'] as Map<String, dynamic>)['dailyPopupMinDefeats'] = 1,
+      );
+      expect(find.text('¡RECOMPENSA DIARIA!'), findsNothing);
+      await tapArena(tester, 10);
+      expect(find.text('¡RECOMPENSA DIARIA!'), findsOneWidget);
+      await tapButton(tester, 'Después');
+      expect(find.text('¡RECOMPENSA DIARIA!'), findsNothing);
+      expect(c.read(gameControllerProvider.notifier).loginReady, isTrue);
       await closeApp(tester);
     });
   });

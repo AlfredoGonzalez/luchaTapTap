@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import '../data/balance.dart';
 import '../data/content_bundle.dart';
 import '../data/content_models.dart';
+import '../data/goals_models.dart';
 import 'big.dart';
 import 'buy_amount.dart';
+import 'daily_state.dart';
 import 'formulas.dart';
 import 'game_state.dart';
 import 'rng.dart';
@@ -394,7 +396,20 @@ class GameEngine {
       (1 + _talentSum(TalentEffect.coinGainMultiplier)) *
       (1 + _maskBonus(MaskBonusType.coinGainMultiplier)) *
       _purchaseCoinMultiplier *
+      _eventFactor(EventEffect.coinMultiplier) *
       (_state.boostLeft > 0 ? _state.boostMultiplier : 1);
+
+  /// Events running today (set by the app from the phone's calendar; not
+  /// saved).
+  List<EventDef> activeEvents = const [];
+
+  double _eventFactor(EventEffect effect) {
+    var factor = 1.0;
+    for (final e in activeEvents) {
+      if (e.effect == effect) factor *= e.value;
+    }
+    return factor;
+  }
 
   Big _rewardOf(int fight) {
     final info = content.fightInfo(fight);
@@ -407,7 +422,8 @@ class GameEngine {
         .mulDouble(coinMultiplier);
     if (info.isBoss) {
       reward = reward.mulDouble(
-        1 + _maskBonus(MaskBonusType.bossCoinMultiplier),
+        (1 + _maskBonus(MaskBonusType.bossCoinMultiplier)) *
+            _eventFactor(EventEffect.bossCoinMultiplier),
       );
     }
     return reward;
@@ -438,7 +454,6 @@ class GameEngine {
       stats: _bump(_state.stats, 'taps', 1),
     );
     final outcome = _applyDamage(damage, carryOver: false);
-    _awardAchievements();
     return DamageOutcome(
       damageDealt: damage,
       defeats: outcome.defeats,
@@ -477,7 +492,6 @@ class GameEngine {
       stats: _bump(_state.stats, 'finishers', 1),
     );
     final outcome = _applyDamage(damage, carryOver: false);
-    _awardAchievements();
     return DamageOutcome(
       damageDealt: damage,
       defeats: outcome.defeats,
@@ -516,7 +530,6 @@ class GameEngine {
     _tickSkills(dt);
     _tickBoost(dt);
     final spawned = _tickLucky(dt);
-    if (defeatsHappened(outcome)) _awardAchievements();
 
     return outcome +
         DamageOutcome(
@@ -616,6 +629,7 @@ class GameEngine {
       coins: _state.coins + reward,
       totalCoinsEarned: _state.totalCoinsEarned + reward,
       clearLucky: true,
+      stats: _bump(_state.stats, 'luckyCaught', 1),
     );
     return reward;
   }
@@ -699,26 +713,175 @@ class GameEngine {
     if (owned != _state.ownedMasks) _state = _state.copyWith(ownedMasks: owned);
   }
 
-  void _awardAchievements() {
-    var done = _state.achievements;
-    var belts = _state.belts;
-    var lifetime = _state.lifetimeBelts;
-    for (final a in content.achievements) {
-      if (done.contains(a.id)) continue;
-      if (_state.stat(a.counter.name) < a.target) continue;
-      done = {...done, a.id};
-      final reward = Big.fromInt(a.rewardBelts);
-      belts += reward;
-      lifetime += reward;
-    }
-    if (done != _state.achievements) {
-      _state = _state.copyWith(
-        achievements: done,
-        belts: belts,
-        lifetimeBelts: lifetime,
-      );
-    }
+  // ---------------------------------------------------------------------------
+  // Achievements, daily goals, calendar
+
+  /// Current value of [counter]: a running stat, or derived from the state.
+  int counterValue(GoalCounter counter) => switch (counter) {
+    GoalCounter.bestFight => _state.bestFight,
+    GoalCounter.masksOwned => _state.ownedMasks.length,
+    _ => _state.stat(counter.name),
+  };
+
+  /// Reached its target (whether or not the reward was taken).
+  bool achievementDone(AchievementDef a) => counterValue(a.counter) >= a.target;
+
+  bool achievementClaimed(AchievementDef a) =>
+      _state.achievements.contains(a.id);
+
+  bool achievementClaimable(AchievementDef a) =>
+      achievementDone(a) && !achievementClaimed(a);
+
+  /// Takes the reward of achievement [id]. False when not reached or taken.
+  bool claimAchievement(String id) {
+    final a = content.achievements.where((e) => e.id == id).firstOrNull;
+    if (a == null || !achievementClaimable(a)) return false;
+    _state = _state.copyWith(achievements: {..._state.achievements, a.id});
+    grantReward(a.reward);
+    return true;
   }
+
+  /// Coins of [fightCoins] rewards of the current fight (the fight before it
+  /// when standing at a boss, so a reward does not jump at a boss).
+  Big rewardCoins(double fightCoins) {
+    if (fightCoins <= 0) return Big.zero;
+    var fight = _state.fightNumber;
+    if (content.fightInfo(fight).isBoss && fight > 1) fight--;
+    return _rewardOf(fight).mulDouble(fightCoins);
+  }
+
+  /// Gives [reward]; returns the coins it paid.
+  Big grantReward(RewardDef reward) {
+    final coins = rewardCoins(reward.fightCoins);
+    final belts = Big.fromInt(reward.belts);
+    var boostLeft = _state.boostLeft;
+    var boostMultiplier = _state.boostMultiplier;
+    if (reward.boostSeconds > 0) {
+      if (boostLeft > 0 && boostMultiplier == reward.boostMultiplier) {
+        boostLeft += reward.boostSeconds;
+      } else if (boostLeft <= 0 || reward.boostMultiplier > boostMultiplier) {
+        boostLeft = reward.boostSeconds;
+        boostMultiplier = reward.boostMultiplier;
+      }
+    }
+    // Reward coins do not count towards the Belts of a mask change: those
+    // measure how far the run itself went.
+    _state = _state.copyWith(
+      coins: _state.coins + coins,
+      belts: _state.belts + belts,
+      lifetimeBelts: _state.lifetimeBelts + belts,
+      boostLeft: boostLeft,
+      boostMultiplier: boostMultiplier,
+    );
+    return coins;
+  }
+
+  /// Starts local calendar [day] (see [DailyState.dayNumberOf]): new goals,
+  /// drawn from the pool with the day as the seed. Nothing changes when the
+  /// day is already running or the clock went back.
+  void startDay(int day) {
+    final daily = _state.daily;
+    final current = daily.day;
+    if (current != null && day <= current) return;
+    final goals = content.goals;
+    final pool = [...goals.dailyPool];
+    final rng = SeededRng(day);
+    for (var i = pool.length - 1; i > 0; i--) {
+      final j = (rng.nextDouble() * (i + 1)).floor();
+      final t = pool[i];
+      pool[i] = pool[j];
+      pool[j] = t;
+    }
+    final picked = pool.take(goals.dailyCount).toList();
+    _state = _state.copyWith(
+      daily: daily.copyWith(
+        day: day,
+        goals: [for (final g in picked) g.id],
+        base: {for (final g in picked) g.counter.name: counterValue(g.counter)},
+        claimed: const {},
+        chestClaimed: false,
+      ),
+    );
+  }
+
+  /// Today's goals (empty before [startDay]).
+  List<DailyGoalDef> get dailyGoals => [
+    for (final id in _state.daily.goals)
+      ...content.goals.dailyPool.where((g) => g.id == id),
+  ];
+
+  /// Progress of [goal] today, capped at its target.
+  int dailyProgress(DailyGoalDef goal) {
+    final base = _state.daily.base[goal.counter.name] ?? 0;
+    return math.max(0, math.min(goal.target, counterValue(goal.counter) - base));
+  }
+
+  bool dailyClaimed(DailyGoalDef goal) =>
+      _state.daily.claimed.contains(goal.id);
+
+  bool dailyClaimable(DailyGoalDef goal) =>
+      !dailyClaimed(goal) && dailyProgress(goal) >= goal.target;
+
+  /// Takes the reward of today's goal [id]; null when not ready.
+  Big? claimDailyGoal(String id) {
+    final goal = dailyGoals.where((g) => g.id == id).firstOrNull;
+    if (goal == null || !dailyClaimable(goal)) return null;
+    _state = _state.copyWith(
+      daily: _state.daily.copyWith(claimed: {..._state.daily.claimed, id}),
+      stats: _bump(_state.stats, 'dailyGoals', 1),
+    );
+    return grantReward(goal.reward);
+  }
+
+  /// Every goal of the day was claimed and the chest is still closed.
+  bool get dailyChestReady {
+    final goals = dailyGoals;
+    return goals.isNotEmpty &&
+        !_state.daily.chestClaimed &&
+        goals.every(dailyClaimed);
+  }
+
+  Big? claimDailyChest() {
+    if (!dailyChestReady) return null;
+    _state = _state.copyWith(
+      daily: _state.daily.copyWith(chestClaimed: true),
+    );
+    return grantReward(content.goals.chest);
+  }
+
+  /// Calendar slot the next claim takes.
+  int get loginIndex =>
+      _state.daily.loginIndex % content.goals.loginRewards.length;
+
+  /// The calendar reward can be taken on [day] (once per day; a clock moved
+  /// back waits for the day of the last claim to pass).
+  bool loginReady(int day) {
+    final last = _state.daily.loginDay;
+    return last == null || day > last;
+  }
+
+  /// Takes the calendar reward on [day]; null when already taken today.
+  RewardDef? claimLogin(int day) {
+    if (!loginReady(day)) return null;
+    final rewards = content.goals.loginRewards;
+    final index = loginIndex;
+    _state = _state.copyWith(
+      daily: _state.daily.copyWith(
+        loginDay: day,
+        loginIndex: (index + 1) % rewards.length,
+      ),
+      stats: _bump(_state.stats, 'loginDays', 1),
+    );
+    grantReward(rewards[index]);
+    return rewards[index];
+  }
+
+  /// Something on the Goals screen waits to be claimed on [day].
+  bool goalsAttention(int day) =>
+      loginReady(day) ||
+      dailyChestReady ||
+      dailyGoals.any(dailyClaimable) ||
+      content.achievements.any(achievementClaimable);
 
   // ---------------------------------------------------------------------------
   // Upgrades and trainers
@@ -759,6 +922,7 @@ class GameEngine {
         ..._state.upgradeLevels,
         id: _state.upgradeLevel(id) + quote.count,
       },
+      stats: _bump(_state.stats, 'upgradeLevels', quote.count),
     );
     return quote;
   }
@@ -772,6 +936,7 @@ class GameEngine {
         ..._state.trainerLevels,
         id: _state.trainerLevel(id) + quote.count,
       },
+      stats: _bump(_state.stats, 'trainerLevels', quote.count),
     );
     return quote;
   }
@@ -887,7 +1052,6 @@ class GameEngine {
           defeats: dealt.defeats,
           coinsEarned: dealt.coinsEarned,
         );
-        _awardAchievements();
       case SkillEffect.bossTimerExtend:
         final left = _state.bossTimeLeft;
         if (left == null) {
@@ -902,6 +1066,7 @@ class GameEngine {
         );
     }
     _state = _state.copyWith(
+      stats: _bump(_state.stats, 'skillsUsed', 1),
       skillCooldowns: {..._state.skillCooldowns, id: cooldownOf(def)},
     );
     return SkillUseResult(outcome: outcome);
@@ -1101,7 +1266,6 @@ class GameEngine {
       clearLucky: true,
       stats: _bump(_state.stats, 'prestiges', 1),
     );
-    _awardAchievements();
     return true;
   }
 
@@ -1192,7 +1356,6 @@ class GameEngine {
     );
     if (defeats > 0) {
       _unlockLeagueMasks();
-      _awardAchievements();
     }
     if (earned.isZero) return null;
 

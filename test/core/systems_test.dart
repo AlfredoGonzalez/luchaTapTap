@@ -4,6 +4,7 @@ import 'package:lucha_tap_tap/core/buy_amount.dart';
 import 'package:lucha_tap_tap/core/formulas.dart';
 import 'package:lucha_tap_tap/core/game_engine.dart';
 import 'package:lucha_tap_tap/core/rng.dart';
+import 'package:lucha_tap_tap/data/goals_models.dart';
 
 import '../test_content.dart';
 
@@ -482,25 +483,130 @@ void main() {
   });
 
   group('achievements', () {
-    test('first defeat pays belts once', () {
+    test('reached achievements wait to be claimed, and pay belts once', () {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e9});
+      final first = e.content.achievements.firstWhere((a) => a.id == 'primera_victoria');
       e.tap();
+      expect(e.achievementClaimable(first), isTrue);
+      expect(e.state.belts.toDouble(), 0); // not paid until claimed
+      expect(e.goalsAttention(1), isTrue);
+      expect(e.claimAchievement('primera_victoria'), isTrue);
       expect(e.state.achievements, contains('primera_victoria'));
       expect(e.state.belts.toDouble(), 1);
       expect(e.state.lifetimeBelts.toDouble(), 1);
-      e.tap();
-      e.tap();
-      expect(e.state.achievements, isNot(contains('cien_golpes'))); // only 3 taps
-      expect(e.state.belts.toDouble(), 1); // not paid twice
+      expect(e.claimAchievement('primera_victoria'), isFalse); // not twice
+      expect(e.claimAchievement('cien_golpes'), isFalse); // only 1 tap
+      expect(e.state.belts.toDouble(), 1);
     });
 
-    test('tap counters pay their reward at the target', () {
+    test('tap counters reach the target', () {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 0.0001});
       for (var i = 0; i < 100; i++) {
         e.tap();
       }
       expect(e.state.stat('taps'), 100);
-      expect(e.state.achievements, contains('cien_golpes'));
+      expect(e.claimAchievement('cien_golpes'), isTrue);
+    });
+
+    test('new counters: purchases, skills, lucky, best fight, masks', () {
+      final e = newEngine();
+      e.debugAddCoins(Big.fromDouble(1e9));
+      e.buyUpgrade('puno_duro', const BuyAmount.fixed(10));
+      e.buyTrainer('don_chuy', const BuyAmount.fixed(3));
+      expect(e.counterValue(GoalCounter.upgradeLevels), 10);
+      expect(e.counterValue(GoalCounter.trainerLevels), 3);
+      expect(e.counterValue(GoalCounter.bestFight), e.state.bestFight);
+      expect(e.counterValue(GoalCounter.masksOwned), e.state.ownedMasks.length);
+    });
+  });
+
+  group('daily goals and calendar', () {
+    test('a day draws the same goals for the same day and new ones later', () {
+      final a = newEngine()..startDay(20000);
+      final b = newEngine()..startDay(20000);
+      expect(a.dailyGoals.length, a.content.goals.dailyCount);
+      expect(a.state.daily.goals, b.state.daily.goals);
+      final ids = <String>{};
+      for (var d = 20000; d < 20010; d++) {
+        ids.addAll((newEngine()..startDay(d)).state.daily.goals);
+      }
+      expect(ids.length, greaterThan(a.content.goals.dailyCount));
+    });
+
+    test('progress counts from the start of the day; claims pay; the chest opens after all', () {
+      final e = newEngine((f) {
+        f['goals.json']!['daily'] = {
+          'count': 1,
+          'pool': [
+            {'id': 'golpes', 'counter': 'taps', 'target': 3, 'reward': {'belts': 2}},
+          ],
+          'chest': {'belts': 5},
+        };
+      });
+      e.tap();
+      e.startDay(100);
+      final goal = e.dailyGoals.single;
+      expect(e.dailyProgress(goal), 0); // the tap before the day does not count
+      e.tap();
+      e.tap();
+      expect(e.claimDailyGoal('golpes'), isNull);
+      e.tap();
+      expect(e.dailyProgress(goal), 3);
+      expect(e.dailyChestReady, isFalse);
+      expect(e.claimDailyGoal('golpes'), isNotNull);
+      expect(e.state.belts.toDouble(), 2);
+      expect(e.state.stat('dailyGoals'), 1);
+      expect(e.claimDailyGoal('golpes'), isNull);
+      expect(e.dailyChestReady, isTrue);
+      e.claimDailyChest();
+      expect(e.state.belts.toDouble(), 7);
+      expect(e.dailyChestReady, isFalse);
+      e.startDay(100); // same day: nothing resets
+      expect(e.state.daily.chestClaimed, isTrue);
+      e.startDay(99); // clock moved back: nothing resets
+      expect(e.state.daily.day, 100);
+      e.startDay(101);
+      expect(e.state.daily.claimed, isEmpty);
+      expect(e.dailyProgress(e.dailyGoals.single), 0);
+    });
+
+    test('calendar: once per day, keeps the streak after a missed day, loops', () {
+      final e = newEngine((f) {
+        f['goals.json']!['login'] = {
+          'rewards': [
+            {'belts': 1},
+            {'fightCoins': 10},
+            {'boostSeconds': 60, 'boostMultiplier': 2},
+          ],
+        };
+      });
+      expect(e.loginReady(10), isTrue);
+      expect(e.claimLogin(10)!.belts, 1);
+      expect(e.claimLogin(10), isNull);
+      expect(e.loginReady(9), isFalse); // clock moved back
+      final coins = e.state.coins;
+      e.claimLogin(15); // five days later: day 2 of the calendar, not day 1
+      expect(e.state.coins > coins, isTrue);
+      expect(e.rewardCoins(10), e.currentReward.mulDouble(10));
+      e.claimLogin(16);
+      expect(e.state.boostLeft, 60);
+      expect(e.state.boostMultiplier, 2);
+      expect(e.loginIndex, 0); // back to the first day
+      expect(e.state.stat('loginDays'), 3);
+    });
+
+    test('events multiply coins only while active', () {
+      final e = newEngine();
+      final base = e.currentReward;
+      final weekend = e.content.goals.events.firstWhere(
+        (ev) => ev.effect == EventEffect.coinMultiplier && ev.weekdays.isNotEmpty,
+      );
+      expect(weekend.activeOn(DateTime(2026, 11, 14)), isTrue); // Saturday
+      expect(weekend.activeOn(DateTime(2026, 11, 16)), isFalse); // Monday
+      e.activeEvents = [weekend];
+      expect(e.currentReward, base.mulDouble(weekend.value));
+      e.activeEvents = const [];
+      expect(e.currentReward, base);
     });
   });
 
@@ -551,17 +657,19 @@ void main() {
       expect(s.equippedMask, 'la_calaverita');
       expect(s.skillLevel('plancha'), 1);
       expect(s.bestFight, greaterThan(1));
-      // Granted: 10 + 2 earned (and the "nueva cara" achievement), minus 1 spent.
+      // Granted: 10 + 2 earned, minus 1 spent; "nueva cara" waits to be claimed.
       expect(s.stat('prestiges'), 1);
-      expect(s.belts.toDouble(), 10 - 1 + 2 + 3);
-      expect(s.achievements, contains('nueva_cara'));
+      expect(s.belts.toDouble(), 10 - 1 + 2);
+      expect(e.claimAchievement('nueva_cara'), isTrue);
+      expect(e.state.belts.toDouble(), 10 - 1 + 2 + 3);
     });
 
     test('each belt earned adds +2% to all damage, permanently', () {
       final e = progressed();
       final before = e.tapDamage.toDouble();
       e.prestige();
-      // 2 belts from the formula + 3 from the "nueva cara" achievement = 5.
+      expect(e.state.lifetimeBelts.toDouble(), 2); // from the formula
+      e.claimAchievement('nueva_cara'); // +3 from the achievement = 5
       expect(e.state.lifetimeBelts.toDouble(), 5);
       expect(e.beltMultiplier.toDouble(), closeTo(1.1, 1e-9));
       expect(e.tapDamage.toDouble(), closeTo(1 * 1.1, 1e-9));

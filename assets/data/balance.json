@@ -119,7 +119,8 @@
     "splashLogoMaxFraction": 0.6,
     "splashVideoLogoFraction": 0.88,
     "loadingFrames": 4,
-    "loadingFps": 3
+    "loadingFps": 3,
+    "dailyPopupMinDefeats": 10
   },
   "kick": {
     "targets": 5,

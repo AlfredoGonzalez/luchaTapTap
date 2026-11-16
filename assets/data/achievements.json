@@ -42,6 +42,207 @@
       "counter": "prestiges",
       "target": 1,
       "rewardBelts": 3
+    },
+    {
+      "id": "diez_mil_golpes",
+      "name": "Diez mil golpes",
+      "counter": "taps",
+      "target": 10000,
+      "rewardBelts": 3
+    },
+    {
+      "id": "cien_mil_golpes",
+      "name": "Puños de leyenda",
+      "counter": "taps",
+      "target": 100000,
+      "rewardBelts": 5
+    },
+    {
+      "id": "doscientas_victorias",
+      "name": "Rey del barrio",
+      "counter": "defeats",
+      "target": 200,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "mil_victorias",
+      "name": "Mil batallas",
+      "counter": "defeats",
+      "target": 1000,
+      "rewardBelts": 5
+    },
+    {
+      "id": "tres_jefes",
+      "name": "Terror de los jefes",
+      "counter": "bosses",
+      "target": 3,
+      "rewardBelts": 3
+    },
+    {
+      "id": "diez_jefes",
+      "name": "Leyenda de la arena",
+      "counter": "bosses",
+      "target": 10,
+      "rewardBelts": 5
+    },
+    {
+      "id": "primera_patada",
+      "name": "Primera patada",
+      "counter": "finishers",
+      "target": 1,
+      "reward": {
+        "fightCoins": 2
+      }
+    },
+    {
+      "id": "veinticinco_patadas",
+      "name": "Pierna de acero",
+      "counter": "finishers",
+      "target": 25,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "cien_patadas",
+      "name": "Patada voladora",
+      "counter": "finishers",
+      "target": 100,
+      "rewardBelts": 4
+    },
+    {
+      "id": "primer_cinturon",
+      "name": "Golpe de suerte",
+      "counter": "luckyCaught",
+      "target": 1,
+      "reward": {
+        "fightCoins": 2
+      }
+    },
+    {
+      "id": "diez_cinturones",
+      "name": "Trébol de cuatro hojas",
+      "counter": "luckyCaught",
+      "target": 10,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "cincuenta_cinturones",
+      "name": "Suertudo",
+      "counter": "luckyCaught",
+      "target": 50,
+      "rewardBelts": 4
+    },
+    {
+      "id": "primera_habilidad",
+      "name": "Movimiento especial",
+      "counter": "skillsUsed",
+      "target": 1,
+      "reward": {
+        "fightCoins": 2
+      }
+    },
+    {
+      "id": "doscientas_habilidades",
+      "name": "Maestro de llaves",
+      "counter": "skillsUsed",
+      "target": 200,
+      "rewardBelts": 3
+    },
+    {
+      "id": "mejoras_25",
+      "name": "Entrenamiento duro",
+      "counter": "upgradeLevels",
+      "target": 25,
+      "reward": {
+        "fightCoins": 2
+      }
+    },
+    {
+      "id": "mejoras_100",
+      "name": "Disciplina",
+      "counter": "upgradeLevels",
+      "target": 100,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "entrenadores_10",
+      "name": "Buen equipo",
+      "counter": "trainerLevels",
+      "target": 10,
+      "reward": {
+        "fightCoins": 2
+      }
+    },
+    {
+      "id": "entrenadores_100",
+      "name": "Gimnasio lleno",
+      "counter": "trainerLevels",
+      "target": 100,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "pelea_20",
+      "name": "Segunda liga",
+      "counter": "bestFight",
+      "target": 20,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "pelea_50",
+      "name": "Gran arena",
+      "counter": "bestFight",
+      "target": 50,
+      "rewardBelts": 4
+    },
+    {
+      "id": "tres_mascaras",
+      "name": "Coleccionista",
+      "counter": "masksOwned",
+      "target": 3,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "seis_mascaras",
+      "name": "Mil caras",
+      "counter": "masksOwned",
+      "target": 6,
+      "rewardBelts": 4
+    },
+    {
+      "id": "cinco_cambios",
+      "name": "Renacido",
+      "counter": "prestiges",
+      "target": 5,
+      "rewardBelts": 5
+    },
+    {
+      "id": "diez_metas",
+      "name": "Cumplido",
+      "counter": "dailyGoals",
+      "target": 10,
+      "reward": {
+        "fightCoins": 3
+      }
+    },
+    {
+      "id": "siete_dias",
+      "name": "Fiel a la lucha",
+      "counter": "loginDays",
+      "target": 7,
+      "rewardBelts": 3
     }
   ]
 }

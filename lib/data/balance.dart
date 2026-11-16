@@ -762,6 +762,7 @@ class UiConfig {
     required this.loadingFrames,
     required this.loadingFps,
     required this.splashVideoLogoFraction,
+    this.dailyPopupMinDefeats,
   });
 
   factory UiConfig.fromReader(JsonReader r) => UiConfig(
@@ -776,9 +777,17 @@ class UiConfig {
     loadingFrames: r.integer('loadingFrames', min: 1),
     loadingFps: r.number('loadingFps', min: 0, minExclusive: true),
     splashVideoLogoFraction: r.number('splashVideoLogoFraction', min: 0, minExclusive: true),
+    dailyPopupMinDefeats: r.has('dailyPopupMinDefeats')
+        ? r.integer('dailyPopupMinDefeats', min: 0)
+        : null,
   );
 
   /// How long the studio splash shows before the loading screen.
+  /// The daily reward pop-up waits until the player has won this many
+  /// fights, so it does not interrupt the first minutes. Null: no pop-up
+  /// (the reward waits on the Goals screen).
+  final int? dailyPopupMinDefeats;
+
   final double splashSeconds;
 
   /// How long the loading bar takes to fill.

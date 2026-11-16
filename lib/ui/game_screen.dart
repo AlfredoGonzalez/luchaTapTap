@@ -7,6 +7,7 @@ import '../services/tutorial_controller.dart';
 import 'boss_intro.dart';
 import 'dialogs.dart';
 import 'fight_view.dart';
+import 'goals_view.dart';
 import 'hud.dart';
 import 'masks_view.dart';
 import 'palette_color.dart';
@@ -39,6 +40,26 @@ class GameScreen extends ConsumerWidget {
     // The tutorial only lights the fight screen, when nothing else is on top.
     final tutorial =
         ref.watch(tutorialProvider).step != null &&
+        view == GameView.fight &&
+        dialog == null &&
+        !hasOffline &&
+        !engine.awaitingBossStart &&
+        !engine.awaitingBossLossAck &&
+        engine.bossWinOpponent == null;
+    // The daily reward pops up once the first minutes are over, when nothing
+    // else is on screen; "Después" hides it until the next start.
+    final controller = ref.read(gameControllerProvider.notifier);
+    final popupAfter = ref
+        .watch(contentProvider)
+        .balance
+        .ui
+        .dailyPopupMinDefeats;
+    final dailyPopup =
+        popupAfter != null &&
+        controller.loginReady &&
+        !ref.watch(dailyPopupDismissedProvider) &&
+        state.stat('defeats') >= popupAfter &&
+        ref.watch(tutorialProvider).step == null &&
         view == GameView.fight &&
         dialog == null &&
         !hasOffline &&
@@ -100,6 +121,7 @@ class GameScreen extends ConsumerWidget {
           if (dialog == GameDialog.deleteData) const DeleteDataDialog(),
           if (hasOffline) const OfflineDialog(),
           if (bossIntro) const BossIntro(),
+          if (dailyPopup) const DailyRewardDialog(),
           if (tutorial) const TutorialOverlay(),
         ],
       ),
@@ -111,6 +133,7 @@ class GameScreen extends ConsumerWidget {
     GameView.masks => const MasksView(),
     GameView.talents => const TalentsView(),
     GameView.shop => const ShopView(),
+    GameView.goals => const GoalsView(),
     GameView.settings => const SettingsView(),
     GameView.credits => const CreditsView(),
     GameView.fight => const SizedBox.shrink(),
