@@ -452,11 +452,26 @@ class GameEngine {
 
   bool get finisherReady => _state.comboMeter >= 1;
 
+  /// Damage of the finisher: `finisherMultiplier` taps plus
+  /// `finisherDpsSeconds` of the trainers' damage (skills on, combo bonus
+  /// off), times the kick talent.
+  Big get finisherDamage {
+    final combo = _balance.combo;
+    var damage = tapDamage.mulDouble(combo.finisherMultiplier);
+    if (combo.finisherDpsSeconds > 0) {
+      damage += damagePerSecondOf(withSkills: true, withCombo: false)
+          .mulDouble(combo.finisherDpsSeconds);
+    }
+    return damage.mulDouble(
+      1 + _talentSum(TalentEffect.kickDamageMultiplier),
+    );
+  }
+
   /// The finisher ("GOLPE"): one large hit, then the meter resets. Null when
   /// the meter is not full.
   DamageOutcome? finisher() {
     if (!finisherReady || awaitingBossStart || _blocked) return null;
-    final damage = tapDamage.mulDouble(_balance.combo.finisherMultiplier);
+    final damage = finisherDamage;
     _state = _state.copyWith(
       comboMeter: 0,
       stats: _bump(_state.stats, 'finishers', 1),

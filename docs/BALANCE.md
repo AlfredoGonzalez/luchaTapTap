@@ -53,6 +53,8 @@ The starting numbers (HP x1.55 per fight, costs x1.15 per level, +1 damage per l
 
 **Opening ramp** (`economy.openingHpScale`, `[0.1, 0.25, 0.5, 0.8]`): the HP of fights 1 to 4 is multiplied by these factors so the first win takes about 13 taps; coins are not scaled, so the first upgrade is affordable after fight 1. A longer ramp (5 fights) brought the first prestige under 20 minutes, so it stops at fight 4.
 
+**Kick scaling** (`combo.finisherDpsSeconds`, 10): the kick deals `finisherMultiplier` taps plus 10 seconds of trainer damage, so it still matters once trainers out-hit the taps; the talent "Patada voladora" (`kickDamageMultiplier`, +20% per level) multiplies the total. 20 seconds brought the first prestige under 20 minutes.
+
 Belts per prestige used to be 1 to 4 (+2% to +8% damage), which could not beat a boss that has 10 times the HP. The divisor and the minimum are now separate levers: `minBelts` says *when* the player may change mask, the divisor says *how much* it pays. The +2% per Belt from the documents is unchanged.
 
 ## Results (active player, 4 taps per second, 80% kick success, does not catch lucky pickups)

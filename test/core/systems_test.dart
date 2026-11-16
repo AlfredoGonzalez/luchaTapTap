@@ -148,6 +148,32 @@ void main() {
       expect(e.finisher(), isNull);
     });
 
+    test('finisher adds finisherDpsSeconds of trainer damage and the kick talent', () {
+      final e = newEngine((f) {
+        f['balance.json']!['tap'] = {'baseDamage': 0.001};
+        (f['balance.json']!['combo'] as Map<String, dynamic>)['finisherDpsSeconds'] = 20;
+        final dano = (f['talents.json']!['branches'] as List).first as Map<String, dynamic>;
+        (dano['nodes'] as List).add({
+          'id': 'patada_test', 'name': 'Patada', 'icon': 'tl_patada', 'maxLevel': 5,
+          'costs': [1, 1, 1, 1, 1], 'effect': 'kickDamageMultiplier',
+          'valuePerLevel': 0.2, 'parent': null,
+        });
+      });
+      final tapOnly = e.tapDamage.toDouble() * 20;
+      expect(e.finisherDamage.toDouble(), closeTo(tapOnly, 1e-12)); // no trainers yet
+      e.debugAddCoins(Big.fromDouble(1e9));
+      e.buyTrainer('don_chuy', x1);
+      final dps = e.damagePerSecondOf(withSkills: true, withCombo: false).toDouble();
+      expect(dps, greaterThan(0));
+      expect(e.finisherDamage.toDouble(), closeTo(tapOnly + dps * 20, 1e-6));
+      e.debugGrantBelts(2);
+      e.buyTalent('patada_test');
+      e.buyTalent('patada_test');
+      final tapNow = e.tapDamage.toDouble() * 20;
+      final dpsNow = e.damagePerSecondOf(withSkills: true, withCombo: false).toDouble();
+      expect(e.finisherDamage.toDouble(), closeTo((tapNow + dpsNow * 20) * 1.4, 1e-6));
+    });
+
     test('the meter holds, then decays when the player stops', () {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 0.001});
       for (var i = 0; i < 5; i++) {

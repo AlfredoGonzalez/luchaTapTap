@@ -44,7 +44,8 @@
     "fillPerTap": 0.02,
     "holdSeconds": 1.5,
     "decayPerSecond": 0.5,
-    "finisherMultiplier": 100
+    "finisherMultiplier": 100,
+    "finisherDpsSeconds": 10
   },
   "boss": {
     "timerSeconds": 30

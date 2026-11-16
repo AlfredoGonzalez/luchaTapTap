@@ -410,7 +410,8 @@ enum TalentEffect {
   skillCooldownReduction,
   offlineCapHours,
   luckyRateMultiplier,
-  startingCoins;
+  startingCoins,
+  kickDamageMultiplier;
 
   static TalentEffect parse(String id, String name) {
     for (final v in values) {

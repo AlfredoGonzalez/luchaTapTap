@@ -20,7 +20,7 @@ void main() {
     final c = loadShippedContent();
     expect(c.upgrades.length, 2);
     expect(c.skills.length, 5);
-    expect(c.talents.length, 8);
+    expect(c.talents.length, 9);
   });
 
   test('the launch content is all there: 3 leagues, 6 opponents and a boss each, 12 masks, 6 trainers', () {

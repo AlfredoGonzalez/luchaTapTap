@@ -514,6 +514,7 @@ class ComboConfig {
     required this.holdSeconds,
     required this.decayPerSecond,
     required this.finisherMultiplier,
+    this.finisherDpsSeconds = 0,
   });
 
   factory ComboConfig.fromReader(JsonReader r) => ComboConfig(
@@ -521,6 +522,9 @@ class ComboConfig {
     holdSeconds: r.number('holdSeconds', min: 0),
     decayPerSecond: r.number('decayPerSecond', min: 0),
     finisherMultiplier: r.number('finisherMultiplier', min: 1),
+    finisherDpsSeconds: r.has('finisherDpsSeconds')
+        ? r.number('finisherDpsSeconds', min: 0)
+        : 0,
   );
 
   /// Meter (0 to 1) gained per tap.
@@ -532,6 +536,10 @@ class ComboConfig {
 
   /// Finisher damage as a multiple of tap damage.
   final double finisherMultiplier;
+
+  /// The finisher also deals this many seconds of the trainers' damage, so
+  /// it keeps mattering once trainers out-hit the taps.
+  final double finisherDpsSeconds;
 }
 
 class CritConfig {

@@ -46,6 +46,27 @@
           "effect": "critChance",
           "valuePerLevel": 0.02,
           "parent": "punos_acero"
+        },
+        {
+          "id": "patada_voladora",
+          "name": "Patada voladora",
+          "icon": "tl_patada",
+          "maxLevel": 10,
+          "costs": [
+            1,
+            2,
+            3,
+            6,
+            10,
+            42,
+            168,
+            672,
+            2687,
+            10750
+          ],
+          "effect": "kickDamageMultiplier",
+          "valuePerLevel": 0.2,
+          "parent": null
         }
       ]
     },

@@ -73,6 +73,7 @@
     "talent_offlineCapHours": "+{n} h de tope offline",
     "talent_luckyRateMultiplier": "+{n}% eventos de suerte",
     "talent_startingCoins": "+{n} monedas al empezar",
+    "talent_kickDamageMultiplier": "+{n}% daño de patada",
     "prestige_button": "Cambiar de máscara",
     "prestige_title": "Cambiar de máscara",
     "prestige_earn": "Ganarás {n} cinturones",
