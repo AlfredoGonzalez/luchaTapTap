@@ -15,6 +15,7 @@ class Balance {
     required this.baseTapDamage,
     required this.hpBase,
     required this.hpGrowth,
+    this.openingHpScale = const [],
     required this.bossHpMultiplier,
     required this.coinsPerHpFraction,
     required this.bossCoinMultiplier,
@@ -60,6 +61,9 @@ class Balance {
       baseTapDamage: tap.number('baseDamage', min: 0, minExclusive: true),
       hpBase: economy.number('hpBase', min: 0, minExclusive: true),
       hpGrowth: economy.number('hpGrowth', min: 1),
+      openingHpScale: economy.has('openingHpScale')
+          ? economy.numbers('openingHpScale', min: 0.001)
+          : const [],
       bossHpMultiplier: economy.number(
         'bossHpMultiplier',
         min: 0,
@@ -131,6 +135,17 @@ class Balance {
   /// HP of fight 1; HP(n) = hpBase * hpGrowth^(n-1).
   final double hpBase;
   final double hpGrowth;
+
+  /// HP factor of the first fights (index 0 is fight 1), so the opening is
+  /// quick; fights past the list use 1. Coins are not affected.
+  final List<double> openingHpScale;
+
+  /// [openingHpScale] for [fight] (1 past the list).
+  double openingHpScaleOf(int fight) =>
+      fight >= 1 && fight <= openingHpScale.length
+          ? openingHpScale[fight - 1]
+          : 1;
+
   final double bossHpMultiplier;
 
   /// Coins(n) = coinsPerHpFraction * HP(n).

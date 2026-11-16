@@ -16,9 +16,11 @@ class Formulas {
     return Big.powOf(balance.hpGrowth, fight - 1).mulDouble(balance.hpBase);
   }
 
-  /// HP of the opponent in [fight]. Bosses multiply HP by `bossHpMultiplier`.
+  /// HP of the opponent in [fight]. Bosses multiply HP by `bossHpMultiplier`;
+  /// the first fights are scaled down by `openingHpScale`.
   Big opponentHp(int fight, {bool isBoss = false, double hpMultiplier = 1}) {
-    var hp = baseHp(fight).mulDouble(hpMultiplier);
+    var hp = baseHp(fight)
+        .mulDouble(hpMultiplier * balance.openingHpScaleOf(fight));
     if (isBoss) hp = hp.mulDouble(balance.bossHpMultiplier);
     return hp;
   }

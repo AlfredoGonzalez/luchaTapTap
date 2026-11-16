@@ -22,6 +22,17 @@ void main() {
       expect(f.coinsReward(2).toDouble(), closeTo(2.325, 1e-9));
     });
 
+    test('openingHpScale lowers the HP of the first fights only, not coins', () {
+      final scaled = loadTestContent((files) {
+        (files['balance.json']!['economy'] as Map<String, dynamic>)['openingHpScale'] = [0.1, 0.5];
+      });
+      final g = Formulas(scaled.balance);
+      expect(g.opponentHp(1).toDouble(), closeTo(1, 1e-9));
+      expect(g.opponentHp(2).toDouble(), closeTo(15.5 * 0.5, 1e-9));
+      expect(g.opponentHp(3), f.opponentHp(3));
+      expect(g.coinsReward(1), f.coinsReward(1));
+    });
+
     test('boss: HP x10, coins x5 (from base HP)', () {
       expect(f.opponentHp(10, isBoss: true), f.baseHp(10).mulDouble(10));
       expect(f.coinsReward(10, isBoss: true).toDouble(),
