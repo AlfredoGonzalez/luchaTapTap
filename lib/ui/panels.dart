@@ -7,6 +7,7 @@ import '../core/game_engine.dart';
 import '../core/number_format.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/tutorial_controller.dart';
 import 'art_icon.dart';
 import 'hud.dart';
 import 'pixel_icons.dart';
@@ -20,7 +21,7 @@ const double buySelectorHeight = 24;
 const double upgradesPanelHeight = 80;
 
 /// The panel under the skills row on the fight screen (the "Mejoras" tab):
-/// the buy selector, then the upgrades and trainers.
+/// the list switch and the buy selector, then the upgrades or the trainers.
 class UpgradesPanel extends ConsumerWidget {
   const UpgradesPanel({super.key});
 
@@ -31,10 +32,15 @@ class UpgradesPanel extends ConsumerWidget {
     ref.watch(gameControllerProvider);
     final content = ref.watch(contentProvider);
     final engine = ref.read(gameControllerProvider.notifier).engine;
+    final tab = _shownTab(ref);
     final children = <Widget>[
-      const _BuySelector(),
-      for (final u in content.upgrades) _UpgradeRow(upgrade: u, engine: engine),
-      for (final t in content.trainers) _TrainerRow(trainer: t, engine: engine),
+      _BuySelector(tab: tab),
+      if (tab == PanelTab.upgrades)
+        for (final u in content.upgrades)
+          _UpgradeRow(upgrade: u, engine: engine)
+      else
+        for (final t in content.trainers)
+          _TrainerRow(trainer: t, engine: engine),
     ];
     return PixelPanel(
       child: ListView(
@@ -50,8 +56,39 @@ class UpgradesPanel extends ConsumerWidget {
   }
 }
 
+/// The list the panel shows. A tutorial step that points at a row of the
+/// other list switches to it.
+PanelTab _shownTab(WidgetRef ref) {
+  final step = ref.watch(tutorialProvider).step;
+  if (step != null) {
+    if (step.targets.any((t) => t.startsWith('trainer:'))) {
+      return PanelTab.trainers;
+    }
+    if (step.targets.any((t) => t.startsWith('upgrade:'))) {
+      return PanelTab.upgrades;
+    }
+  }
+  return ref.watch(panelTabProvider);
+}
+
+/// Something in [tab] can be bought with the selected amount.
+bool _affordableIn(PanelTab tab, GameEngine engine, WidgetRef ref) {
+  final content = ref.read(contentProvider);
+  final amount = ref.read(buyAmountProvider);
+  return switch (tab) {
+    PanelTab.upgrades => content.upgrades.any(
+      (u) => engine.quoteUpgrade(u.id, amount).canBuy,
+    ),
+    PanelTab.trainers => content.trainers.any(
+      (t) => engine.quoteTrainer(t.id, amount).canBuy,
+    ),
+  };
+}
+
 class _BuySelector extends ConsumerWidget {
-  const _BuySelector();
+  const _BuySelector({required this.tab});
+
+  final PanelTab tab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,14 +96,47 @@ class _BuySelector extends ConsumerWidget {
     final strings = ref.watch(stringsProvider);
     final content = ref.watch(contentProvider);
     final selected = ref.watch(buyAmountProvider);
+    final engine = ref.read(gameControllerProvider.notifier).engine;
     final options = <BuyAmount>[
       for (final n in content.balance.buyFixedAmounts) BuyAmount.fixed(n),
       const BuyAmount.max(),
     ];
+    // One button switches lists; it shows where it goes, and a dot when
+    // something there can be bought.
+    final other = tab == PanelTab.upgrades
+        ? PanelTab.trainers
+        : PanelTab.upgrades;
+    final toggle = AttentionDot(
+      show: _affordableIn(other, engine, ref),
+      child: TutorialTarget(
+        id: 'panel:toggle',
+        child: PixelButton(
+          label: '',
+          icon: other == PanelTab.trainers
+              ? PixelIcons.trainer
+              : PixelIcons.upgradeFist,
+          // The first trainer's or upgrade's art when it exists.
+          iconWidget: _art(
+            ref,
+            other == PanelTab.trainers
+                ? content.trainers.first.portrait
+                : content.upgrades.first.icon,
+          ),
+          width: 24,
+          semanticLabel: strings.t(
+            other == PanelTab.trainers ? 'panel_trainers' : 'panel_upgrades',
+          ),
+          style: PixelButtonStyle.secondary,
+          onPressed: () => ref.read(panelTabProvider.notifier).show(other),
+        ),
+      ),
+    );
     return SizedBox(
       height: scale.px(buySelectorHeight),
       child: Row(
         children: [
+          toggle,
+          SizedBox(width: scale.px(4)),
           for (var i = 0; i < options.length; i++) ...[
             if (i > 0) SizedBox(width: scale.px(4)),
             Expanded(

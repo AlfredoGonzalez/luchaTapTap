@@ -111,6 +111,7 @@ class PixelButton extends StatefulWidget {
     this.width,
     this.height = 24,
     this.icon,
+    this.iconWidget,
     this.semanticLabel,
   }) : assert(height >= 24, 'touch targets are at least 24 virtual pixels');
 
@@ -127,6 +128,9 @@ class PixelButton extends StatefulWidget {
 
   /// Small icon drawn before the label.
   final PixelIconData? icon;
+
+  /// A picture instead of [icon] (art from the sprite library).
+  final Widget? iconWidget;
 
   /// Spoken label when it differs from the visible text.
   final String? semanticLabel;
@@ -196,8 +200,9 @@ class _PixelButtonState extends State<PixelButton> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (widget.icon != null) ...[
-                      PixelIcon(widget.icon!, color: textColor.color),
+                    if (widget.iconWidget != null || widget.icon != null) ...[
+                      widget.iconWidget ??
+                          PixelIcon(widget.icon!, color: textColor.color),
                       if (widget.label.isNotEmpty) SizedBox(width: scale.px(2)),
                     ],
                     if (widget.label.isNotEmpty)

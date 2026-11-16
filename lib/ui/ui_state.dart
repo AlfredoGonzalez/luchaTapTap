@@ -114,3 +114,17 @@ class DailyPopupDismissedNotifier extends Notifier<bool> {
 
   void set() => state = true;
 }
+
+/// Which list the fight screen's panel shows.
+enum PanelTab { upgrades, trainers }
+
+final panelTabProvider = NotifierProvider<PanelTabNotifier, PanelTab>(
+  PanelTabNotifier.new,
+);
+
+class PanelTabNotifier extends Notifier<PanelTab> {
+  @override
+  PanelTab build() => PanelTab.upgrades;
+
+  void show(PanelTab tab) => state = tab;
+}

@@ -133,3 +133,8 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - **Events** (`goals.json` `events`): weekdays and/or a date range; effects `coinMultiplier` and `bossCoinMultiplier`; a strip at the bottom of the arena names them.
 - **Time** is the phone's local calendar. Moving the clock back does nothing (no new day, no second claim); moving it forward does give the next day early. Accepted for a single-player game. No notifications yet.
 - Not built yet: an event that gives an exclusive mask (needs its art).
+
+## Navigation: dots and the split panel
+
+- Red dots: the trophy (something to claim), Habilidades (a skill can be learned), Máscaras (a mask can be bought), Talentos (a talent can be raised or the mask change is ready). Mejoras and Tienda have none (something there is almost always affordable).
+- The fight screen's panel shows the upgrades or the trainers. One button at the left of x1/x10/x100/MAX switches lists; it shows the other list's art and a dot when something there is affordable. A tutorial step that points at a row switches to its list.

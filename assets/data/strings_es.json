@@ -235,6 +235,8 @@
     "daily_title": "¡RECOMPENSA DIARIA!",
     "daily_text": "Día {n} de {total}. Si faltas un día no pierdes tu racha.",
     "daily_later": "Después",
-    "event_banner": "{name}: {text}"
+    "event_banner": "{name}: {text}",
+    "panel_upgrades": "Ver mejoras",
+    "panel_trainers": "Ver entrenadores"
   }
 }

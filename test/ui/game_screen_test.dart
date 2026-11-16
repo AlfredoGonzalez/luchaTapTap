@@ -17,6 +17,7 @@ import 'package:lucha_tap_tap/services/game_controller.dart';
 import 'package:lucha_tap_tap/services/save_store.dart';
 import 'package:lucha_tap_tap/services/tutorial_controller.dart';
 import 'package:lucha_tap_tap/ui/goals_view.dart';
+import 'package:lucha_tap_tap/ui/hud.dart';
 import 'package:lucha_tap_tap/ui/intro_screens.dart';
 import 'package:lucha_tap_tap/ui/kick_layer.dart';
 import 'package:lucha_tap_tap/ui/pixel_widgets.dart';
@@ -119,6 +120,12 @@ Future<void> tapArena(WidgetTester tester, [int times = 1]) async {
     await tester.tapAt(arena);
     await tester.pump(const Duration(milliseconds: 20));
   }
+}
+
+/// Switches the fight screen's panel to the trainers.
+Future<void> showTrainers(WidgetTester tester) async {
+  await tester.tap(buttonLabelled('Ver entrenadores'));
+  await tester.pump(_short);
 }
 
 Future<void> scrollPanel(WidgetTester tester, double dy) async {
@@ -234,8 +241,7 @@ void main() {
       await pumpApp(tester, edit: (f) {
         f['trainers.json']!['trainers'][0]['special'] = {'type': 'coinGain', 'perLevel': 0.05, 'maxBonus': 1.0};
       });
-      await tester.drag(find.text('Puño duro'), const Offset(0, -400));
-      await tester.pump(const Duration(milliseconds: 50));
+      await showTrainers(tester);
       await tester.tap(buttonLabelled('Información Don Chuy'));
       await tester.pump(_short);
       expect(find.textContaining('Especial: cada nivel suma 5% de monedas (máximo 100%)'), findsOneWidget);
@@ -246,8 +252,8 @@ void main() {
 
     testWidgets('a locked trainer says in which fight it unlocks', (tester) async {
       await pumpApp(tester);
-      await tester.drag(find.text('Puño duro'), const Offset(0, -400));
-      await tester.pump(_short);
+      await showTrainers(tester);
+      await scrollPanel(tester, -200);
       await tester.tap(buttonLabelled('Información ???').first);
       await tester.pump(_short);
       expect(find.textContaining('Se desbloquea al llegar a la pelea'), findsOneWidget);
@@ -304,9 +310,34 @@ void main() {
       await closeApp(tester);
     });
 
+    testWidgets('the panel shows upgrades or trainers; a dot marks the other list when it has something to buy', (tester) async {
+      await pumpApp(tester, edit: (f) => f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1});
+      bool dotOn(String label) => find
+          .byWidgetPredicate((w) => w is AttentionDot && w.show)
+          .evaluate()
+          .any((e) => find.descendant(of: find.byWidget(e.widget), matching: buttonLabelled(label)).evaluate().isNotEmpty);
+      expect(find.text('Puño duro'), findsOneWidget);
+      expect(find.text('Don Chuy'), findsNothing);
+      expect(dotOn('Ver entrenadores'), isTrue); // Don Chuy is affordable
+      await showTrainers(tester);
+      expect(find.text('Don Chuy'), findsOneWidget);
+      expect(find.text('Puño duro'), findsNothing);
+      expect(dotOn('Ver mejoras'), isTrue);
+      await closeApp(tester);
+    });
+
+    testWidgets('a nav tab gets a dot when a skill can be learned', (tester) async {
+      await pumpApp(tester, edit: (f) {
+        f['balance.json']!['start'] = {'coins': 1e9, 'fightNumber': 20};
+      });
+      final dots = find.byWidgetPredicate((w) => w is AttentionDot && w.show);
+      expect(dots, findsWidgets);
+      await closeApp(tester);
+    });
+
     testWidgets('a trainer is a mystery until its fight', (tester) async {
       await pumpApp(tester, edit: (f) => f['trainers.json']!['trainers'][0]['unlockFight'] = 50);
-      await scrollPanel(tester, -200);
+      await showTrainers(tester);
       expect(find.text('???'), findsWidgets);
       expect(find.text('Misterio'), findsWidgets);
       expect(find.text('Pelea 50'), findsOneWidget);
@@ -318,7 +349,7 @@ void main() {
         f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1};
         fastTrainer(f);
       });
-      await scrollPanel(tester, -200);
+      await showTrainers(tester);
       await tapButton(tester, '50'); // hire Don Chuy
       await elapse(tester, 2);
       expect(stateOf(c).fightNumber, greaterThan(1));
@@ -753,7 +784,7 @@ void main() {
         f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1};
         fastTrainer(f);
       });
-      await scrollPanel(tester, -200);
+      await showTrainers(tester);
       await tapButton(tester, '50'); // hire Don Chuy
       expect(find.text('¡BIENVENIDO!'), findsNothing);
       await backgroundFor(tester, const Duration(minutes: 10));
@@ -1075,7 +1106,7 @@ void main() {
         f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1};
         fastTrainer(f);
       });
-      await scrollPanel(tester, -200);
+      await showTrainers(tester);
       await tapButton(tester, '50');
       await openDebug(tester);
       await tapButton(tester, '+1m');
@@ -1088,7 +1119,7 @@ void main() {
         f['balance.json']!['start'] = {'coins': 1000, 'fightNumber': 1};
         fastTrainer(f);
       });
-      await scrollPanel(tester, -200);
+      await showTrainers(tester);
       await tapButton(tester, '50');
       await openDebug(tester);
       await tapButton(tester, '4 h');

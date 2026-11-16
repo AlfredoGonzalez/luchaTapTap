@@ -114,6 +114,25 @@ class HudBar extends ConsumerWidget {
   }
 }
 
+/// Tabs with something new: a skill to learn, a mask to buy, a talent to
+/// raise or a mask change to make.
+Set<GameView> _attention(WidgetRef ref) {
+  final engine = ref.read(gameControllerProvider.notifier).engine;
+  final content = ref.read(contentProvider);
+  return {
+    if (content.skills.any(
+      (s) =>
+          engine.state.skillLevel(s.id) == 0 && engine.quoteSkill(s.id).canBuy,
+    ))
+      GameView.skills,
+    if (content.masks.any((m) => engine.quoteMask(m.id).canBuy))
+      GameView.masks,
+    if (engine.prestigePreview().canPrestige ||
+        content.talents.any((t) => engine.quoteTalent(t.id).canBuy))
+      GameView.talents,
+  };
+}
+
 /// A small red square on the top-right corner of [child] when [show]: there
 /// is something new there (a reward to claim, something to buy).
 class AttentionDot extends StatelessWidget {
@@ -204,6 +223,8 @@ class NavBar extends ConsumerWidget {
     final scale = PixelScale.of(context);
     final selected = ref.watch(viewProvider);
     final strings = ref.watch(stringsProvider);
+    ref.watch(gameControllerProvider);
+    final dots = _attention(ref);
     return SizedBox(
       height: scale.px(navHeight),
       child: Row(
@@ -244,6 +265,13 @@ class NavBar extends ConsumerWidget {
                                       .color,
                             ),
                           ),
+                          if (view != selected && dots.contains(view))
+                            Positioned.fill(
+                              child: AttentionDot(
+                                show: true,
+                                child: const SizedBox.expand(),
+                              ),
+                            ),
                         ],
                       ),
                     ),
