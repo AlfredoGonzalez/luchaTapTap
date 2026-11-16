@@ -8,6 +8,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'art_icon.dart';
 import 'palette_color.dart';
@@ -416,11 +417,11 @@ class InfoDialog extends ConsumerWidget {
 
     if (target != null && target.kind == InfoKind.upgrade) {
       final u = content.upgrades.firstWhere((u) => u.id == target.id);
-      title = u.name;
+      title = strings.upgradeName(u);
       final value = u.effect == UpgradeEffect.critChance
           ? formatBigShort(Big.fromDouble(u.perLevelValue * 100))
           : formatBigShort(Big.fromDouble(u.perLevelValue));
-      line(u.description.replaceAll('{n}', value));
+      line(strings.upgradeDescription(u).replaceAll('{n}', value));
       levelAndMilestone(engine.state.upgradeLevel(u.id));
     } else if (target != null) {
       final t = content.trainers.firstWhere((t) => t.id == target.id);
@@ -437,7 +438,7 @@ class InfoDialog extends ConsumerWidget {
           body.add(const SizedBox(height: 4));
         }
         line(
-          t.description.replaceAll(
+          strings.trainerDescription(t).replaceAll(
             '{d}',
             formatBigShort(Big.fromDouble(t.baseDps)),
           ),

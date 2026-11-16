@@ -8,6 +8,7 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'art_icon.dart';
 import 'hud.dart';
@@ -135,7 +136,7 @@ class _Branch extends ConsumerWidget {
           height: scale.px(12),
           child: Center(
             child: PixelText(
-              branch.name.toUpperCase(),
+              strings.branchName(branch).toUpperCase(),
               color: Palette.marigold.color,
             ),
           ),
@@ -150,6 +151,7 @@ class _Branch extends ConsumerWidget {
               state: _stateOf(t),
               level: engine.state.talentLevel(t.id),
               selected: t.id == selectedId,
+              name: strings.talentName(t),
               label: strings.t('talent_node_level', {
                 'a': engine.state.talentLevel(t.id),
                 'b': t.maxLevel,
@@ -171,11 +173,15 @@ class _Node extends StatelessWidget {
     required this.state,
     required this.level,
     required this.selected,
+    required this.name,
     required this.label,
     required this.onTap,
   });
 
   final TalentDef talent;
+
+  /// Translated talent name.
+  final String name;
   final ui.Image? art;
   final _NodeState state;
   final int level;
@@ -196,7 +202,7 @@ class _Node extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: '${talent.name} $label',
+      label: '$name $label',
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -260,7 +266,7 @@ class _Detail extends ConsumerWidget {
     final locked = quote.failure == BuyFailure.locked;
     final parentName = talent.parent == null
         ? ''
-        : engine.content.talent(talent.parent!).name;
+        : strings.talentName(engine.content.talent(talent.parent!));
     final String button;
     if (maxed) {
       button = strings.t('talent_maxed');
@@ -273,7 +279,7 @@ class _Detail extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: PixelText(talent.name, color: Palette.sunYellow.color),
+              child: PixelText(strings.talentName(talent), color: Palette.sunYellow.color),
             ),
             PixelText(
               strings.t('skill_row_level', {
@@ -297,7 +303,7 @@ class _Detail extends ConsumerWidget {
           child: PixelButton(
             label: maxed ? button : '$button ${formatBigShort(quote.cost)}',
             icon: maxed ? null : PixelIcons.belt,
-            semanticLabel: '$button ${talent.name}',
+            semanticLabel: '$button ${strings.talentName(talent)}',
             style: PixelButtonStyle.confirm,
             onPressed: quote.canBuy
                 ? () => ref

@@ -8,6 +8,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../data/goals_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'hud.dart';
 import 'palette_color.dart';
@@ -122,7 +123,7 @@ class GoalsView extends ConsumerWidget {
               for (final a in achievements)
                 _GoalRow(
                   icon: PixelIcons.trophy,
-                  title: a.name,
+                  title: strings.achievementName(a),
                   subtitle: goalText(strings, a.counter, a.target),
                   reward: a.reward,
                   value: engine.counterValue(a.counter),

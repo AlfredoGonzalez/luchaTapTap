@@ -194,6 +194,70 @@ void main() {
     final content = loadTestContent();
     final strings = content.strings;
 
+    test('English has every Spanish text, with the same placeholders', () {
+      final en = content.translations['en']!;
+      final holes = RegExp(r'\{[a-zA-Z]+\}');
+      Set<String> placeholders(String t) => holes.allMatches(t).map((m) => m.group(0)!).toSet();
+      for (final entry in strings.entries) {
+        expect(en.containsKey(entry.key), isTrue, reason: 'strings_en.json misses "${entry.key}"');
+        expect(placeholders(en[entry.key]!), placeholders(entry.value), reason: entry.key);
+      }
+      for (final key in en.keys.where((k) => !k.startsWith('data.'))) {
+        expect(strings.containsKey(key), isTrue, reason: 'strings_en.json has unknown "$key"');
+      }
+    });
+
+    test('English translates the names and descriptions of the data files', () {
+      final shipped = loadShippedContent();
+      final en = shipped.translations['en']!;
+      void has(String file, String id, String field, String spanish) {
+        final key = 'data.$file.$id.$field';
+        expect(en.containsKey(key), isTrue, reason: 'strings_en.json misses "$key"');
+        final holes = RegExp(r'\{[a-zA-Z]+\}');
+        expect(holes.allMatches(en[key]!).map((m) => m.group(0)).toSet(),
+            holes.allMatches(spanish).map((m) => m.group(0)).toSet(), reason: key);
+      }
+      for (final u in shipped.upgrades) {
+        has('upgrades', u.id, 'name', u.name);
+        has('upgrades', u.id, 'description', u.description);
+      }
+      for (final t in shipped.trainers) {
+        has('trainers', t.id, 'description', t.description);
+      }
+      for (final k in shipped.skills) {
+        has('skills', k.id, 'name', k.name);
+        has('skills', k.id, 'description', k.description);
+      }
+      for (final b in shipped.talentBranches) {
+        has('branches', b.id, 'name', b.name);
+        for (final t in b.nodes) {
+          has('talents', t.id, 'name', t.name);
+        }
+      }
+      for (final l in shipped.leagues) {
+        has('leagues', l.id, 'name', l.name);
+      }
+      for (final a in shipped.achievements) {
+        has('achievements', a.id, 'name', a.name);
+      }
+      for (final i in shipped.shopItems) {
+        has('shop', i.id, 'name', i.name);
+        has('shop', i.id, 'detail', i.detail);
+      }
+      for (final e in shipped.goals.events) {
+        has('events', e.id, 'name', e.name);
+        has('events', e.id, 'text', e.text);
+      }
+      for (final g in shipped.credits) {
+        has('credits', g.title, 'text', g.title);
+        for (final line in g.lines) {
+          // Names, fonts and licenses read the same in every language.
+          if (RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+|·|Press Start').hasMatch(line.text)) continue;
+          has('credits', line.text, 'text', line.text);
+        }
+      }
+    });
+
     test('every goal counter has a text', () {
       for (final c in GoalCounter.values) {
         expect(strings.containsKey('goal_${c.name}'), isTrue, reason: 'goal_${c.name}');

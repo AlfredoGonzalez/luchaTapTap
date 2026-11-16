@@ -5,6 +5,7 @@ import '../core/game_state.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'hud.dart';
 import 'palette_color.dart';
@@ -109,7 +110,7 @@ class _ShopViewState extends ConsumerState<ShopView> {
     final owned =
         item.kind == ShopKind.purchase && state.purchases.contains(item.id);
     final Widget button;
-    var detail = item.detail;
+    var detail = strings.shopDetail(item);
     switch (item.kind) {
       case ShopKind.purchase:
       case ShopKind.beltPack:
@@ -122,7 +123,7 @@ class _ShopViewState extends ConsumerState<ShopView> {
                     : ''),
           width: 52,
           style: PixelButtonStyle.confirm,
-          semanticLabel: '${strings.t('shop_buy')} ${item.name}',
+          semanticLabel: '${strings.t('shop_buy')} ${strings.shopName(item)}',
           onPressed: owned || _busy || (price.hasValue && price.value == null)
               ? null
               : () => _use(item),
@@ -141,13 +142,13 @@ class _ShopViewState extends ConsumerState<ShopView> {
           icon: wait > 0 ? null : PixelIcons.adWatch,
           width: 52,
           style: PixelButtonStyle.secondary,
-          semanticLabel: '${strings.t('shop_watch')} ${item.name}',
+          semanticLabel: '${strings.t('shop_watch')} ${strings.shopName(item)}',
           onPressed: wait > 0 || _busy ? null : () => _use(item),
         );
     }
     return ListRow(
       icon: icon,
-      title: item.name,
+      title: strings.shopName(item),
       subtitle: detail,
       trailing: button,
     );

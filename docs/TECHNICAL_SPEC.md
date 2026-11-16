@@ -6,7 +6,7 @@ Nov 10, 2026 · @Alfredo
 
 Build "Lucha Tap, Tap!", an offline-first Android clicker with a lucha libre theme and pixel art, as a Flutter + Flame app. Companion docs: Game Design Document v0, Visual Style Guide v0 and the 14 UI mockups (canvas "Lucha Tap, Tap! — UI Mockups"). If this spec and those disagree, ask before choosing.
 
-- Platform: Android only, portrait only, Spanish only (all player-facing strings in Spanish, code and comments in English).
+- Platform: Android only, portrait only, Spanish and English (player-facing strings in both languages, the phone's language by default; code and comments in English). English was added after M7 at the designer's request.
 - Play style: active tapping with idle income (trainers) and offline earnings.
 - No backend, no accounts, no analytics in v0. Everything runs and saves locally.
 - Content is data, not code: opponents, masks, trainers, upgrades, skills and talents live in JSON files.

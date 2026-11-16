@@ -21,6 +21,7 @@ abstract final class ContentFiles {
   static const tutorial = 'tutorial.json';
   static const goals = 'goals.json';
   static const strings = 'strings_es.json';
+  static const stringsEn = 'strings_en.json';
 
   static const all = [
     balance,
@@ -37,7 +38,11 @@ abstract final class ContentFiles {
     tutorial,
     goals,
     strings,
+    stringsEn,
   ];
+
+  /// Languages the game ships, with their text file.
+  static const languages = {'es': strings, 'en': stringsEn};
 }
 
 const int _supportedSchemaVersion = 1;
@@ -85,6 +90,7 @@ class ContentBundle {
     required this.tutorial,
     required this.goals,
     required this.strings,
+    required this.translations,
   });
 
   /// [files] maps a file name from [ContentFiles] to its decoded JSON.
@@ -315,6 +321,15 @@ class ContentBundle {
       file(ContentFiles.strings),
     )..expectSchemaVersion(_supportedSchemaVersion);
     final strings = stringsReader.stringMap('strings');
+    final translations = <String, Map<String, String>>{
+      for (final entry in ContentFiles.languages.entries)
+        if (entry.value != ContentFiles.strings)
+          entry.key: Map.unmodifiable(
+            (JsonReader(entry.value, file(entry.value))
+                  ..expectSchemaVersion(_supportedSchemaVersion))
+                .stringMap('strings'),
+          ),
+    };
 
     return ContentBundle._(
       balance: balance,
@@ -331,6 +346,7 @@ class ContentBundle {
       tutorial: tutorial,
       goals: goals,
       strings: Map.unmodifiable(strings),
+      translations: Map.unmodifiable(translations),
     );
   }
 
@@ -365,7 +381,15 @@ class ContentBundle {
 
   /// Daily goals, chest, calendar and events (`goals.json`).
   final GoalsDef goals;
+  /// Spanish text (`strings_es.json`), the language the game is written in.
   final Map<String, String> strings;
+
+  /// Other languages: code to text map (UI keys and `data.*` keys).
+  final Map<String, Map<String, String>> translations;
+
+  /// Text map of [language]; Spanish for `es` or an unknown code.
+  Map<String, String> stringsFor(String language) =>
+      translations[language] ?? strings;
 
   late final Map<String, OpponentDef> _opponentById = {
     for (final o in opponents) o.id: o,

@@ -1,6 +1,6 @@
 # Lucha Tap, Tap!
 
-Offline-first Android clicker with a comedic lucha libre theme and pixel art. Flutter + Flame, Riverpod, Spanish only.
+Offline-first Android clicker with a comedic lucha libre theme and pixel art. Flutter + Flame, Riverpod, in Spanish and English (the phone's language, or the one chosen in Ajustes).
 
 ## Documents
 
@@ -38,7 +38,7 @@ lib/
   ui/         Flutter screens, panels, dialogs and widgets
   services/   game controller (Riverpod), save store, ad service, strings
 assets/data/  balance, opponents, leagues, trainers, upgrades, skills, talents, masks,
-              achievements and strings_es (all JSON)
+              achievements, goals, tutorial, strings_es and strings_en (all JSON)
 test/         unit, data and widget tests
 docs/         design documents
 ```
@@ -48,7 +48,7 @@ docs/         design documents
 - No balance number lives in Dart. Every cost, multiplier, cap and time comes from `assets/data/`. To tune the game, edit the JSON.
 - Only the 32 palette colors (`lib/core/palette.dart`). The mask colors Night Purple, Violet and Lilac are reserved for masks.
 - Game rules stay in `lib/core` so they can be tested without a device.
-- All player-facing text is Spanish and lives in `strings_es.json`. Code and comments are English.
+- Player-facing text is Spanish (`strings_es.json`) and English (`strings_en.json`, which also translates the data files' names and descriptions with `data.*` keys). Code and comments are English.
 
 ## Develop
 

@@ -138,3 +138,10 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 
 - Red dots: the trophy (something to claim), Habilidades (a skill can be learned), Máscaras (a mask can be bought), Talentos (a talent can be raised or the mask change is ready). Mejoras and Tienda have none (something there is almost always affordable).
 - The fight screen's panel shows the upgrades or the trainers. One button at the left of x1/x10/x100/MAX switches lists; it shows the other list's art and a dot when something there is affordable. A tutorial step that points at a row switches to its list.
+
+## English
+
+- The game follows the phone's language: Spanish phones get Spanish, every other phone English. Ajustes > Idioma cycles Auto / Español / English (saved as `language` in the settings; Auto follows the phone again).
+- UI text: `strings_en.json` has the same keys as `strings_es.json`. Data text: the data files stay in Spanish and `strings_en.json` translates them with `data.<file>.<id>.<field>` keys (`branches` for talent branches, `credits` keyed by the Spanish text). Missing English text falls back to Spanish; tests check that nothing is missing and that placeholders match.
+- Wrestler, mask and trainer names stay in Spanish (they are characters); the coach is "El Profe" in both.
+- The English text is a first draft by Claude; a native speaker should review it. Settings now scroll on small screens (one row more).

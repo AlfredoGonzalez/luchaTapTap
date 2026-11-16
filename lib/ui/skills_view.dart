@@ -6,6 +6,7 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/strings.dart';
 import 'art_icon.dart';
 import 'hud.dart';
@@ -23,7 +24,8 @@ String _number(double v) => v == v.roundToDouble()
 
 /// What [skill] does at [level] (level 1 when it is not learned): its
 /// `description` from skills.json with the value and duration filled in.
-String skillDescription(SkillDef skill, int level) => skill.description
+String skillDescription(Strings strings, SkillDef skill, int level) => strings
+    .skillText(skill)
     .replaceAll('{n}', _number(skill.valueAt(level < 1 ? 1 : level)))
     .replaceAll('{d}', _number(skill.duration));
 
@@ -66,9 +68,9 @@ class SkillsView extends ConsumerWidget {
   List<Widget> _detail(Strings strings, GameEngine engine, SkillDef skill) {
     final level = engine.state.skillLevel(skill.id);
     final lines = <Widget>[
-      PixelText(skill.name, color: Palette.sunYellow.color),
+      PixelText(strings.skillName(skill), color: Palette.sunYellow.color),
       const _Gap(),
-      PixelText(skillDescription(skill, level), wrap: true),
+      PixelText(skillDescription(strings, skill, level), wrap: true),
     ];
     if (level > 0 && level < skill.maxLevel) {
       final next = level + 1;
@@ -134,7 +136,7 @@ class _SkillRow extends ConsumerWidget {
             ? PixelIcons.locked
             : (PixelIcons.byKey(skill.icon) ?? PixelIcons.skillBolt),
         iconWidget: art == null || locked ? null : ArtIcon(art),
-        title: locked ? strings.t('skill_locked') : skill.name,
+        title: locked ? strings.t('skill_locked') : strings.skillName(skill),
         subtitle: locked
             ? strings.t('row_unlock_short', {'n': skill.unlockFight})
             : strings.t('skill_row_sub', {'n': level, 's': cooldown}),
@@ -149,7 +151,7 @@ class _SkillRow extends ConsumerWidget {
             : CostButton(
                 cost: formatBigShort(quote.cost),
                 enabled: quote.canBuy,
-                semanticLabel: skill.name,
+                semanticLabel: strings.skillName(skill),
                 onPressed: () {
                   ref.read(selectedSkillProvider.notifier).select(skill.id);
                   ref.read(gameControllerProvider.notifier).buySkill(skill.id);

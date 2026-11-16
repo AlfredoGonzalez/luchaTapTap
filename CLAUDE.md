@@ -1,6 +1,6 @@
 # Instructions for Claude Code
 
-Project: Lucha Tap, Tap! (Flutter + Flame, Android only, Spanish only). Read `docs/TECHNICAL_SPEC.md` first; it is the source of truth for architecture, schemas and milestones.
+Project: Lucha Tap, Tap! (Flutter + Flame, Android only, Spanish and English). Read `docs/TECHNICAL_SPEC.md` first; it is the source of truth for architecture, schemas and milestones.
 
 ## Hard rules
 
@@ -8,7 +8,7 @@ Project: Lucha Tap, Tap! (Flutter + Flame, Android only, Spanish only). Read `do
 2. **Game rules stay pure Dart** in `lib/core` (no Flutter imports) and are covered by unit tests.
 3. **Palette:** only the 32 colors in `lib/core/palette.dart`, used by name. Night Purple, Violet and Lilac are reserved for masks.
 4. **Pixel rules:** integer scale only, whole-pixel positions, no anti-aliasing, touch targets at least 24 virtual pixels.
-5. **Player-facing text is Spanish** and goes through `strings_es.json`. Code and comments are English.
+5. **Player-facing text is Spanish and English.** UI text goes through `strings_es.json` and `strings_en.json` (same keys; a test checks they match). Names and descriptions in the other data files are written in Spanish and translated with `data.<file>.<id>.<field>` keys in `strings_en.json`; wrestler, mask and trainer names stay Spanish. Every new text needs both languages. Code and comments are English.
 6. **Open questions in the spec (section 9) are the designer's to decide.** Ask; do not guess.
 7. If the documents disagree, ask before choosing.
 8. Never reference real wrestlers, promotions or brands.

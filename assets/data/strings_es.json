@@ -237,6 +237,10 @@
     "daily_later": "Después",
     "event_banner": "{name}: {text}",
     "panel_upgrades": "Ver mejoras",
-    "panel_trainers": "Ver entrenadores"
+    "panel_trainers": "Ver entrenadores",
+    "settings_language": "Idioma",
+    "language_auto": "Auto",
+    "language_es": "Español",
+    "language_en": "English"
   }
 }

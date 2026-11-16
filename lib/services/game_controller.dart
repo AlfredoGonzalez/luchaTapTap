@@ -29,10 +29,29 @@ final contentProvider = Provider<ContentBundle>(
   (ref) => throw UnimplementedError('contentProvider must be overridden'),
 );
 
-/// Spanish text lookup.
-final stringsProvider = Provider<Strings>(
-  (ref) => Strings(ref.watch(contentProvider).strings),
+/// Language of the phone (only its code: `es`, `en`, ...).
+final deviceLanguageProvider = Provider<String>(
+  (ref) => WidgetsBinding.instance.platformDispatcher.locale.languageCode,
 );
+
+/// Language of the game: the one chosen in Ajustes, or else the phone's
+/// (Spanish phones get Spanish, every other phone English).
+final languageProvider = Provider<String>((ref) {
+  final chosen = ref.watch(settingsProvider).language;
+  if (chosen != null && ContentFiles.languages.containsKey(chosen)) {
+    return chosen;
+  }
+  return ref.watch(deviceLanguageProvider) == 'es' ? 'es' : 'en';
+});
+
+/// Text lookup in the current language (Spanish fills any gap).
+final stringsProvider = Provider<Strings>((ref) {
+  final content = ref.watch(contentProvider);
+  return Strings(
+    content.stringsFor(ref.watch(languageProvider)),
+    content.strings,
+  );
+});
 
 final saveCodecProvider = Provider<SaveCodec>(
   (ref) => SaveCodec(content: ref.watch(contentProvider)),
@@ -63,6 +82,7 @@ class AppSettings {
     this.notices = false,
     this.tutorialStep,
     this.tutorialDone,
+    this.language,
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -72,6 +92,7 @@ class AppSettings {
     notices: map['notices'] as bool? ?? false,
     tutorialStep: (map['tutorialStep'] as num?)?.toInt(),
     tutorialDone: (map['tutorialDone'] as List?)?.cast<String>(),
+    language: map['language'] as String?,
   );
 
   final bool sound;
@@ -90,12 +111,16 @@ class AppSettings {
   /// the tutorial (decided when the game starts).
   final List<String>? tutorialDone;
 
+  /// Language chosen in Ajustes (`es`, `en`); null follows the phone.
+  final String? language;
+
   Map<String, dynamic> toMap() => {
     'sound': sound,
     'music': music,
     'vibration': vibration,
     'notices': notices,
     if (tutorialDone != null) 'tutorialDone': tutorialDone,
+    if (language != null) 'language': language,
   };
 
   AppSettings copyWith({
@@ -111,6 +136,18 @@ class AppSettings {
     notices: notices ?? this.notices,
     tutorialStep: tutorialStep,
     tutorialDone: tutorialDone ?? this.tutorialDone,
+    language: language,
+  );
+
+  /// The same settings with [language] (null: follow the phone).
+  AppSettings withLanguage(String? language) => AppSettings(
+    sound: sound,
+    music: music,
+    vibration: vibration,
+    notices: notices,
+    tutorialStep: tutorialStep,
+    tutorialDone: tutorialDone,
+    language: language,
   );
 
   AppSettings toggled(String name) => switch (name) {
@@ -149,6 +186,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   void reset() => state = const AppSettings();
+
+  /// Language for the game; null follows the phone (saved with the game).
+  void setLanguage(String? language) {
+    state = state.withLanguage(language);
+    ref.read(gameControllerProvider.notifier).saveNow();
+  }
 
   /// Remembers which tutorial steps were shown (saved with the game).
   void setTutorialDone(List<String> done) {

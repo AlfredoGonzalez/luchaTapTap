@@ -7,6 +7,7 @@ import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import 'arena_view.dart';
 import 'art_icon.dart';
 import 'ui_state.dart';
@@ -173,7 +174,7 @@ class _EventBanner extends ConsumerWidget {
               children: [
                 for (final e in events)
                   PixelText(
-                    strings.t('event_banner', {'name': e.name, 'text': e.text}),
+                    strings.t('event_banner', {'name': strings.eventName(e), 'text': strings.eventText(e)}),
                     color: Palette.sunYellow.color,
                     align: TextAlign.center,
                   ),
@@ -510,7 +511,7 @@ class _SkillButton extends ConsumerWidget {
     return Semantics(
       button: true,
       enabled: learned && !onCooldown,
-      label: skill.name,
+      label: ref.watch(stringsProvider).skillName(skill),
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

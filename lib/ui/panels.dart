@@ -7,6 +7,7 @@ import '../core/game_engine.dart';
 import '../core/number_format.dart';
 import '../data/content_models.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
 import '../services/tutorial_controller.dart';
 import 'art_icon.dart';
 import 'hud.dart';
@@ -185,8 +186,8 @@ class _UpgradeRow extends ConsumerWidget {
         onInfo: () => ref
             .read(infoTargetProvider.notifier)
             .show(InfoTarget(InfoKind.upgrade, upgrade.id)),
-        infoLabel: '${strings.t('info_open')} ${upgrade.name}',
-        title: upgrade.name,
+        infoLabel: '${strings.t('info_open')} ${strings.upgradeName(upgrade)}',
+        title: strings.upgradeName(upgrade),
         subtitle: next == null
             ? strings.t('row_level_short', {'n': level})
             : strings.t('row_level_next', {'n': level, 'next': next}),
@@ -196,7 +197,7 @@ class _UpgradeRow extends ConsumerWidget {
           child: CostButton(
             cost: formatBigShort(quote.cost),
             enabled: quote.canBuy,
-            semanticLabel: upgrade.name,
+            semanticLabel: strings.upgradeName(upgrade),
             onPressed: () => ref
                 .read(gameControllerProvider.notifier)
                 .buyUpgrade(upgrade.id),

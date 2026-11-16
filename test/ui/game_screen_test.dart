@@ -382,8 +382,9 @@ void main() {
         await tester.tap(find.bySemanticsLabel('AJUSTES'));
         await tester.pump(_short);
         expect(find.text('Sonido'), findsOneWidget);
-        // All eight settings rows are visible without scrolling, "Borrar datos" included.
-        final area = tester.getRect(find.byType(ListView).first);
+        // The last settings row ("Borrar datos") can be scrolled into view.
+        await tester.scrollUntilVisible(find.text('Borrar datos'), 40, scrollable: find.byType(Scrollable).last);
+        final area = tester.getRect(find.byType(ListView).last);
         final last = tester.getRect(find.text('Borrar datos'));
         expect(area.contains(last.center), isTrue);
         await closeApp(tester);
@@ -881,6 +882,40 @@ void main() {
     });
   });
 
+  group('language', () {
+    testWidgets('a phone in English gets the game in English', (tester) async {
+      tester.platformDispatcher.localeTestValue = const Locale('en', 'US');
+      addTearDown(() => tester.platformDispatcher.localeTestValue = const Locale('es', 'MX'));
+      await pumpApp(tester);
+      expect(find.text('Fight 1'), findsOneWidget);
+      expect(find.text('Iron Fist'), findsOneWidget);
+      expect(find.bySemanticsLabel('Upgrades'), findsOneWidget);
+      expect(find.text('Mr. Aguacate'), findsOneWidget); // wrestlers keep their names
+      await closeApp(tester);
+    });
+
+    testWidgets('Ajustes switches the language at once and remembers it', (tester) async {
+      final c = await pumpApp(tester);
+      await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      expect(find.text('Idioma'), findsOneWidget);
+      await tester.tap(buttonLabelled('Idioma: Auto'));
+      await tester.pump(_short);
+      expect(c.read(settingsProvider).language, 'es');
+      await tester.tap(buttonLabelled('Idioma: Español'));
+      await tester.pump(_short);
+      expect(c.read(settingsProvider).language, 'en');
+      expect(find.text('Language'), findsOneWidget);
+      expect(find.text('SETTINGS'), findsOneWidget);
+      expect(c.read(settingsProvider).toMap()['language'], 'en');
+      await tester.tap(buttonLabelled('Language: English'));
+      await tester.pump(_short);
+      expect(c.read(settingsProvider).language, isNull); // back to the phone's
+      expect(find.text('Idioma'), findsOneWidget);
+      await closeApp(tester);
+    });
+  });
+
   group('goals', () {
     testWidgets('the trophy opens Metas; a reached achievement is claimed there', (tester) async {
       final c = await pumpApp(tester);
@@ -1010,6 +1045,8 @@ void main() {
         e.debugSkipFights(5);
       }));
       await tester.tap(find.bySemanticsLabel('AJUSTES'));
+      await tester.pump(_short);
+      await tester.scrollUntilVisible(buttonLabelled('Borrar datos'), 40, scrollable: find.byType(Scrollable).last);
       await tester.pump(_short);
       await tester.tap(buttonLabelled('Borrar datos'));
       await tester.pump(_short);

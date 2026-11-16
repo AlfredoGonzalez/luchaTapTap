@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app_info.dart';
 import '../core/palette.dart';
 import '../services/game_controller.dart';
+import '../services/localized_text.dart';
+import '../services/strings.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'pixel_scale.dart';
@@ -33,6 +35,28 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     setState(
       () =>
           _message = strings.t(restored > 0 ? 'restore_done' : 'restore_none'),
+    );
+  }
+
+  /// "Idioma": Automático (the phone's), then each language in turn.
+  Widget _languageRow(Strings strings, String? chosen) {
+    const order = <String?>[null, 'es', 'en'];
+    final next = order[(order.indexOf(chosen) + 1) % order.length];
+    final label = strings.t('language_${chosen ?? 'auto'}');
+    return ListRow(
+      title: strings.t('settings_language'),
+      subtitle: chosen == null
+          ? strings.t('language_${ref.watch(languageProvider)}')
+          : '',
+      height: 26,
+      trailing: PixelButton(
+        label: label,
+        semanticLabel: '${strings.t('settings_language')}: $label',
+        width: 64,
+        style: PixelButtonStyle.secondary,
+        onPressed: () =>
+            ref.read(settingsProvider.notifier).setLanguage(next),
+      ),
     );
   }
 
@@ -95,6 +119,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               toggle('music', 'settings_music', settings.music),
               toggle('vibration', 'settings_vibration', settings.vibration),
               toggle('notices', 'settings_notices', settings.notices, sub: strings.t('settings_notices_sub')),
+              _languageRow(strings, settings.language),
               action('settings_restore', subKey: 'settings_restore_sub', onTap: _restore),
               action('settings_tutorial', onTap: () {
                 ref.read(tutorialProvider.notifier).restart();
@@ -138,10 +163,10 @@ class CreditsView extends ConsumerWidget {
             children: [
               for (final group in content.credits) ...[
                 SizedBox(height: scale.px(4)),
-                PixelText(group.title, color: Palette.marigold.color),
+                PixelText(strings.credit(group.title), color: Palette.marigold.color),
                 for (final line in group.lines) ...[
                   SizedBox(height: scale.px(3)),
-                  PixelText(line.text, wrap: true),
+                  PixelText(strings.credit(line.text), wrap: true),
                 ],
               ],
             ],
