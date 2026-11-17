@@ -138,8 +138,8 @@ class HudBar extends ConsumerWidget {
   }
 }
 
-/// A tab's picture: the art in full color when selected, else its
-/// silhouette; the code glyph while there is no art.
+/// A tab's picture ([art] is already the selected or the silhouette version);
+/// the code glyph while there is no art.
 Widget _tabIcon(
   ui.Image? art,
   PixelIconData glyph, {
@@ -150,12 +150,9 @@ Widget _tabIcon(
           ? Palette.dust
           : (selected ? Palette.bone : Palette.fog))
       .color;
+  // Selected: the art; otherwise its silhouette picture (`nav_<tab>_off`).
   if (art == null) return PixelIcon(glyph, color: tint);
-  if (selected) return ArtIcon(art);
-  return ColorFiltered(
-    colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
-    child: ArtIcon(art),
-  );
+  return ArtIcon(art);
 }
 
 /// Tabs still locked (`ui.lockTabs`): Habilidades until the first skill can
@@ -354,7 +351,9 @@ class NavBar extends ConsumerWidget {
                               locked.contains(view)
                                   ? null
                                   : sprites.icon(
-                                      SpriteLibrary.navKey(
+                                      (view == selected
+                                          ? SpriteLibrary.navKey
+                                          : SpriteLibrary.navOffKey)(
                                         view == GameView.fight
                                             ? 'upgrades'
                                             : view.name,

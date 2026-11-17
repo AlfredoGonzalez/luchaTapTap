@@ -140,6 +140,20 @@ def build(path, key, tilt=False, pool=True, size=SIZE, tile=False):
     print(f"{path.name} -> assets/icons/{key}.png")
 
 
+def silhouette(key):
+    """The unselected look of a tab icon: the light parts of the picture in
+    Fog, the dark lines left empty, so details (eyes, a coin) still read."""
+    a = np.array(Image.open(OUT / f"{key}.png").convert("RGBA"))
+    rgb = a[:, :, :3].astype(int)
+    # Only the outline color (Ink) is left empty; dark reds stay part of it.
+    dark = np.abs(rgb - np.array(PALETTE["ink"])).sum(axis=2) < 40
+    out = np.zeros_like(a)
+    keep = (a[:, :, 3] > 0) & ~dark
+    out[keep] = [*PALETTE["fog"], 255]
+    Image.fromarray(out, "RGBA").save(OUT / f"{key}_off.png")
+    print(f"  -> assets/icons/{key}_off.png (silhouette)")
+
+
 def _ids(file, key="id"):
     data = json.loads((ROOT / "assets/data" / file).read_text())
     items = [x for k, v in data.items() if isinstance(v, list) for x in v]
@@ -183,6 +197,7 @@ def main():
             build(p, stem, tile=True)
         elif stem.startswith("nav_"):
             build(p, stem, tile=True)
+            silhouette(stem)
         elif stem.startswith("ui_"):
             build(p, stem, tile=True)
             if stem == "ui_boost":

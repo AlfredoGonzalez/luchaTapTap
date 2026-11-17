@@ -117,12 +117,20 @@ class SpriteLibrary {
   /// shop).
   static String navKey(String tab) => 'nav_$tab';
 
+  /// Its unselected look (a silhouette made by tools/build_icons.py).
+  static String navOffKey(String tab) => 'nav_${tab}_off';
+
   static const List<String> uiIconKeys = [
     'nav_upgrades',
     'nav_skills',
     'nav_masks',
     'nav_talents',
     'nav_shop',
+    'nav_upgrades_off',
+    'nav_skills_off',
+    'nav_masks_off',
+    'nav_talents_off',
+    'nav_shop_off',
     trophyKey,
     chestKey,
     goalKey,
