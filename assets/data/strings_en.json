@@ -351,6 +351,16 @@
     "belts_info_prestige": "By changing masks: the more coins you earn in a run, the more belts. The run must be worth at least {n} to change.",
     "belts_info_goals": "By claiming achievements, daily goals, the chest and the daily reward.",
     "belts_info_shop": "In the Shop (also one free by watching an ad).",
-    "belts_info_use": "Belts buy talents and masks, and every belt you earn adds damage forever."
+    "belts_info_use": "Belts buy talents and masks, and every belt you earn adds damage forever.",
+    "comic_tap": "POW!|BAM!|WHAM!|SMACK!|THUD!",
+    "comic_crit": "CRACK!|KA-POW!",
+    "comic_kick": "KA-BOOM!|KER-SMASH!",
+    "boss_ready": "You can take the boss now! Tap BOSS!",
+    "active_tapMultiplier": "Taps x{v}",
+    "active_luckBoost": "Luck x{v}",
+    "active_trainerMultiplier": "Trainers x{v}",
+    "active_burst": "Splash",
+    "active_bossTimerExtend": "Headlock",
+    "active_boost": "Coins x{v}"
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flame/game.dart';
 import 'package:flutter/widgets.dart';
@@ -75,6 +76,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       if (e.isTap) {
         _game.playerAttack(kick: e.isKick);
         _game.hit(formatBig(e.damage), isTap: true, isBig: e.isBig);
+        _comicFor(e);
       } else {
         // Trainer damage arrives every tick: show it as one number per
         // `idleNumberEverySeconds` with the total of that time.
@@ -135,6 +137,26 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
         y: lucky?.y ?? 0.5,
       );
     });
+  }
+
+  final math.Random _random = math.Random();
+
+  /// A comic word for a tap: always for kicks and crits, sometimes for the
+  /// rest (`fx.comicTapChance`). The words come from the strings.
+  void _comicFor(HitEvent e) {
+    final strings = ref.read(stringsProvider);
+    final String key;
+    if (e.isKick) {
+      key = 'comic_kick';
+    } else if (e.isBig) {
+      key = 'comic_crit';
+    } else {
+      final chance = ref.read(contentProvider).balance.fx.comicTapChance;
+      if (_random.nextDouble() >= chance) return;
+      key = 'comic_tap';
+    }
+    final words = strings.t(key).split('|');
+    _game.comic(words[_random.nextInt(words.length)], big: e.isKick);
   }
 
   /// Base color (the middle of the three slot colors) of the equipped mask.

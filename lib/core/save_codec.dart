@@ -104,6 +104,8 @@ class SaveCodec {
                 'defeats': s.pendingOffline!.defeats,
               },
         'bestFight': s.bestFight,
+        'farmOpponent': s.farmOpponent,
+        'farmFight': s.farmFight,
         'boostLeft': s.boostLeft,
         'boostMultiplier': s.boostMultiplier,
         'adReadyAt': s.adReadyAt,
@@ -254,6 +256,10 @@ class SaveCodec {
               defeats: (pending['defeats'] as num).toInt(),
             ),
       bestFight: _int(s, 'bestFight', fight),
+      farmOpponent: content.opponents.any((o) => o.id == s['farmOpponent'])
+          ? s['farmOpponent'] as String
+          : null,
+      farmFight: (s['farmFight'] as num?)?.toInt(),
       boostLeft: _double(s, 'boostLeft', 0),
       boostMultiplier: _double(s, 'boostMultiplier', 1),
       adReadyAt: levels('adReadyAt', shopIds.contains),

@@ -329,6 +329,37 @@ class ArenaGame extends FlameGame {
   /// One shake jolt lasts this long (a frame at 20 fps).
   static const double _shakeStepSeconds = 0.05;
 
+  static const List<int> _comicColors = [
+    Palette.sunYellow,
+    Palette.coral,
+    Palette.sky,
+    Palette.lime,
+  ];
+  int _comicCount = 0;
+
+  /// Pops a comic word ([text]) near the opponent; [big] for the kick.
+  void comic(String text, {bool big = false}) {
+    if (!isLoaded) return;
+    final jitter = fx.comicJitterPx;
+    final dx = jitter == 0 ? 0 : _random.nextInt(2 * jitter + 1) - jitter;
+    final dy = jitter == 0 ? 0 : _random.nextInt(jitter + 1);
+    world.add(
+      _ComicWord(
+        text: text,
+        start: Vector2(
+          (_enemy.position.x + _enemy.size.x / 2 + dx).roundToDouble(),
+          (_enemy.position.y + _enemy.size.y * 0.3 + dy).roundToDouble(),
+        ),
+        color: big
+            ? Palette.sunYellow
+            : _comicColors[_comicCount++ % _comicColors.length],
+        seconds: fx.comicSeconds * (big ? 2 : 1),
+        risePx: fx.comicRisePx,
+        big: big,
+      ),
+    );
+  }
+
   /// Reaction to a hit. A tap flashes the opponent white and floats the damage
   /// number above it; [isBig] (critical hits, finishers) uses the large yellow
   /// number. Damage from trainers ([isTap] false) does not flash: its number
@@ -827,6 +858,68 @@ class _LuckyPickup extends PositionComponent with TapCallbacks {
       point.y >= -8 &&
       point.x <= size.x + 8 &&
       point.y <= size.y + 8;
+}
+
+/// A comic-book word ("¡POW!") that pops near the opponent, rises a little and
+/// blinks out. Drawn in the pixel font with an ink outline.
+class _ComicWord extends TextComponent {
+  _ComicWord({
+    required String text,
+    required this.start,
+    required this.color,
+    required this.seconds,
+    required this.risePx,
+    required this.big,
+  }) : super(
+         text: text,
+         anchor: Anchor.bottomCenter,
+         textRenderer: TextPaint(
+           style: TextStyle(
+             fontFamily: 'PressStart2P',
+             color: color.color,
+             fontSize: big ? 16 : 8,
+             height: 1,
+             shadows: [
+               for (final o in const [
+                 Offset(1, 0),
+                 Offset(-1, 0),
+                 Offset(0, 1),
+                 Offset(0, -1),
+                 Offset(1, 1),
+               ])
+                 Shadow(color: Palette.ink.color, offset: o),
+             ],
+           ),
+         ),
+       );
+
+  final Vector2 start;
+  final int color;
+  final double seconds;
+  final int risePx;
+  final bool big;
+  double _age = 0;
+
+  @override
+  void onMount() {
+    super.onMount();
+    position = start.clone();
+    priority = 11;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _age += dt;
+    if (_age >= seconds) {
+      removeFromParent();
+      return;
+    }
+    position = Vector2(
+      start.x.roundToDouble(),
+      (start.y - risePx * (_age / seconds)).roundToDouble(),
+    );
+  }
 }
 
 class _DamageNumber extends TextComponent {

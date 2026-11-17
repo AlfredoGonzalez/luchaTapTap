@@ -142,7 +142,32 @@ class GameEngine {
   // Current fight
 
   FightInfo get fightInfo => content.fightInfo(_state.fightNumber);
-  OpponentDef get opponent => fightInfo.opponent;
+  /// The wrestler in the current fight. While farming the fight before a
+  /// boss it changes after every win, among those already beaten (HP and
+  /// coins stay the fight's own).
+  OpponentDef get opponent {
+    final farm = _state.farmOpponent;
+    if (farm != null &&
+        _state.farmFight == _state.fightNumber &&
+        _holdsGate(_state.fightNumber)) {
+      return content.opponents.firstWhere((o) => o.id == farm);
+    }
+    return fightInfo.opponent;
+  }
+
+  /// A random regular wrestler met before [fight], not [avoid] when possible.
+  String _randomBeaten(int fight, String? avoid) {
+    final bosses = {for (final l in content.leagues) l.bossId};
+    final all = content.opponents.where((o) => !bosses.contains(o.id)).length;
+    final found = <String>{};
+    for (var f = 1; f <= fight && found.length < all; f++) {
+      final info = content.fightInfo(f);
+      if (!info.isBoss) found.add(info.opponent.id);
+    }
+    final ids = found.toList();
+    if (ids.length > 1) ids.remove(avoid);
+    return ids[(rng.nextDouble() * ids.length).floor().clamp(0, ids.length - 1)];
+  }
   bool get isBossFight => fightInfo.isBoss;
 
   /// True while a boss fight is showing its intro: the countdown has not
@@ -162,6 +187,21 @@ class GameEngine {
 
   /// The player stands in the fight before a boss and may challenge it.
   bool get bossGateReady => _holdsGate(_state.fightNumber);
+
+  /// At the gate, the boss looks beatable: tap damage at
+  /// `boss.hintTapsPerSecond` (crits counted) plus the trainers, over the
+  /// boss's clock, reaches its HP. False when the hint is off.
+  bool get bossLooksBeatable {
+    final taps = _balance.bossHintTapsPerSecond;
+    if (taps == null || !bossGateReady) return false;
+    final boss = _state.fightNumber + 1;
+    final info = content.fightInfo(boss);
+    final crit = 1 + critChance * (_balance.crit.multiplier - 1);
+    final perSecond =
+        tapDamage.mulDouble(taps * crit) +
+        damagePerSecondOf(withSkills: false, withCombo: false);
+    return perSecond.mulDouble(_bossSeconds(info)) >= _maxHpOf(boss);
+  }
 
   /// The gate holds the player (farming) only after they have met the boss
   /// once. The first time, beating the gate fight leads straight into the boss.
@@ -196,6 +236,8 @@ class GameEngine {
       fightNumber: previous,
       enemyHp: _maxHpOf(previous),
       clearBossTimer: true,
+      farmOpponent: _randomBeaten(previous, null),
+      farmFight: previous,
     );
     return true;
   }
@@ -688,7 +730,13 @@ class GameEngine {
     if (defeats > 0) stats = _bump(stats, 'defeats', defeats);
     if (bosses > 0) stats = _bump(stats, 'bosses', bosses);
     if (bossBeaten != null) _bossWin = bossBeaten;
+    // Farming before a boss: the next wrestler is another one already beaten.
+    final farmNext = defeats > 0 && _holdsGate(fight)
+        ? _randomBeaten(fight, opponent.id)
+        : null;
     _state = _state.copyWith(
+      farmOpponent: farmNext,
+      farmFight: farmNext == null ? null : fight,
       coins: coins,
       totalCoinsEarned: total,
       fightNumber: fight,

@@ -414,11 +414,24 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       timedOut = timedOut || outcome.bossTimedOut;
     }
     if (defeated && wasBoss) _afterBossWin();
+    _checkBossHint();
     _publish();
     if (!damage.isZero) {
       _hits.add(HitEvent(damage: damage, isTap: false, defeated: defeated));
     }
     if (timedOut) _bossLost.add(null); // the defeat tip waits for "Aceptar"
+  }
+
+  /// The fight at which "you can take the boss" was last said.
+  int? _bossHintAt;
+
+  /// Says once per gate visit that the boss looks beatable.
+  void _checkBossHint() {
+    if (!_engine.bossLooksBeatable) return;
+    final fight = _engine.state.fightNumber;
+    if (_bossHintAt == fight) return;
+    _bossHintAt = fight;
+    ref.read(noticeProvider.notifier).show('boss_ready');
   }
 
   void _publish() {

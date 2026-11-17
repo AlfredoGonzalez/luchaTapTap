@@ -65,6 +65,8 @@ class GameState {
     Set<String> purchases = const {},
     this.pendingOffline,
     this.bestFight = 1,
+    this.farmOpponent,
+    this.farmFight,
     this.boostLeft = 0,
     this.boostMultiplier = 1,
     Map<String, int> adReadyAt = const {},
@@ -129,6 +131,11 @@ class GameState {
   /// Furthest fight ever reached (across prestiges).
   final int bestFight;
 
+  /// While farming the fight before a boss, the wrestler shown there (a
+  /// random one already beaten) and the fight it belongs to.
+  final String? farmOpponent;
+  final int? farmFight;
+
   /// Seconds left of the rewarded-ad coin boost, and its multiplier.
   final double boostLeft;
   final double boostMultiplier;
@@ -179,6 +186,8 @@ class GameState {
     OfflineReport? pendingOffline,
     bool clearPendingOffline = false,
     int? bestFight,
+    String? farmOpponent,
+    int? farmFight,
     double? boostLeft,
     double? boostMultiplier,
     Map<String, int>? adReadyAt,
@@ -211,6 +220,8 @@ class GameState {
         ? null
         : (pendingOffline ?? this.pendingOffline),
     bestFight: bestFight ?? this.bestFight,
+    farmOpponent: farmOpponent ?? this.farmOpponent,
+    farmFight: farmFight ?? this.farmFight,
     boostLeft: boostLeft ?? this.boostLeft,
     boostMultiplier: boostMultiplier ?? this.boostMultiplier,
     adReadyAt: adReadyAt ?? this.adReadyAt,

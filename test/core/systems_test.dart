@@ -36,6 +36,23 @@ void main() {
       expect(content.leagueEndFight(1), 10);
     });
 
+    test('farming before a boss shows a different beaten wrestler after each win', () {
+      final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 1e12});
+      e.debugGoToBoss();
+      e.abandonBoss(); // the boss was met: the gate now holds the player
+      final gate = e.state.fightNumber;
+      final seen = <String>{};
+      for (var i = 0; i < 12; i++) {
+        e.tap();
+        expect(e.state.fightNumber, gate);
+        seen.add(e.opponent.id);
+        expect(e.opponent.id, isNot(e.content.fightInfo(gate + 1).opponent.id)); // never the boss
+      }
+      expect(seen.length, greaterThan(1));
+      final beaten = {for (var f = 1; f <= gate; f++) e.content.fightInfo(f).opponent.id};
+      expect(beaten.containsAll(seen), isTrue);
+    });
+
     test('boss HP is x10 and pays x5 coins', () {
       final e = newEngine();
       e.debugGoToBoss();

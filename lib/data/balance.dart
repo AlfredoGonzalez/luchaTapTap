@@ -28,6 +28,7 @@ class Balance {
     required this.fx,
     required this.combo,
     required this.bossTimerSeconds,
+    this.bossHintTapsPerSecond,
     required this.crit,
     required this.lucky,
     required this.prestige,
@@ -94,6 +95,9 @@ class Balance {
       bossTimerSeconds: r
           .object('boss')
           .number('timerSeconds', min: 0, minExclusive: true),
+      bossHintTapsPerSecond: r.object('boss').has('hintTapsPerSecond')
+          ? r.object('boss').number('hintTapsPerSecond', min: 0)
+          : null,
       crit: CritConfig.fromReader(r.object('crit')),
       lucky: LuckyConfig.fromReader(r.object('lucky')),
       prestige: PrestigeConfig.fromReader(r.object('prestige')),
@@ -172,6 +176,10 @@ class Balance {
 
   /// Default boss countdown (an opponent may override it).
   final double bossTimerSeconds;
+
+  /// Taps per second assumed when telling the player a boss looks beatable;
+  /// null turns the hint off.
+  final double? bossHintTapsPerSecond;
   final CritConfig crit;
   final LuckyConfig lucky;
   final PrestigeConfig prestige;
@@ -722,6 +730,10 @@ class FxConfig {
     required this.idleNumberEverySeconds,
     required this.idleNumberColor,
     required this.fadeSteps,
+    this.comicTapChance = 0,
+    this.comicSeconds = 0.5,
+    this.comicRisePx = 6,
+    this.comicJitterPx = 10,
   });
 
   factory FxConfig.fromReader(JsonReader r) => FxConfig(
@@ -737,7 +749,27 @@ class FxConfig {
     idleNumberEverySeconds: r.number('idleNumberEverySeconds', min: 0, minExclusive: true),
     idleNumberColor: r.string('idleNumberColor'),
     fadeSteps: r.integer('fadeSteps', min: 1),
+    comicTapChance: r.has('comicTapChance')
+        ? r.number('comicTapChance', min: 0)
+        : 0,
+    comicSeconds: r.has('comicSeconds')
+        ? r.number('comicSeconds', min: 0, minExclusive: true)
+        : 0.5,
+    comicRisePx: r.has('comicRisePx') ? r.integer('comicRisePx', min: 0) : 6,
+    comicJitterPx: r.has('comicJitterPx')
+        ? r.integer('comicJitterPx', min: 0)
+        : 10,
   );
+
+  /// Chance that a plain tap shows a comic word (crits and kicks always do;
+  /// 0 turns them off for taps).
+  final double comicTapChance;
+
+  /// How long a comic word stays, how far it rises and how far from the
+  /// opponent's center it may appear (virtual pixels).
+  final double comicSeconds;
+  final int comicRisePx;
+  final int comicJitterPx;
 
   final int idleFps;
   final double hitFlashSeconds;

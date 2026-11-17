@@ -255,6 +255,16 @@
     "belts_info_prestige": "Cambiando de máscara: entre más monedas ganes en el recorrido, más cinturones. Necesitas que valga al menos {n} para poder cambiar.",
     "belts_info_goals": "Cobrando logros, metas del día, el cofre y la recompensa diaria.",
     "belts_info_shop": "En la Tienda (también uno gratis viendo un anuncio).",
-    "belts_info_use": "Los cinturones compran talentos y máscaras, y cada uno que ganas suma daño para siempre."
+    "belts_info_use": "Los cinturones compran talentos y máscaras, y cada uno que ganas suma daño para siempre.",
+    "comic_tap": "¡PAF!|¡ZAS!|¡PUM!|¡POW!|¡BAM!",
+    "comic_crit": "¡CRAC!|¡KA-POW!",
+    "comic_kick": "¡KA-BOOM!|¡CATAPLÚN!",
+    "boss_ready": "¡Ya puedes con el jefe! Toca ¡JEFE!",
+    "active_tapMultiplier": "Golpes x{v}",
+    "active_luckBoost": "Suerte x{v}",
+    "active_trainerMultiplier": "Entrenadores x{v}",
+    "active_burst": "Plancha",
+    "active_bossTimerExtend": "Llave",
+    "active_boost": "Monedas x{v}"
   }
 }

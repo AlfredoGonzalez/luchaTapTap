@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,7 @@ import '../core/game_state.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
 import '../data/content_models.dart';
+import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import '../services/localized_text.dart';
 import 'arena_view.dart';
@@ -64,6 +67,7 @@ class FightView extends ConsumerWidget {
               const KickCircles(),
               const _BossName(),
               const _EventBanner(),
+              const _ActiveEffects(),
               const _NoticeBanner(),
               const KickPrompt(),
               const _BossButton(),
@@ -349,15 +353,145 @@ class _BossButton extends ConsumerWidget {
       right: scale.px(2),
       child: TutorialTarget(
         id: 'bossButton',
-        child: PixelButton(
-          label: strings.t('boss_button'),
-          style: PixelButtonStyle.gold,
-          width: 52,
-          onPressed: controller.challengeBoss,
+        // When the boss looks beatable the button blinks.
+        child: _Blink(
+          on: controller.engine.bossLooksBeatable,
+          child: PixelButton(
+            label: strings.t('boss_button'),
+            style: PixelButtonStyle.gold,
+            width: 52,
+            onPressed: controller.challengeBoss,
+          ),
         ),
       ),
     );
   }
+}
+
+/// The timed effects running now (skills and the coin boost): icon, what it
+/// does and the time left, at the top left of the arena.
+class _ActiveEffects extends ConsumerWidget {
+  const _ActiveEffects();
+
+  static String _num(double v) => v == v.roundToDouble()
+      ? v.round().toString()
+      : v.toStringAsFixed(1);
+
+  static String _time(double seconds) {
+    final t = seconds.ceil();
+    return t >= 60 ? '${t ~/ 60}:${(t % 60).toString().padLeft(2, '0')}' : '$t s';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    final state = ref.watch(gameControllerProvider);
+    final strings = ref.watch(stringsProvider);
+    final content = ref.watch(contentProvider);
+    final sprites = ref.watch(spriteLibraryProvider);
+    final rows = <Widget>[];
+    for (final skill in content.skills) {
+      final left = state.skillActiveLeft(skill.id);
+      if (left <= 0 || skill.duration <= 0) continue;
+      final value = skill.valueAt(state.skillLevel(skill.id));
+      final art = sprites.icon(skill.icon);
+      rows.add(
+        _effectRow(
+          scale,
+          art == null
+              ? PixelIcon(
+                  PixelIcons.byKey(skill.icon) ?? PixelIcons.skillBolt,
+                  size: 8,
+                )
+              : ArtIcon(art, size: 8),
+          strings.t('active_${skill.effect.name}', {'v': _num(value)}),
+          _time(left),
+        ),
+      );
+    }
+    if (state.boostLeft > 0) {
+      final art = sprites.icon(SpriteLibrary.boostSmallKey);
+      rows.add(
+        _effectRow(
+          scale,
+          art == null
+              ? const PixelIcon(PixelIcons.coin)
+              : ArtIcon(art, size: 8),
+          strings.t('active_boost', {'v': _num(state.boostMultiplier)}),
+          _time(state.boostLeft),
+        ),
+      );
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      left: scale.px(2),
+      top: scale.px(2),
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final r in rows) ...[r, SizedBox(height: scale.px(1))],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _effectRow(PixelScale scale, Widget icon, String what, String time) =>
+      ColoredBox(
+        color: Palette.ink.color,
+        child: Padding(
+          padding: EdgeInsets.all(scale.px(1)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              icon,
+              SizedBox(width: scale.px(2)),
+              PixelText(what, color: Palette.sunYellow.color),
+              SizedBox(width: scale.px(3)),
+              PixelText(time, color: Palette.bone.color),
+            ],
+          ),
+        ),
+      );
+}
+
+/// Blinks [child] (hidden every other half second) while [on].
+class _Blink extends ConsumerStatefulWidget {
+  const _Blink({required this.on, required this.child});
+
+  final bool on;
+  final Widget child;
+
+  @override
+  ConsumerState<_Blink> createState() => _BlinkState();
+}
+
+class _BlinkState extends ConsumerState<_Blink> {
+  Timer? _timer;
+  bool _shown = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final seconds = ref.read(contentProvider).balance.ui.blinkSeconds;
+    _timer = Timer.periodic(
+      Duration(microseconds: (seconds * Duration.microsecondsPerSecond).round()),
+      (_) {
+        if (mounted && widget.on) setState(() => _shown = !_shown);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Opacity(opacity: !widget.on || _shown ? 1 : 0.35, child: widget.child);
 }
 
 class _NoticeBanner extends ConsumerWidget {
