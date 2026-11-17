@@ -377,8 +377,11 @@ class PixelDialog extends StatelessWidget {
         children: [
           const CheckerOverlay(),
           Center(
-            child: SizedBox(
+            child: Container(
               width: scale.px(150),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+              ),
               child: PixelPanel(
                 padding: 6,
                 child: Column(
@@ -394,7 +397,16 @@ class PixelDialog extends StatelessWidget {
                       shadow: Palette.ink.color,
                     ),
                     SizedBox(height: scale.px(6)),
-                    ...body,
+                    // A long body scrolls; the title and buttons stay.
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: body,
+                        ),
+                      ),
+                    ),
                     SizedBox(height: scale.px(6)),
                     for (var i = 0; i < actions.length; i++) ...[
                       if (i > 0) SizedBox(height: scale.px(4)),

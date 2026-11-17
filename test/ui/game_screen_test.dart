@@ -332,7 +332,8 @@ void main() {
       final c = await pumpApp(tester, edit: lock);
       await openTab(tester, 'Habilidades');
       expect(c.read(viewProvider), GameView.fight);
-      expect(find.textContaining('se abre al llegar'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Se desbloquea en la pelea 3'), findsOneWidget);
       await openTab(tester, 'Tienda');
       expect(c.read(viewProvider), GameView.shop); // never locked
       await closeApp(tester);
@@ -548,11 +549,11 @@ void main() {
     testWidgets('Talentos shows the run\'s belts against the minimum; the "i" explains belts', (tester) async {
       await pumpApp(tester, save: saveFrom((e) => e.debugAddCoins(Big.fromDouble(5e6))));
       await openTab(tester, 'Talentos');
-      expect(find.textContaining('Este recorrido vale'), findsOneWidget);
-      expect(find.textContaining('Siguiente cinturón'), findsOneWidget);
-      await tester.tap(buttonLabelled('¿Cómo gano cinturones?'));
+      expect(find.textContaining('te daría'), findsOneWidget);
+      expect(find.textContaining('para +1 cinturón'), findsOneWidget);
+      await tester.tap(buttonLabelled('Cinturones'));
       await tester.pump(_short);
-      expect(find.textContaining('Cambiando de máscara'), findsOneWidget);
+      expect(find.textContaining('Cambia de máscara (botón rojo)'), findsOneWidget);
       await tapButton(tester, 'Cerrar');
       await closeApp(tester);
     });

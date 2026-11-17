@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/number_format.dart';
 import '../core/palette.dart';
+import '../data/content_models.dart';
 import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
 import 'art_icon.dart';
@@ -132,6 +134,176 @@ class HudBar extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shakes its child a few whole pixels sideways when [active] turns on (a
+/// tab just picked).
+class _Shake extends StatefulWidget {
+  const _Shake({required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  State<_Shake> createState() => _ShakeState();
+}
+
+class _ShakeState extends State<_Shake> {
+  static const List<int> _steps = [1, -1, 1, -1, 0];
+  Timer? _timer;
+  int _step = _steps.length - 1;
+
+  @override
+  void didUpdateWidget(_Shake old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) {
+      _timer?.cancel();
+      _step = 0;
+      _timer = Timer.periodic(const Duration(milliseconds: 50), (t) {
+        if (!mounted) return t.cancel();
+        setState(() => _step++);
+        if (_step >= _steps.length - 1) t.cancel();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dx = _steps[_step.clamp(0, _steps.length - 1)];
+    return Transform.translate(
+      offset: Offset(PixelScale.of(context).px(dx.toDouble()), 0),
+      child: widget.child,
+    );
+  }
+}
+
+/// What a locked tab says it needs ("Se desbloquea en la pelea 3").
+String _lockedText(WidgetRef ref, GameView view) {
+  final strings = ref.read(stringsProvider);
+  final content = ref.read(contentProvider);
+  switch (view) {
+    case GameView.skills:
+      final fight = content.skills
+          .map((s) => s.unlockFight)
+          .reduce((a, b) => a < b ? a : b);
+      return strings.t('tab_locked_skills', {'n': fight});
+    case GameView.masks:
+      final prices = [
+        for (final m in content.masks)
+          if (m.unlockRule == MaskUnlockRule.belts) m.unlockValue.round(),
+      ]..sort();
+      return strings.t('tab_locked_masks', {
+        'n': prices.isEmpty ? 0 : prices.first,
+      });
+    case GameView.talents:
+      final costs = [
+        for (final t in content.talents) t.costs.first.round(),
+      ]..sort();
+      return strings.t('tab_locked_talents', {'n': costs.first});
+    default:
+      return '';
+  }
+}
+
+/// A short text that floats up from a locked tab and fades out.
+class LockedHint {
+  const LockedHint(this.tab, this.text, this.serial);
+  final int tab;
+  final String text;
+  final int serial;
+}
+
+final lockedHintProvider = NotifierProvider<LockedHintNotifier, LockedHint?>(
+  LockedHintNotifier.new,
+);
+
+class LockedHintNotifier extends Notifier<LockedHint?> {
+  int _serial = 0;
+
+  @override
+  LockedHint? build() => null;
+
+  void show(int tab, String text) => state = LockedHint(tab, text, ++_serial);
+
+  void clear() => state = null;
+}
+
+/// Draws [lockedHintProvider] above the navigation bar: it rises a few
+/// pixels and fades out in steps.
+class LockedHintLayer extends ConsumerStatefulWidget {
+  const LockedHintLayer({super.key});
+
+  @override
+  ConsumerState<LockedHintLayer> createState() => _LockedHintLayerState();
+}
+
+class _LockedHintLayerState extends ConsumerState<LockedHintLayer> {
+  Timer? _timer;
+  final Stopwatch _age = Stopwatch();
+  int? _serial;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hint = ref.watch(lockedHintProvider);
+    if (hint == null) return const SizedBox.shrink();
+    final seconds = ref.read(contentProvider).balance.ui.noticeSeconds;
+    if (hint.serial != _serial) {
+      _serial = hint.serial;
+      _age
+        ..reset()
+        ..start();
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(milliseconds: 50), (t) {
+        if (!mounted) return t.cancel();
+        if (_age.elapsedMilliseconds >= seconds * 1000) {
+          t.cancel();
+          ref.read(lockedHintProvider.notifier).clear();
+        } else {
+          setState(() {});
+        }
+      });
+    }
+    final scale = PixelScale.of(context);
+    final t = (_age.elapsedMilliseconds / (seconds * 1000)).clamp(0.0, 1.0);
+    final rise = (t * 8).floorToDouble();
+    // Four steps of fading over the second half (no soft transparency).
+    final fade = t < 0.5 ? 1.0 : 1 - ((t - 0.5) * 2 * 4).floor() / 4;
+    final tabs = NavBar._tabs.length;
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: scale.px(navHeight + bottomSafeHeight + 2 + rise),
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: fade.clamp(0.0, 1.0),
+          child: Align(
+            alignment: Alignment(-1 + (2 * hint.tab + 1) / tabs, 0),
+            child: Container(
+              color: Palette.ink.color,
+              padding: EdgeInsets.all(scale.px(2)),
+              child: PixelText(
+                hint.text,
+                color: Palette.sunYellow.color,
+                align: TextAlign.center,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -329,8 +501,11 @@ class NavBar extends ConsumerWidget {
                     behavior: HitTestBehavior.opaque,
                     onTap: locked.contains(view)
                         ? () => ref
-                              .read(noticeProvider.notifier)
-                              .show('tab_locked_${view.name}')
+                              .read(lockedHintProvider.notifier)
+                              .show(
+                                _tabs.indexWhere((t) => t.$1 == view),
+                                _lockedText(ref, view),
+                              )
                         : () => ref.read(viewProvider.notifier).show(view),
                     child: ColoredBox(
                       color:
@@ -347,7 +522,9 @@ class NavBar extends ConsumerWidget {
                               child: ColoredBox(color: Palette.marigold.color),
                             ),
                           Center(
-                            child: _tabIcon(
+                            child: _Shake(
+                              active: view == selected,
+                              child: _tabIcon(
                               locked.contains(view)
                                   ? null
                                   : sprites.icon(
@@ -362,6 +539,7 @@ class NavBar extends ConsumerWidget {
                               locked.contains(view) ? PixelIcons.locked : icon,
                               selected: view == selected,
                               locked: locked.contains(view),
+                            ),
                             ),
                           ),
                           if (view != selected &&

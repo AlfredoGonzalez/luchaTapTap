@@ -150,7 +150,7 @@ class _BeltProgress extends ConsumerWidget {
               'min': min,
             }),
             color: Palette.aqua.color,
-            ellipsis: true,
+            wrap: true,
           ),
           SizedBox(height: scale.px(2)),
           PixelBar(
@@ -165,7 +165,7 @@ class _BeltProgress extends ConsumerWidget {
               'n': formatBigShort(engine.coinsToNextBelt),
             }),
             color: Palette.fog.color,
-            ellipsis: true,
+            wrap: true,
           ),
         ],
       ),

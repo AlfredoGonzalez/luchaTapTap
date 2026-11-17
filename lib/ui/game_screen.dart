@@ -129,6 +129,7 @@ class GameScreen extends ConsumerWidget {
           if (hasOffline) const OfflineDialog(),
           if (bossIntro) const BossIntro(),
           if (dailyPopup) const DailyRewardDialog(),
+          const LockedHintLayer(),
           if (tutorial) const TutorialOverlay(),
         ],
       ),
