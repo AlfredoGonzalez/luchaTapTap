@@ -28,9 +28,13 @@ class PixelText extends StatelessWidget {
     this.wrap = false,
     this.shadow,
     this.visibleChars,
+    this.ellipsis = false,
   });
 
   final String text;
+
+  /// A line that does not fit ends in "..." instead of being cut.
+  final bool ellipsis;
   final int size;
   final Color? color;
   final TextAlign align;
@@ -85,7 +89,7 @@ class PixelText extends StatelessWidget {
             ),
       textAlign: align,
       maxLines: wrap ? null : maxLines,
-      overflow: TextOverflow.clip,
+      overflow: ellipsis ? TextOverflow.ellipsis : TextOverflow.clip,
       softWrap: wrap,
       style: style,
     );

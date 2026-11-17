@@ -80,13 +80,16 @@ class KickChallenge {
   }
 
   /// Moves time forward by [dt] seconds.
-  void tick(double dt) {
+  /// Advances time. With [holdFirst] the first circle does not shrink until
+  /// it is tapped (the tutorial explains it meanwhile).
+  void tick(double dt, {bool holdFirst = false}) {
     if (_status != KickStatus.active) return;
     if (!_circleOn) {
       _wait -= dt;
       if (_wait <= 0) _spawn();
       return;
     }
+    if (holdFirst && _hits == 0) return;
     _age += dt;
     if (_age >= settings.circleSeconds) {
       _circleOn = false;

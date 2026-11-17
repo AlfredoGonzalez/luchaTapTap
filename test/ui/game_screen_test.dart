@@ -381,7 +381,7 @@ void main() {
         }
         await tester.tap(find.bySemanticsLabel('AJUSTES'));
         await tester.pump(_short);
-        expect(find.text('Sonido'), findsOneWidget);
+        expect(find.text('Efectos'), findsOneWidget);
         // The last settings row ("Borrar datos") can be scrolled into view.
         await tester.scrollUntilVisible(find.text('Borrar datos'), 40, scrollable: find.byType(Scrollable).last);
         final area = tester.getRect(find.byType(ListView).last);
@@ -976,7 +976,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(c.read(settingsProvider).vibration, isTrue);
       expect(find.bySemanticsLabel('Vibración: SÍ'), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('Sonido: SÍ'));
+      await tester.tap(find.bySemanticsLabel('Efectos: SÍ'));
       await tester.pump(const Duration(milliseconds: 100));
       expect(store.current!.settings, containsPair('sound', false));
       expect(store.current!.settings, containsPair('vibration', true));

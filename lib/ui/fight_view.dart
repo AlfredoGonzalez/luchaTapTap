@@ -130,7 +130,10 @@ class _OpponentBar extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: PixelText(engine.opponent.name)),
+              Flexible(
+                child: PixelText(engine.opponent.name, ellipsis: true),
+              ),
+              SizedBox(width: scale.px(4)),
               PixelText(
                 formatBigShort(state.enemyHp),
                 color: Palette.fog.color,
@@ -500,7 +503,14 @@ class _SkillButton extends ConsumerWidget {
     final learned = level > 0;
     final total = engine.cooldownOf(skill);
     final onCooldown = learned && cooldown > 0;
-    final fill = !learned
+    // The hold (more boss time) only works in a running boss fight.
+    final waiting =
+        learned &&
+        !onCooldown &&
+        skill.effect == SkillEffect.bossTimerExtend &&
+        (!engine.isBossFight || engine.awaitingBossStart);
+    final usable = learned && !onCooldown && !waiting;
+    final fill = !learned || waiting
         ? Palette.slate
         : onCooldown
         ? Palette.nightPurple
@@ -512,12 +522,12 @@ class _SkillButton extends ConsumerWidget {
     final art = learned ? ref.watch(spriteLibraryProvider).icon(skill.icon) : null;
     return Semantics(
       button: true,
-      enabled: learned && !onCooldown,
+      enabled: usable,
       label: ref.watch(stringsProvider).skillName(skill),
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: learned && !onCooldown
+        onTap: usable
             ? () => ref.read(gameControllerProvider.notifier).useSkill(skill.id)
             : null,
         child: SizedBox(
@@ -543,12 +553,15 @@ class _SkillButton extends ConsumerWidget {
                     ),
                   ),
                 Center(
-                  child: art != null
-                      ? ArtIcon(art)
-                      : PixelIcon(
-                          icon,
-                          color: (learned ? Palette.bone : Palette.fog).color,
-                        ),
+                  child: Opacity(
+                    opacity: waiting ? 0.4 : 1,
+                    child: art != null
+                        ? ArtIcon(art)
+                        : PixelIcon(
+                            icon,
+                            color: (learned ? Palette.bone : Palette.fog).color,
+                          ),
+                  ),
                 ),
                 if (onCooldown)
                   Positioned(

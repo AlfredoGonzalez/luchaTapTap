@@ -69,6 +69,7 @@ class _ArenaViewState extends ConsumerState<ArenaView> {
       playerMaskColor: _maskColor(controller),
       enemyMayAttack: () => controller.enemyMayAttack,
       onEnemyAttackLanded: controller.enemyAttackLanded,
+      luckyScale: content.balance.lucky.pickupScale,
     );
     _hits = controller.hits.listen((e) {
       if (e.isTap) {

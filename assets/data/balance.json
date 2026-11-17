@@ -57,7 +57,8 @@
   "lucky": {
     "spawnPerSecond": 0.03,
     "lifetimeSeconds": 6,
-    "rewardCoinMultiple": 0.75
+    "rewardCoinMultiple": 0.75,
+    "pickupScale": 2
   },
   "prestige": {
     "minBelts": 44,

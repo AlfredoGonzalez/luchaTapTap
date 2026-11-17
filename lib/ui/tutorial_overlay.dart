@@ -55,18 +55,22 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
   /// The step whose targets were already scrolled into view.
   String? _scrolledFor;
 
+  late final GameController _game = ref.read(gameControllerProvider.notifier);
+
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(milliseconds: 60), (_) {
       if (mounted) setState(() {});
     });
+    _game.tutorialShowing = true;
     _track();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _game.tutorialShowing = false;
     super.dispose();
   }
 

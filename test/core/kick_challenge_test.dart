@@ -21,6 +21,18 @@ void untilCircle(KickChallenge k) {
 
 void main() {
   group('kick challenge', () {
+    test('holdFirst: the first circle waits for the tap; the next ones shrink', () {
+      final k = fresh()..start();
+      untilCircle(k);
+      k.tick(10, holdFirst: true);
+      expect(k.status, KickStatus.active);
+      expect(k.circleVisible, isTrue);
+      expect(k.hit(), isTrue);
+      untilCircle(k);
+      k.tick(2, holdFirst: true);
+      expect(k.status, KickStatus.failed);
+    });
+
     test('nothing happens until it starts, then the first circle waits for the delay', () {
       final k = fresh();
       k.tick(5);

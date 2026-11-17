@@ -34,7 +34,11 @@ class ArenaGame extends FlameGame {
     this.playerMaskColor = Palette.violet,
     this.enemyMayAttack,
     this.onEnemyAttackLanded,
+    this.luckyScale = 1,
   }) : sprites = sprites ?? SpriteLibrary.empty();
+
+  /// Whole-number zoom of the lucky pickup's art.
+  final int luckyScale;
 
   /// Asked before each cosmetic opponent attack (null: always allowed).
   final bool Function()? enemyMayAttack;
@@ -257,10 +261,15 @@ class ArenaGame extends FlameGame {
       return;
     }
     if (_lucky != null) return;
-    final margin = _LuckyPickup.spriteSize;
+    final picture = sprites.icon(SpriteLibrary.luckyBeltKey);
+    final zoom = luckyScale.toDouble();
+    final margin = picture == null
+        ? _LuckyPickup.spriteSize
+        : Vector2(picture.width * zoom, picture.height * zoom);
     _lucky = _LuckyPickup(
       onTap: onLuckyTap,
-      picture: sprites.icon(SpriteLibrary.luckyBeltKey),
+      picture: picture,
+      zoom: zoom,
       position: Vector2(
         (margin.x + x * (virtualSize.x - 3 * margin.x)).roundToDouble(),
         (margin.y + y * (_floorY - 3 * margin.y)).roundToDouble(),
@@ -757,7 +766,17 @@ class _LuckyPickup extends PositionComponent with TapCallbacks {
     required this.onTap,
     required Vector2 position,
     this.picture,
-  }) : super(position: position, size: spriteSize.clone(), priority: 20);
+    this.zoom = 1,
+  }) : super(
+         position: position,
+         size: picture == null
+             ? spriteSize.clone()
+             : Vector2(picture.width * zoom, picture.height * zoom),
+         priority: 20,
+       );
+
+  /// Whole-number zoom of [picture].
+  final double zoom;
 
   static final Vector2 spriteSize = Vector2(14, 8);
 
@@ -775,12 +794,7 @@ class _LuckyPickup extends PositionComponent with TapCallbacks {
       canvas.drawImageRect(
         art,
         Rect.fromLTWH(0, 0, w, h),
-        Rect.fromLTWH(
-          ((size.x - w) / 2).roundToDouble(),
-          ((size.y - h) / 2).roundToDouble(),
-          w,
-          h,
-        ),
+        Rect.fromLTWH(0, 0, w * zoom, h * zoom),
         paint..filterQuality = FilterQuality.none,
       );
       return;

@@ -438,12 +438,14 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     final dt = math.min(0.1, _seconds(now - _lastKickAt));
     _lastKickAt = now;
     final canKick = _engine.finisherReady && !_engine.awaitingBossStart;
+    // The boss clock waits while the player goes for the kick.
+    _engine.holdBossTimer = canKick;
     if (!canKick) {
       if (_kick.status != KickStatus.idle) _resetKick();
       return;
     }
     if (_kick.status == KickStatus.idle) _kick.start();
-    _kick.tick(dt);
+    _kick.tick(dt, holdFirst: _tutorialShowing);
     switch (_kick.status) {
       case KickStatus.success:
         _resetKick();
@@ -462,6 +464,15 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
       case KickStatus.idle:
         break;
     }
+  }
+
+  bool _tutorialShowing = false;
+
+  /// A tutorial step is on screen: the lucky pickup does not run out and the
+  /// kick's first circle waits to be tapped.
+  set tutorialShowing(bool showing) {
+    _tutorialShowing = showing;
+    _engine.holdLucky = showing;
   }
 
   void _resetKick() {

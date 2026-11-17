@@ -552,6 +552,7 @@ class GameEngine {
     }
     final left = _state.bossTimeLeft;
     if (left == null) return false; // waiting for startBoss
+    if (holdBossTimer) return false;
     final remaining = left - dt;
     if (remaining > 0) {
       _state = _state.copyWith(bossTimeLeft: remaining);
@@ -593,9 +594,18 @@ class GameEngine {
         : _state.copyWith(boostLeft: 0, boostMultiplier: 1);
   }
 
+  /// While true the lucky pickup does not run out (the tutorial is talking
+  /// about it). Not saved.
+  bool holdLucky = false;
+
+  /// While true the boss countdown stands still (the player is doing the
+  /// kick). Not saved.
+  bool holdBossTimer = false;
+
   bool _tickLucky(double dt) {
     final current = _state.lucky;
     if (current != null) {
+      if (holdLucky) return false;
       final left = current.lifeLeft - dt;
       _state = left > 0
           ? _state.copyWith(lucky: current.withLife(left))

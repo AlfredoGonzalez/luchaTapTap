@@ -175,6 +175,21 @@ void main() {
       expect(e.finisherDamage.toDouble(), closeTo((tapNow + dpsNow * 20) * 1.4, 1e-6));
     });
 
+    test('holdBossTimer stops the boss clock; holdLucky keeps the pickup', () {
+      final e = newEngine();
+      e.debugGoToBoss();
+      e.startBoss();
+      final left = e.state.bossTimeLeft!;
+      e.holdBossTimer = true;
+      for (var i = 0; i < 20; i++) {
+        e.tick();
+      }
+      expect(e.state.bossTimeLeft, left);
+      e.holdBossTimer = false;
+      e.tick();
+      expect(e.state.bossTimeLeft!, lessThan(left));
+    });
+
     test('the meter holds, then decays when the player stops', () {
       final e = newEngine((f) => f['balance.json']!['tap'] = {'baseDamage': 0.001});
       for (var i = 0; i < 5; i++) {

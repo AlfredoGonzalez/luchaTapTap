@@ -616,13 +616,18 @@ class LuckyConfig {
     required this.spawnPerSecond,
     required this.lifetimeSeconds,
     required this.rewardCoinMultiple,
+    this.pickupScale = 1,
   });
 
   factory LuckyConfig.fromReader(JsonReader r) => LuckyConfig(
     spawnPerSecond: r.number('spawnPerSecond', min: 0),
     lifetimeSeconds: r.number('lifetimeSeconds', min: 0, minExclusive: true),
     rewardCoinMultiple: r.number('rewardCoinMultiple', min: 0),
+    pickupScale: r.has('pickupScale') ? r.integer('pickupScale', min: 1) : 1,
   );
+
+  /// Whole-number zoom of the pickup's art in the arena (it is small).
+  final int pickupScale;
 
   /// Chance per second that a pickup appears (while none is on screen).
   final double spawnPerSecond;

@@ -38,28 +38,20 @@ class HudBar extends ConsumerWidget {
         color: Palette.nightPurple.color,
         child: Row(
           children: [
+            // Coins over Belts on the left, the fight in the middle, the
+            // trophy and the gear on the right: each side has room for long
+            // numbers.
             Expanded(
-              child: Row(
-                children: [
-                  AttentionDot(
-                    show: ref
-                        .read(gameControllerProvider.notifier)
-                        .goalsAttention,
-                    child: PixelButton(
-                      label: '',
-                      icon: PixelIcons.trophy,
-                      iconWidget: _artIcon(ref, SpriteLibrary.trophyKey),
-                      width: 24,
-                      semanticLabel: strings.t('goals_open'),
-                      style: PixelButtonStyle.flat,
-                      onPressed: () =>
-                          ref.read(viewProvider.notifier).show(GameView.goals),
-                    ),
-                  ),
-                  Flexible(
-                    child: TutorialTarget(
+              child: Padding(
+                padding: EdgeInsets.only(left: scale.px(sideMargin)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TutorialTarget(
                       id: 'hudCoins',
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const PixelIcon(PixelIcons.coin),
                           SizedBox(width: scale.px(3)),
@@ -67,13 +59,29 @@ class HudBar extends ConsumerWidget {
                             child: PixelText(
                               formatBigShort(state.coins),
                               color: Palette.sunYellow.color,
+                              ellipsis: true,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: scale.px(2)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const PixelIcon(PixelIcons.belt),
+                        SizedBox(width: scale.px(3)),
+                        Flexible(
+                          child: PixelText(
+                            formatBigShort(state.belts),
+                            color: Palette.aqua.color,
+                            ellipsis: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             GestureDetector(
@@ -90,12 +98,19 @@ class HudBar extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const PixelIcon(PixelIcons.belt),
-                  SizedBox(width: scale.px(3)),
-                  Flexible(
-                    child: PixelText(
-                      formatBigShort(state.belts),
-                      color: Palette.aqua.color,
+                  AttentionDot(
+                    show: ref
+                        .read(gameControllerProvider.notifier)
+                        .goalsAttention,
+                    child: PixelButton(
+                      label: '',
+                      icon: PixelIcons.trophy,
+                      iconWidget: _artIcon(ref, SpriteLibrary.trophyKey),
+                      width: 24,
+                      semanticLabel: strings.t('goals_open'),
+                      style: PixelButtonStyle.flat,
+                      onPressed: () =>
+                          ref.read(viewProvider.notifier).show(GameView.goals),
                     ),
                   ),
                   PixelButton(
