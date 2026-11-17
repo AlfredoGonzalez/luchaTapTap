@@ -102,7 +102,7 @@
       ],
       "text": "tut_lucky",
       "advance": {
-        "type": "ok"
+        "type": "luckyCaught"
       }
     },
     {

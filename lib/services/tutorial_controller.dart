@@ -18,6 +18,8 @@ class TutorialProgress {
     this.baseDefeats = 0,
     this.baseLevel = 0,
     this.baseFinishers = 0,
+    this.baseLucky = 0,
+    this.baseSkills = 0,
   });
 
   final TutorialStep? step;
@@ -25,6 +27,10 @@ class TutorialProgress {
   final int baseDefeats;
   final int baseLevel;
   final int baseFinishers;
+  final int baseLucky;
+
+  /// Skills learned when the step began.
+  final int baseSkills;
 }
 
 final tutorialProvider = NotifierProvider<TutorialNotifier, TutorialProgress>(
@@ -141,6 +147,8 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
       baseTaps: game.stat('taps'),
       baseDefeats: game.stat('defeats'),
       baseFinishers: game.stat('finishers'),
+      baseLucky: game.stat('luckyCaught'),
+      baseSkills: game.skillLevels.values.where((l) => l > 0).length,
       baseLevel: item == null
           ? 0
           : (step.advance == TutorialAdvance.trainerBought
@@ -166,6 +174,10 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
         game.trainerLevel(step.itemId!) > state.baseLevel,
       TutorialAdvance.finisherUsed =>
         game.stat('finishers') > state.baseFinishers,
+      TutorialAdvance.luckyCaught =>
+        game.stat('luckyCaught') > state.baseLucky,
+      TutorialAdvance.skillLearned =>
+        game.skillLevels.values.where((l) => l > 0).length > state.baseSkills,
       TutorialAdvance.viewOpened || TutorialAdvance.ok => false,
     };
     if (done) _finish(step);

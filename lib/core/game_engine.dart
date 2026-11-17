@@ -81,7 +81,7 @@ class BuyQuote {
   bool get canBuy => failure == null;
 }
 
-enum SkillFailure { unknown, notLearned, cooldown, noBoss, waitingBoss }
+enum SkillFailure { unknown, notLearned, cooldown, noBoss, waitingBoss, usedUp }
 
 class SkillUseResult {
   const SkillUseResult({this.failure, this.outcome = DamageOutcome.none});
@@ -177,7 +177,20 @@ class GameEngine {
   /// "¡A PELEAR!": starts the boss countdown.
   void startBoss() {
     if (!awaitingBossStart) return;
+    _bossSkillUses.clear();
     _state = _state.copyWith(bossTimeLeft: _bossSeconds(fightInfo));
+  }
+
+  /// Uses of each skill in the boss fight running now (see
+  /// `SkillDef.usesPerBoss`). Not saved: a reload starts the count again.
+  final Map<String, int> _bossSkillUses = {};
+
+  /// [skill] has no uses left in this boss fight.
+  bool skillUsedUp(SkillDef skill) {
+    final limit = skill.usesPerBoss;
+    return limit != null &&
+        isBossFight &&
+        (_bossSkillUses[skill.id] ?? 0) >= limit;
   }
 
   /// True when [fight] is the last regular fight before a boss. The game holds
@@ -1181,7 +1194,10 @@ class GameEngine {
     final def = _findSkill(id);
     if (def == null) return _failed(BuyFailure.unknownItem);
     final level = _state.skillLevel(id);
-    final cost = formulas.purchaseCost(def.baseCost, level, 1);
+    final growth = def.costGrowth;
+    final cost = growth == null
+        ? formulas.purchaseCost(def.baseCost, level, 1)
+        : Big.powOf(growth, level).mulDouble(def.baseCost).ceil();
     final BuyFailure? failure;
     if (level >= def.maxLevel) {
       failure = BuyFailure.maxed;
@@ -1228,6 +1244,9 @@ class GameEngine {
     if (_state.skillCooldownLeft(id) > 0) {
       return const SkillUseResult(failure: SkillFailure.cooldown);
     }
+    if (skillUsedUp(def)) {
+      return const SkillUseResult(failure: SkillFailure.usedUp);
+    }
     final value = def.valueAt(level);
     var outcome = DamageOutcome.none;
     switch (def.effect) {
@@ -1251,6 +1270,9 @@ class GameEngine {
         _state = _state.copyWith(
           skillActive: {..._state.skillActive, id: def.duration},
         );
+    }
+    if (isBossFight) {
+      _bossSkillUses[id] = (_bossSkillUses[id] ?? 0) + 1;
     }
     _state = _state.copyWith(
       stats: _bump(_state.stats, 'skillsUsed', 1),

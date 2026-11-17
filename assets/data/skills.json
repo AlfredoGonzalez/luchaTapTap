@@ -15,7 +15,8 @@
       "baseCost": 200,
       "maxLevel": 10,
       "description": "Salto desde las cuerdas: daño x{n} al instante.",
-      "animation": "plancha"
+      "animation": "plancha",
+      "costGrowth": 3
     },
     {
       "id": "furia",
@@ -31,7 +32,8 @@
       "baseCost": 800,
       "maxLevel": 10,
       "description": "Tus toques pegan x{n} durante {d} s.",
-      "animation": "furia"
+      "animation": "furia",
+      "costGrowth": 3
     },
     {
       "id": "suerte",
@@ -47,7 +49,8 @@
       "baseCost": 2000,
       "maxLevel": 10,
       "description": "Los eventos de suerte salen x{n} veces más durante {d} s.",
-      "animation": "suerte"
+      "animation": "suerte",
+      "costGrowth": 3
     },
     {
       "id": "grito",
@@ -63,7 +66,8 @@
       "baseCost": 4000,
       "maxLevel": 10,
       "description": "Tus entrenadores pegan x{n} durante {d} s.",
-      "animation": "grito"
+      "animation": "grito",
+      "costGrowth": 3
     },
     {
       "id": "llave",
@@ -79,7 +83,9 @@
       "baseCost": 8000,
       "maxLevel": 10,
       "description": "Suma {n} s al reloj del jefe.",
-      "animation": "llave"
+      "animation": "llave",
+      "costGrowth": 3,
+      "usesPerBoss": 1
     }
   ]
 }

@@ -53,6 +53,33 @@ void main() {
       expect(beaten.containsAll(seen), isTrue);
     });
 
+    test('usesPerBoss: the hold works once per boss fight; costGrowth prices each level', () {
+      final e = newEngine((f) {
+        for (final sk in f['skills.json']!['skills'] as List) {
+          final m = sk as Map<String, dynamic>;
+          if (m['id'] == 'llave') {
+            m['usesPerBoss'] = 1;
+            m['cooldown'] = 0.1;
+          }
+          m['costGrowth'] = 3;
+        }
+      });
+      e.debugAddCoins(Big.fromDouble(1e12));
+      e.debugSkipFights(12);
+      final llave = e.content.skills.firstWhere((s) => s.id == 'llave');
+      final first = e.quoteSkill('llave').cost;
+      e.buySkill('llave');
+      expect(e.quoteSkill('llave').cost, (Big.fromDouble(llave.baseCost) * Big.fromInt(3)).ceil());
+      expect(first.toDouble(), llave.baseCost);
+      e.debugGoToBoss();
+      e.startBoss();
+      expect(e.useSkill('llave').ok, isTrue);
+      for (var i = 0; i < 5; i++) {
+        e.tick(); // past the short cooldown
+      }
+      expect(e.useSkill('llave').failure, SkillFailure.usedUp);
+    });
+
     test('boss HP is x10 and pays x5 coins', () {
       final e = newEngine();
       e.debugGoToBoss();

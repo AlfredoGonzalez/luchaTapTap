@@ -41,6 +41,7 @@ class GameScreen extends ConsumerWidget {
     final tutorial =
         ref.watch(tutorialProvider).step != null &&
         view == GameView.fight &&
+        !engine.isBossFight &&
         dialog == null &&
         !hasOffline &&
         !engine.awaitingBossStart &&

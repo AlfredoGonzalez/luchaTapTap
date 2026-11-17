@@ -343,6 +343,8 @@ class SkillDef {
     required this.maxLevel,
     required this.description,
     this.animation,
+    this.costGrowth,
+    this.usesPerBoss,
   });
 
   factory SkillDef.fromReader(JsonReader r) {
@@ -372,8 +374,17 @@ class SkillDef {
       maxLevel: r.integer('maxLevel', min: 1),
       description: r.string('description'),
       animation: r.optionalString('animation'),
+      costGrowth: r.has('costGrowth') ? r.number('costGrowth', min: 1) : null,
+      usesPerBoss: r.has('usesPerBoss') ? r.integer('usesPerBoss', min: 1) : null,
     );
   }
+
+  /// Price factor per level (each level costs this many times the one
+  /// before); null uses `economy.costGrowth`.
+  final double? costGrowth;
+
+  /// Times the skill may be used in one boss fight; null for no limit.
+  final int? usesPerBoss;
 
   /// Name of a skill animation (`balance.json` `animations.skillClips`) that
   /// plays when the skill is used; null for none.

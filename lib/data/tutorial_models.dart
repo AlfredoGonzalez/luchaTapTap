@@ -23,6 +23,12 @@ enum TutorialAdvance {
 
   /// The player presses the "Entendido" button.
   ok,
+
+  /// The player catches a lucky belt.
+  luckyCaught,
+
+  /// The player learns any skill.
+  skillLearned,
 }
 
 /// When a step may begin (besides its `after` step being done).

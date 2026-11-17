@@ -641,8 +641,9 @@ class _SkillButton extends ConsumerWidget {
     final waiting =
         learned &&
         !onCooldown &&
-        skill.effect == SkillEffect.bossTimerExtend &&
-        (!engine.isBossFight || engine.awaitingBossStart);
+        ((skill.effect == SkillEffect.bossTimerExtend &&
+                (!engine.isBossFight || engine.awaitingBossStart)) ||
+            engine.skillUsedUp(skill));
     final usable = learned && !onCooldown && !waiting;
     final fill = !learned || waiting
         ? Palette.slate
