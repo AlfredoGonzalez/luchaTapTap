@@ -347,7 +347,8 @@ class ArenaGame extends FlameGame {
       _ComicWord(
         text: text,
         start: Vector2(
-          (_enemy.position.x + _enemy.size.x / 2 + dx).roundToDouble(),
+          // On the side the punch lands (the opponent faces the player).
+          (_enemy.position.x + _enemy.size.x * 0.2 + dx).roundToDouble(),
           (_enemy.position.y + _enemy.size.y * 0.3 + dy).roundToDouble(),
         ),
         color: big

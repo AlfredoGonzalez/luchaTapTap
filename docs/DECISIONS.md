@@ -151,3 +151,13 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - New mask unlock rule `event`: the mask is the `rewardMask` of one event in `goals.json`, won by reaching all of the event's `goals` while it runs. Progress counts from the first time the game sees the event running (`GameState.daily.eventBase`), and the mask can only be claimed while the event is on.
 - Nochebuena (wine, red, coral; +30% boss coins) is the reward of "Lucha navideña" (Dec 20 to Jan 6): beat 10 bosses, claim 7 daily rewards and land 50 kicks. The Goals screen shows an event section at the top while it runs. Note: La Calaverita (3 Belts) already gives +50% boss coins, so Nochebuena is a collector's mask more than an upgrade.
 - An event reused in a later year needs a new id (the progress base is kept per event id).
+
+## Playtest round (web)
+
+- HUD: coins over Belts on the left, the fight in the middle, trophy and gear on the right; long names end in "...".
+- Tutorial: comboHint (tap fast), the skill step gifts the coins, goals/masks/talents steps; while a step is on screen the lucky belt does not run out and the first kick circle waits for the tap.
+- Boss: the clock stands still while the combo is full (the kick); the BOSS button blinks and a notice says so when the boss looks beatable (`boss.hintTapsPerSecond`); farming before a boss rotates among beaten wrestlers.
+- Comic words on hits (`fx.comic*`, words in the strings), running effects with their time left, bigger lucky belt (`lucky.pickupScale`).
+- Goals: sorted by progress, claimed last, "new goals in" when done, swap a goal / new set for an ad (`goals.json` `daily.adRerollsPerDay`, `adRefreshesPerDay`).
+- Tabs: with `ui.lockTabs` Habilidades, Máscaras and Talentos are locked until usable (remembered in the settings); tab art `nav_<tab>` is drawn as a silhouette unless selected.
+- "Sonido" is now "Efectos".

@@ -113,7 +113,16 @@ class SpriteLibrary {
   static const String boostKey = 'ui_boost';
   static const String boostSmallKey = 'ui_boost_8';
   static const String luckyBeltKey = 'lucky_belt';
+  /// Navigation tab art (`nav_<tab>.png`: upgrades, skills, masks, talents,
+  /// shop).
+  static String navKey(String tab) => 'nav_$tab';
+
   static const List<String> uiIconKeys = [
+    'nav_upgrades',
+    'nav_skills',
+    'nav_masks',
+    'nav_talents',
+    'nav_shop',
     trophyKey,
     chestKey,
     goalKey,

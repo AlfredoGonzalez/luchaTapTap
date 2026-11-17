@@ -13,6 +13,8 @@
   ui_<name>.webp       -> assets/icons/ui_<name>.png   (trophy, chest, goal, boost;
                           ui_boost also as ui_boost_8.png for the calendar)
   lucky_belt.webp      -> assets/icons/lucky_belt.png  (the lucky pickup in the arena)
+  nav_<tab>.webp       -> assets/icons/nav_<tab>.png   (bottom tabs: upgrades, skills,
+                          masks, talents, shop; drawn as a silhouette unless selected)
 
 The names after the prefix must match ids in the data files; anything else is
 skipped.
@@ -178,6 +180,8 @@ def main():
         elif stem.startswith("tl_") and stem in talent_icons:
             build(p, stem)
         elif stem.startswith("shop_") and stem in shop_icons:
+            build(p, stem, tile=True)
+        elif stem.startswith("nav_"):
             build(p, stem, tile=True)
         elif stem.startswith("ui_"):
             build(p, stem, tile=True)

@@ -367,6 +367,10 @@
     "goals_ad_new": "New goals",
     "goals_reroll": "Swap",
     "goals_reroll_label": "Swap goal (watch ad)",
-    "goals_no_ad": "No ad available."
+    "goals_no_ad": "No ad available.",
+    "tab_locked_skills": "Skills: opens at the fight of your first skill",
+    "tab_locked_masks": "Masks: opens when you have the belts for one",
+    "tab_locked_talents": "Talents: opens when you can afford your first talent",
+    "tut_talents": "You can raise a talent! They are permanent boosts paid with belts. Open the Talents tab."
   }
 }

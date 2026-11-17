@@ -53,6 +53,9 @@ enum TutorialWhen {
 
   /// A goal or an achievement waits to be claimed.
   goalReady,
+
+  /// Some talent can be raised with the player's Belts.
+  talentAffordable,
 }
 
 /// One step: everything dark except [targets], a text from the coach, and

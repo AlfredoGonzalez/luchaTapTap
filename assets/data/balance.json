@@ -126,7 +126,8 @@
     "splashVideoLogoFraction": 0.88,
     "loadingFrames": 4,
     "loadingFps": 3,
-    "dailyPopupMinDefeats": 10
+    "dailyPopupMinDefeats": 10,
+    "lockTabs": true
   },
   "kick": {
     "targets": 5,

@@ -326,6 +326,28 @@ void main() {
       await closeApp(tester);
     });
 
+    testWidgets('with ui.lockTabs, Habilidades stays locked until a skill can be learned', (tester) async {
+      void lock(Map<String, Map<String, dynamic>> f) =>
+          (f['balance.json']!['ui'] as Map<String, dynamic>)['lockTabs'] = true;
+      final c = await pumpApp(tester, edit: lock);
+      await openTab(tester, 'Habilidades');
+      expect(c.read(viewProvider), GameView.fight);
+      expect(find.textContaining('se abre al llegar'), findsOneWidget);
+      await openTab(tester, 'Tienda');
+      expect(c.read(viewProvider), GameView.shop); // never locked
+      await closeApp(tester);
+
+      final c2 = await pumpApp(tester, edit: (f) {
+        lock(f);
+        f['balance.json']!['start'] = {'coins': 1e9, 'fightNumber': 12};
+      });
+      await tester.pump(_short);
+      await openTab(tester, 'Habilidades');
+      expect(c2.read(viewProvider), GameView.skills);
+      expect(c2.read(settingsProvider).unlockedTabs, contains('skills'));
+      await closeApp(tester);
+    });
+
     testWidgets('a nav tab gets a dot when a skill can be learned', (tester) async {
       await pumpApp(tester, edit: (f) {
         f['balance.json']!['start'] = {'coins': 1e9, 'fightNumber': 20};

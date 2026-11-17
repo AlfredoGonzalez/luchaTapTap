@@ -83,6 +83,7 @@ class AppSettings {
     this.tutorialStep,
     this.tutorialDone,
     this.language,
+    this.unlockedTabs = const [],
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -93,6 +94,7 @@ class AppSettings {
     tutorialStep: (map['tutorialStep'] as num?)?.toInt(),
     tutorialDone: (map['tutorialDone'] as List?)?.cast<String>(),
     language: map['language'] as String?,
+    unlockedTabs: (map['unlockedTabs'] as List?)?.cast<String>() ?? const [],
   );
 
   final bool sound;
@@ -114,6 +116,9 @@ class AppSettings {
   /// Language chosen in Ajustes (`es`, `en`); null follows the phone.
   final String? language;
 
+  /// Navigation tabs already opened up (they stay open).
+  final List<String> unlockedTabs;
+
   Map<String, dynamic> toMap() => {
     'sound': sound,
     'music': music,
@@ -121,6 +126,7 @@ class AppSettings {
     'notices': notices,
     if (tutorialDone != null) 'tutorialDone': tutorialDone,
     if (language != null) 'language': language,
+    if (unlockedTabs.isNotEmpty) 'unlockedTabs': unlockedTabs,
   };
 
   AppSettings copyWith({
@@ -129,6 +135,7 @@ class AppSettings {
     bool? vibration,
     bool? notices,
     List<String>? tutorialDone,
+    List<String>? unlockedTabs,
   }) => AppSettings(
     sound: sound ?? this.sound,
     music: music ?? this.music,
@@ -137,6 +144,7 @@ class AppSettings {
     tutorialStep: tutorialStep,
     tutorialDone: tutorialDone ?? this.tutorialDone,
     language: language,
+    unlockedTabs: unlockedTabs ?? this.unlockedTabs,
   );
 
   /// The same settings with [language] (null: follow the phone).
@@ -148,6 +156,7 @@ class AppSettings {
     tutorialStep: tutorialStep,
     tutorialDone: tutorialDone,
     language: language,
+    unlockedTabs: unlockedTabs,
   );
 
   AppSettings toggled(String name) => switch (name) {
@@ -190,6 +199,14 @@ class SettingsNotifier extends Notifier<AppSettings> {
   /// Language for the game; null follows the phone (saved with the game).
   void setLanguage(String? language) {
     state = state.withLanguage(language);
+    ref.read(gameControllerProvider.notifier).saveNow();
+  }
+
+  /// Remembers tabs that opened up (they never lock again).
+  void unlockTabs(Iterable<String> tabs) {
+    final all = {...state.unlockedTabs, ...tabs};
+    if (all.length == state.unlockedTabs.length) return;
+    state = state.copyWith(unlockedTabs: all.toList()..sort());
     ref.read(gameControllerProvider.notifier).saveNow();
   }
 

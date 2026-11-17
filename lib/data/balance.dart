@@ -801,6 +801,7 @@ class UiConfig {
     required this.loadingFps,
     required this.splashVideoLogoFraction,
     this.dailyPopupMinDefeats,
+    this.lockTabs = false,
   });
 
   factory UiConfig.fromReader(JsonReader r) => UiConfig(
@@ -818,6 +819,7 @@ class UiConfig {
     dailyPopupMinDefeats: r.has('dailyPopupMinDefeats')
         ? r.integer('dailyPopupMinDefeats', min: 0)
         : null,
+    lockTabs: r.has('lockTabs') && r.boolean('lockTabs'),
   );
 
   /// How long the studio splash shows before the loading screen.
@@ -825,6 +827,9 @@ class UiConfig {
   /// fights, so it does not interrupt the first minutes. Null: no pop-up
   /// (the reward waits on the Goals screen).
   final int? dailyPopupMinDefeats;
+
+  /// Habilidades, Máscaras and Talentos stay locked until they can be used.
+  final bool lockTabs;
 
   final double splashSeconds;
 

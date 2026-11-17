@@ -94,6 +94,10 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
         return _engine.prestigePreview().canPrestige;
       case TutorialWhen.maskAffordable:
         return _engine.content.masks.any((m) => _engine.quoteMask(m.id).canBuy);
+      case TutorialWhen.talentAffordable:
+        return _engine.content.talents.any(
+          (t) => _engine.quoteTalent(t.id).canBuy,
+        );
       case TutorialWhen.goalReady:
         return _engine.content.achievements.any(_engine.achievementClaimable) ||
             _engine.dailyGoals.any(_engine.dailyClaimable);

@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -136,6 +138,65 @@ class HudBar extends ConsumerWidget {
   }
 }
 
+/// A tab's picture: the art in full color when selected, else its
+/// silhouette; the code glyph while there is no art.
+Widget _tabIcon(
+  ui.Image? art,
+  PixelIconData glyph, {
+  required bool selected,
+  required bool locked,
+}) {
+  final tint = (locked
+          ? Palette.dust
+          : (selected ? Palette.bone : Palette.fog))
+      .color;
+  if (art == null) return PixelIcon(glyph, color: tint);
+  if (selected) return ArtIcon(art);
+  return ColorFiltered(
+    colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+    child: ArtIcon(art),
+  );
+}
+
+/// Tabs still locked (`ui.lockTabs`): Habilidades until the first skill can
+/// be learned, Máscaras until a mask can be bought or a second one is owned,
+/// Talentos until a talent can be raised or the mask change is ready. A tab
+/// that opened up is remembered and never locks again.
+Set<GameView> _lockedTabs(WidgetRef ref) {
+  final content = ref.read(contentProvider);
+  if (!content.balance.ui.lockTabs) return const {};
+  final engine = ref.read(gameControllerProvider.notifier).engine;
+  final state = engine.state;
+  final open = {
+    if (content.skills.any(
+      (s) => state.skillLevel(s.id) > 0 || engine.quoteSkill(s.id).canBuy,
+    ))
+      GameView.skills,
+    if (state.ownedMasks.length > 1 ||
+        content.masks.any((m) => engine.quoteMask(m.id).canBuy))
+      GameView.masks,
+    if (content.talents.any(
+          (t) => state.talentLevel(t.id) > 0 || engine.quoteTalent(t.id).canBuy,
+        ) ||
+        engine.prestigePreview().canPrestige)
+      GameView.talents,
+  };
+  final remembered = ref.watch(settingsProvider).unlockedTabs;
+  final fresh = [
+    for (final v in open)
+      if (!remembered.contains(v.name)) v.name,
+  ];
+  if (fresh.isNotEmpty) {
+    Future.microtask(
+      () => ref.read(settingsProvider.notifier).unlockTabs(fresh),
+    );
+  }
+  return {
+    for (final v in const [GameView.skills, GameView.masks, GameView.talents])
+      if (!open.contains(v) && !remembered.contains(v.name)) v,
+  };
+}
+
 /// Tabs with something new: a skill to learn, a mask to buy, a talent to
 /// raise or a mask change to make.
 Set<GameView> _attention(WidgetRef ref) {
@@ -252,6 +313,8 @@ class NavBar extends ConsumerWidget {
     final strings = ref.watch(stringsProvider);
     ref.watch(gameControllerProvider);
     final dots = _attention(ref);
+    final locked = _lockedTabs(ref);
+    final sprites = ref.watch(spriteLibraryProvider);
     return SizedBox(
       height: scale.px(navHeight),
       child: Row(
@@ -267,7 +330,11 @@ class NavBar extends ConsumerWidget {
                   excludeSemantics: true,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => ref.read(viewProvider.notifier).show(view),
+                    onTap: locked.contains(view)
+                        ? () => ref
+                              .read(noticeProvider.notifier)
+                              .show('tab_locked_${view.name}')
+                        : () => ref.read(viewProvider.notifier).show(view),
                     child: ColoredBox(
                       color:
                           (view == selected ? Palette.nightPurple : Palette.ink)
@@ -283,16 +350,24 @@ class NavBar extends ConsumerWidget {
                               child: ColoredBox(color: Palette.marigold.color),
                             ),
                           Center(
-                            child: PixelIcon(
-                              icon,
-                              color:
-                                  (view == selected
-                                          ? Palette.bone
-                                          : Palette.fog)
-                                      .color,
+                            child: _tabIcon(
+                              locked.contains(view)
+                                  ? null
+                                  : sprites.icon(
+                                      SpriteLibrary.navKey(
+                                        view == GameView.fight
+                                            ? 'upgrades'
+                                            : view.name,
+                                      ),
+                                    ),
+                              locked.contains(view) ? PixelIcons.locked : icon,
+                              selected: view == selected,
+                              locked: locked.contains(view),
                             ),
                           ),
-                          if (view != selected && dots.contains(view))
+                          if (view != selected &&
+                              !locked.contains(view) &&
+                              dots.contains(view))
                             Positioned.fill(
                               child: AttentionDot(
                                 show: true,

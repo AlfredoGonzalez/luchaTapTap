@@ -271,6 +271,10 @@
     "goals_ad_new": "Metas nuevas",
     "goals_reroll": "Otra",
     "goals_reroll_label": "Cambiar meta (ver anuncio)",
-    "goals_no_ad": "No hay anuncio disponible."
+    "goals_no_ad": "No hay anuncio disponible.",
+    "tab_locked_skills": "Habilidades: se abre al llegar a la pelea de tu primera habilidad",
+    "tab_locked_masks": "Máscaras: se abre cuando te alcancen los cinturones para una",
+    "tab_locked_talents": "Talentos: se abre cuando te alcance para tu primer talento",
+    "tut_talents": "¡Ya puedes subir un talento! Son mejoras para siempre que se pagan con cinturones. Toca la pestaña de Talentos."
   }
 }

@@ -169,6 +169,19 @@
         "type": "viewOpened",
         "id": "masks"
       }
+    },
+    {
+      "id": "talents",
+      "when": "talentAffordable",
+      "after": "goals",
+      "targets": [
+        "nav:talents"
+      ],
+      "text": "tut_talents",
+      "advance": {
+        "type": "viewOpened",
+        "id": "talents"
+      }
     }
   ]
 }
