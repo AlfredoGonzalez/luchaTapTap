@@ -92,6 +92,11 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
         return _engine.bossGateReady;
       case TutorialWhen.canPrestige:
         return _engine.prestigePreview().canPrestige;
+      case TutorialWhen.maskAffordable:
+        return _engine.content.masks.any((m) => _engine.quoteMask(m.id).canBuy);
+      case TutorialWhen.goalReady:
+        return _engine.content.achievements.any(_engine.achievementClaimable) ||
+            _engine.dailyGoals.any(_engine.dailyClaimable);
     }
   }
 
@@ -113,10 +118,15 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
     if (id != null) {
       // Run after the build: the gift changes the game state.
       Future.microtask(() {
-        final quote = controller.engine.quoteUpgrade(
-          id,
-          const BuyAmount.fixed(1),
-        );
+        final engine = controller.engine;
+        final quote = id.startsWith('skill:')
+            ? engine.quoteSkill(id.substring('skill:'.length))
+            : engine.quoteUpgrade(
+                id.startsWith('upgrade:')
+                    ? id.substring('upgrade:'.length)
+                    : id,
+                const BuyAmount.fixed(1),
+              );
         final coins = controller.engine.state.coins;
         if (coins < quote.cost) controller.grantCoins(quote.cost - coins);
       });

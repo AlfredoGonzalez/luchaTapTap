@@ -1294,6 +1294,14 @@ class GameEngine {
     );
   }
 
+  /// Coins still to earn in this run for one more Belt at the mask change.
+  Big get coinsToNextBelt {
+    final now = formulas.belts(_state.totalCoinsEarned).toDouble().round();
+    final target = formulas.coinsForBelts(now + 1);
+    final earned = _state.totalCoinsEarned;
+    return target > earned ? target - earned : Big.zero;
+  }
+
   /// Resets coins, upgrades, trainers and fights; keeps masks, talents,
   /// belts, skills and achievements; grants the belts of this run.
   /// Returns false when the run is not worth enough Belts yet.

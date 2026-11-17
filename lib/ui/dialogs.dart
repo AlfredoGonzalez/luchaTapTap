@@ -225,6 +225,41 @@ class _OfflineDialogState extends ConsumerState<OfflineDialog> {
   }
 }
 
+/// "¿Cómo gano cinturones?": where Belts come from and what they are for.
+class BeltsInfoDialog extends ConsumerWidget {
+  const BeltsInfoDialog({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(stringsProvider);
+    final min = ref.watch(contentProvider).balance.prestige.minBelts;
+    Widget line(String key, [Map<String, Object> p = const {}]) => Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: PixelText(strings.t(key, p), wrap: true),
+    );
+    return PixelDialog(
+      title: strings.t('belts_info_title'),
+      body: [
+        line('belts_info_prestige', {'n': min}),
+        line('belts_info_goals'),
+        line('belts_info_shop'),
+        PixelText(
+          strings.t('belts_info_use'),
+          wrap: true,
+          color: Palette.fog.color,
+        ),
+      ],
+      actions: [
+        PixelButton(
+          label: strings.t('dialog_close'),
+          style: PixelButtonStyle.secondary,
+          onPressed: () => ref.read(dialogProvider.notifier).close(),
+        ),
+      ],
+    );
+  }
+}
+
 /// Privacy policy placeholder: the real text and link come before launch.
 class PrivacyDialog extends ConsumerWidget {
   const PrivacyDialog({super.key});

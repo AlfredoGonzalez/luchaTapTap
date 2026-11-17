@@ -523,6 +523,18 @@ void main() {
       await closeApp(tester);
     });
 
+    testWidgets('Talentos shows the run\'s belts against the minimum; the "i" explains belts', (tester) async {
+      await pumpApp(tester, save: saveFrom((e) => e.debugAddCoins(Big.fromDouble(5e6))));
+      await openTab(tester, 'Talentos');
+      expect(find.textContaining('Este recorrido vale'), findsOneWidget);
+      expect(find.textContaining('Siguiente cinturón'), findsOneWidget);
+      await tester.tap(buttonLabelled('¿Cómo gano cinturones?'));
+      await tester.pump(_short);
+      expect(find.textContaining('Cambiando de máscara'), findsOneWidget);
+      await tapButton(tester, 'Cerrar');
+      await closeApp(tester);
+    });
+
     testWidgets('a locked talent says what it needs', (tester) async {
       await pumpApp(tester, save: saveFrom((e) => e.debugGrantBelts(5)));
       await openTab(tester, 'Talentos');
@@ -1206,8 +1218,11 @@ void tutorialTests() {
       expect(find.textContaining('Aquí compras mejoras'), findsOneWidget);
       await tapButton(tester, 'Entendido');
       await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('¡Toca rápido!'), findsOneWidget); // the kick bar
+      await tapButton(tester, 'Entendido');
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('El Profe'), findsNothing);
-      expect(c.read(settingsProvider).tutorialDone, containsAll(['tap', 'defeat', 'upgrade', 'panel']));
+      expect(c.read(settingsProvider).tutorialDone, containsAll(['tap', 'defeat', 'upgrade', 'panel', 'comboHint']));
       await closeApp(tester);
     });
 
@@ -1239,7 +1254,7 @@ void tutorialTests() {
       );
     }
 
-    const intro = ['tap', 'defeat', 'upgrade', 'panel'];
+    const intro = ['tap', 'defeat', 'upgrade', 'panel', 'comboHint'];
 
     testWidgets('a trainer step shows when one can be hired and ends when hired', (tester) async {
       final c = await pumpApp(
@@ -1254,6 +1269,40 @@ void tutorialTests() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.textContaining('contratar a Don Chuy'), findsNothing);
       expect(c.read(settingsProvider).tutorialDone, contains('trainer'));
+      await closeApp(tester);
+    });
+
+    testWidgets('a goal to claim sends the player to the trophy', (tester) async {
+      final c = await pumpApp(
+        tester,
+        tutorial: true,
+        save: withTutorialDone([...intro, 'combo', 'lucky'], (e) {
+          for (var i = 0; i < 10; i++) {
+            e.tap(); // first win: an achievement to claim
+          }
+        }),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Toca el trofeo'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Metas'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(c.read(settingsProvider).tutorialDone, contains('goals'));
+      await closeApp(tester);
+    });
+
+    testWidgets('an affordable mask sends the player to Máscaras', (tester) async {
+      final c = await pumpApp(
+        tester,
+        tutorial: true,
+        save: withTutorialDone([...intro, 'goals'], (e) => e.debugGrantBelts(100)),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('máscara nueva'), findsOneWidget);
+      await openTab(tester, 'Máscaras');
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(c.read(settingsProvider).tutorialDone, contains('masks'));
       await closeApp(tester);
     });
 

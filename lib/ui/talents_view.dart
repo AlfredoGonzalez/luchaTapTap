@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/big.dart';
 import '../core/game_engine.dart';
 import '../core/number_format.dart';
 import '../core/palette.dart';
@@ -67,17 +68,32 @@ class TalentsView extends ConsumerWidget {
         ),
         Padding(
           padding: EdgeInsets.all(scale.px(sideMargin)),
-          child: SizedBox(
-            width: double.infinity,
-            child: PixelButton(
-              label: strings.t('prestige_button'),
-              onPressed: () =>
-                  ref.read(dialogProvider.notifier).open(GameDialog.prestige),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: PixelButton(
+                  label: strings.t('prestige_button'),
+                  onPressed: () => ref
+                      .read(dialogProvider.notifier)
+                      .open(GameDialog.prestige),
+                ),
+              ),
+              SizedBox(width: scale.px(2)),
+              PixelButton(
+                label: 'i',
+                width: 24,
+                style: PixelButtonStyle.secondary,
+                semanticLabel: strings.t('belts_info_title'),
+                onPressed: () => ref
+                    .read(dialogProvider.notifier)
+                    .open(GameDialog.beltsInfo),
+              ),
+            ],
           ),
         ),
+        _BeltProgress(engine: engine),
         Expanded(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: scale.px(sideMargin)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +116,59 @@ class TalentsView extends ConsumerWidget {
           children: [_Detail(talent: selected, engine: engine)],
         ),
       ],
+    );
+  }
+}
+
+/// How many Belts this run is worth against the minimum for the mask
+/// change, and the coins still needed for the next one.
+class _BeltProgress extends ConsumerWidget {
+  const _BeltProgress({required this.engine});
+
+  final GameEngine engine;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = PixelScale.of(context);
+    ref.watch(gameControllerProvider);
+    final strings = ref.watch(stringsProvider);
+    final min = ref.watch(contentProvider).balance.prestige.minBelts;
+    final worth = engine.prestigePreview().beltsToEarn.toDouble();
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        scale.px(sideMargin),
+        0,
+        scale.px(sideMargin),
+        scale.px(sideMargin),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PixelText(
+            strings.t('belts_progress', {
+              'n': formatBigShort(Big.fromDouble(worth)),
+              'min': min,
+            }),
+            color: Palette.aqua.color,
+            ellipsis: true,
+          ),
+          SizedBox(height: scale.px(2)),
+          PixelBar(
+            fraction: (worth / min).clamp(0.0, 1.0),
+            fill: Palette.teal,
+            track: Palette.ink,
+            height: 4,
+          ),
+          SizedBox(height: scale.px(2)),
+          PixelText(
+            strings.t('belts_next', {
+              'n': formatBigShort(engine.coinsToNextBelt),
+            }),
+            color: Palette.fog.color,
+            ellipsis: true,
+          ),
+        ],
+      ),
     );
   }
 }

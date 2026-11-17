@@ -98,19 +98,23 @@ class HudBar extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  AttentionDot(
-                    show: ref
-                        .read(gameControllerProvider.notifier)
-                        .goalsAttention,
-                    child: PixelButton(
-                      label: '',
-                      icon: PixelIcons.trophy,
-                      iconWidget: _artIcon(ref, SpriteLibrary.trophyKey),
-                      width: 24,
-                      semanticLabel: strings.t('goals_open'),
-                      style: PixelButtonStyle.flat,
-                      onPressed: () =>
-                          ref.read(viewProvider.notifier).show(GameView.goals),
+                  TutorialTarget(
+                    id: 'hud:goals',
+                    child: AttentionDot(
+                      show: ref
+                          .read(gameControllerProvider.notifier)
+                          .goalsAttention,
+                      child: PixelButton(
+                        label: '',
+                        icon: PixelIcons.trophy,
+                        iconWidget: _artIcon(ref, SpriteLibrary.trophyKey),
+                        width: 24,
+                        semanticLabel: strings.t('goals_open'),
+                        style: PixelButtonStyle.flat,
+                        onPressed: () => ref
+                            .read(viewProvider.notifier)
+                            .show(GameView.goals),
+                      ),
                     ),
                   ),
                   PixelButton(
@@ -143,8 +147,7 @@ Set<GameView> _attention(WidgetRef ref) {
           engine.state.skillLevel(s.id) == 0 && engine.quoteSkill(s.id).canBuy,
     ))
       GameView.skills,
-    if (content.masks.any((m) => engine.quoteMask(m.id).canBuy))
-      GameView.masks,
+    if (content.masks.any((m) => engine.quoteMask(m.id).canBuy)) GameView.masks,
     if (engine.prestigePreview().canPrestige ||
         content.talents.any((t) => engine.quoteTalent(t.id).canBuy))
       GameView.talents,

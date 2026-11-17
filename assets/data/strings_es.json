@@ -41,9 +41,9 @@
     "tut_upgrade": "Te regalo las monedas. ¡Compra Puño duro y cada toque pegará más!",
     "tut_panel": "Aquí compras mejoras y entrenadores. Toca la \"i\" de cada uno para saber qué hace.",
     "tut_trainer": "¡Ya puedes contratar a Don Chuy! Pelea solo, aunque no toques.",
-    "tut_combo": "¡Barra llena! Toca los círculos antes de que desaparezcan para dar la patada.",
+    "tut_combo": "¡Barra llena! Toca el círculo para empezar la patada. Los siguientes se encogen rápido: ¡tócalos antes de que desaparezcan!",
     "tut_lucky": "¡Un cinturón de suerte! Tócalo rápido para ganar monedas.",
-    "tut_skill": "¡Habilidad nueva! Toca la pestaña de Habilidades para aprenderla.",
+    "tut_skill": "¡Habilidad nueva! Te regalo las monedas: toca la pestaña de Habilidades para aprenderla.",
     "tut_boss": "Cuando te sientas fuerte, toca ¡JEFE! para retarlo. Si pierdes, sigues farmeando.",
     "tut_prestige": "Ya puedes cambiar de máscara: reinicias el avance, pero ganas cinturones para talentos permanentes. Toca la pestaña de Talentos.",
     "tut_ok": "Entendido",
@@ -245,6 +245,16 @@
     "mask_unlock_event": "Evento: {name}",
     "goals_event": "EVENTO: {name}",
     "goals_event_mask": "Máscara {name}",
-    "goals_event_hint": "Cumple las metas del evento"
+    "goals_event_hint": "Cumple las metas del evento",
+    "tut_combo_hint": "¡Toca rápido! Cada golpe llena esta barra. Cuando se llene, darás una patada muy fuerte.",
+    "tut_goals": "¡Cumpliste una meta! Toca el trofeo para cobrar tu premio.",
+    "tut_masks": "¡Ya te alcanza para una máscara nueva! Cada una da una ventaja distinta. Toca la pestaña de Máscaras.",
+    "belts_progress": "Este recorrido vale {n} de {min} cinturones",
+    "belts_next": "Siguiente cinturón: faltan {n} monedas",
+    "belts_info_title": "¿Cómo gano cinturones?",
+    "belts_info_prestige": "Cambiando de máscara: entre más monedas ganes en el recorrido, más cinturones. Necesitas que valga al menos {n} para poder cambiar.",
+    "belts_info_goals": "Cobrando logros, metas del día, el cofre y la recompensa diaria.",
+    "belts_info_shop": "En la Tienda (también uno gratis viendo un anuncio).",
+    "belts_info_use": "Los cinturones compran talentos y máscaras, y cada uno que ganas suma daño para siempre."
   }
 }

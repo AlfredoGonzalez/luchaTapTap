@@ -57,6 +57,17 @@
       }
     },
     {
+      "id": "comboHint",
+      "after": "panel",
+      "targets": [
+        "comboRow"
+      ],
+      "text": "tut_combo_hint",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
       "id": "trainer",
       "when": "trainerAffordable",
       "after": "panel",
@@ -105,7 +116,8 @@
       "advance": {
         "type": "viewOpened",
         "id": "skills"
-      }
+      },
+      "ensureAffordable": "skill:plancha"
     },
     {
       "id": "boss",
@@ -130,6 +142,32 @@
       "advance": {
         "type": "viewOpened",
         "id": "talents"
+      }
+    },
+    {
+      "id": "goals",
+      "when": "goalReady",
+      "after": "panel",
+      "targets": [
+        "hud:goals"
+      ],
+      "text": "tut_goals",
+      "advance": {
+        "type": "viewOpened",
+        "id": "goals"
+      }
+    },
+    {
+      "id": "masks",
+      "when": "maskAffordable",
+      "after": "panel",
+      "targets": [
+        "nav:masks"
+      ],
+      "text": "tut_masks",
+      "advance": {
+        "type": "viewOpened",
+        "id": "masks"
       }
     }
   ]

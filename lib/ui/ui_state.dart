@@ -39,7 +39,7 @@ class ViewNotifier extends Notifier<GameView> {
 
 /// Pop-ups opened by the player (the offline earnings pop-up and the boss
 /// intro are driven by the game state instead).
-enum GameDialog { prestige, debug, privacy, deleteData, info }
+enum GameDialog { prestige, debug, privacy, deleteData, info, beltsInfo }
 
 /// What the info pop-up explains: an upgrade or a trainer.
 enum InfoKind { upgrade, trainer }

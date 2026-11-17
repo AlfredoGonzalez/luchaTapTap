@@ -47,6 +47,12 @@ enum TutorialWhen {
 
   /// Changing the mask is worth a belt.
   canPrestige,
+
+  /// Some mask can be bought with the player's Belts.
+  maskAffordable,
+
+  /// A goal or an achievement waits to be claimed.
+  goalReady,
 }
 
 /// One step: everything dark except [targets], a text from the coach, and
@@ -113,8 +119,9 @@ class TutorialStep {
   final int count;
   final String? itemId;
 
-  /// Upgrade the player must be able to afford at the start of the step; if
-  /// they cannot, the missing coins are given.
+  /// Upgrade (`<id>` or `upgrade:<id>`) or skill (`skill:<id>`) the player
+  /// must be able to afford at the start of the step; if they cannot, the
+  /// missing coins are given.
   final String? ensureAffordable;
 }
 

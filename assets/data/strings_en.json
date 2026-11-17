@@ -41,9 +41,9 @@
     "tut_upgrade": "Here, the coins are on me. Buy Iron Fist and every tap will hit harder!",
     "tut_panel": "Buy upgrades and trainers here. Tap the \"i\" on each one to see what it does.",
     "tut_trainer": "You can hire Don Chuy now! He fights even when you don't tap.",
-    "tut_combo": "Bar full! Tap the circles before they vanish to land the kick.",
+    "tut_combo": "Bar full! Tap the circle to start the kick. The next ones shrink fast: tap them before they vanish!",
     "tut_lucky": "A lucky belt! Tap it quickly to win coins.",
-    "tut_skill": "New skill! Open the Skills tab to learn it.",
+    "tut_skill": "New skill! The coins are on me: open the Skills tab to learn it.",
     "tut_boss": "When you feel strong, tap BOSS! to challenge them. If you lose, keep training.",
     "tut_prestige": "You can change masks now: your progress restarts, but you earn belts for permanent talents. Open the Talents tab.",
     "tut_ok": "Got it",
@@ -341,6 +341,16 @@
     "mask_unlock_event": "Event: {name}",
     "goals_event": "EVENT: {name}",
     "goals_event_mask": "{name} mask",
-    "goals_event_hint": "Complete the event goals"
+    "goals_event_hint": "Complete the event goals",
+    "tut_combo_hint": "Tap fast! Every hit fills this bar. When it is full, you will land a mighty kick.",
+    "tut_goals": "You reached a goal! Tap the trophy to claim your prize.",
+    "tut_masks": "You can afford a new mask! Each one gives a different edge. Open the Masks tab.",
+    "belts_progress": "This run is worth {n} of {min} belts",
+    "belts_next": "Next belt: {n} coins to go",
+    "belts_info_title": "How do I earn belts?",
+    "belts_info_prestige": "By changing masks: the more coins you earn in a run, the more belts. The run must be worth at least {n} to change.",
+    "belts_info_goals": "By claiming achievements, daily goals, the chest and the daily reward.",
+    "belts_info_shop": "In the Shop (also one free by watching an ad).",
+    "belts_info_use": "Belts buy talents and masks, and every belt you earn adds damage forever."
   }
 }

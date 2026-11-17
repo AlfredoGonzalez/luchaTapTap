@@ -87,6 +87,13 @@ class Formulas {
   Big belts(Big totalCoinsEarned) =>
       totalCoinsEarned.divDouble(balance.beltCoinDivisor).sqrt().floor();
 
+  /// Coins a run must earn to be worth [belts] Belts (the inverse of
+  /// [belts]).
+  Big coinsForBelts(int belts) =>
+      Big.fromInt(belts).mulDouble(belts.toDouble()).mulDouble(
+        balance.beltCoinDivisor,
+      );
+
   void _checkFight(int fight) {
     if (fight < 1) {
       throw ArgumentError.value(fight, 'fight', 'must be at least 1');
