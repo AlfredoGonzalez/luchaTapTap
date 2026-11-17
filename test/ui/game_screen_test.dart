@@ -1277,6 +1277,7 @@ void tutorialTests() {
     }
 
     const intro = ['tap', 'defeat', 'upgrade', 'panel', 'comboHint'];
+    const goalsTour = ['goalsLogin', 'goalsDaily', 'goalsAchievements', 'goalsClaim', 'goalsBack'];
 
     testWidgets('a trainer step shows when one can be hired and ends when hired', (tester) async {
       final c = await pumpApp(
@@ -1310,6 +1311,18 @@ void tutorialTests() {
       await tester.tap(find.bySemanticsLabel('Metas'));
       await tester.pump(const Duration(milliseconds: 200));
       expect(c.read(settingsProvider).tutorialDone, contains('goals'));
+      // The tour of the Goals screen, then back to the fight.
+      for (final text in ['recompensa diaria', 'metas de hoy', 'logros', 'Cobrar']) {
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.textContaining(text), findsWidgets, reason: text);
+        await tapButton(tester, 'Entendido');
+      }
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('volver a la pelea'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Mejoras'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(c.read(settingsProvider).tutorialDone, contains('goalsBack'));
       await closeApp(tester);
     });
 
@@ -1317,7 +1330,7 @@ void tutorialTests() {
       final c = await pumpApp(
         tester,
         tutorial: true,
-        save: withTutorialDone([...intro, 'goals'], (e) => e.debugGrantBelts(100)),
+        save: withTutorialDone([...intro, 'goals', ...goalsTour], (e) => e.debugGrantBelts(100)),
       );
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pump(const Duration(milliseconds: 200));
@@ -1332,7 +1345,7 @@ void tutorialTests() {
       final c = await pumpApp(
         tester,
         tutorial: true,
-        save: withTutorialDone([...intro, 'trainer'], (e) {
+        save: withTutorialDone([...intro, 'trainer', 'panelToggle'], (e) {
           for (var i = 0; i < 60; i++) {
             e.tap();
           }

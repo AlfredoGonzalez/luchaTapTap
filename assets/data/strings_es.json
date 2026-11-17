@@ -275,6 +275,18 @@
     "tab_locked_skills": "Habilidades: se abre al llegar a la pelea de tu primera habilidad",
     "tab_locked_masks": "Máscaras: se abre cuando te alcancen los cinturones para una",
     "tab_locked_talents": "Talentos: se abre cuando te alcance para tu primer talento",
-    "tut_talents": "¡Ya puedes subir un talento! Son mejoras para siempre que se pagan con cinturones. Toca la pestaña de Talentos."
+    "tut_talents": "¡Ya puedes subir un talento! Son mejoras para siempre que se pagan con cinturones. Toca la pestaña de Talentos.",
+    "tut_panel_toggle": "Este botón cambia la lista: mejoras para tu luchador o entrenadores que pelean por ti. Tiene un puntito cuando la otra lista tiene algo que puedes comprar.",
+    "tut_skill_learn": "Toca la Plancha y luego \"Aprender\". Cada nivel la hace más fuerte.",
+    "tut_skill_back": "¡Aprendida! Toca aquí para volver a la pelea.",
+    "tut_skill_use": "Aquí están tus habilidades. Toca su botón para usarla; después necesita unos segundos para recargarse.",
+    "tut_goals_login": "Arriba está la recompensa diaria: vuelve cada día y cóbrala. Si faltas un día no pierdes tu racha.",
+    "tut_goals_daily": "Aquí están las metas de hoy: cumple las tres y abre el cofre. Si una no te gusta, puedes cambiarla.",
+    "tut_goals_achievements": "Abajo están los logros: retos más largos que te dan monedas y cinturones.",
+    "tut_goals_claim": "Toca \"Cobrar\" en todo lo que esté listo. Cuando termines, toca Entendido.",
+    "tut_back": "Toca aquí para volver a la pelea.",
+    "tut_masks_tour": "Toca una máscara para ver su ventaja y su precio. Se compran con cinturones; la que te pongas te da su ventaja.",
+    "tut_talents_tour": "Cada talento es una mejora para siempre: elige uno y toca \"Mejorar\". Se pagan con cinturones. La \"i\" te explica cómo ganarlos.",
+    "tut_prestige_tour": "Toca \"Cambiar de máscara\": vuelves a la pelea 1 sin mejoras ni entrenadores, pero ganas cinturones y conservas máscaras y talentos."
   }
 }

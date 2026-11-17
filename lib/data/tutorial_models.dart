@@ -77,6 +77,7 @@ class TutorialStep {
     this.count = 1,
     this.itemId,
     this.ensureAffordable,
+    this.view = 'fight',
   });
 
   factory TutorialStep.fromReader(JsonReader r) {
@@ -111,6 +112,7 @@ class TutorialStep {
       count: advance.has('count') ? advance.integer('count', min: 1) : 1,
       itemId: advance.optionalString('id'),
       ensureAffordable: r.optionalString('ensureAffordable'),
+      view: r.optionalString('view') ?? 'fight',
     );
   }
 
@@ -125,6 +127,9 @@ class TutorialStep {
   /// finished before it (the intro steps chain with `after`).
   final TutorialWhen when;
   final String? after;
+
+  /// Screen the step shows on (a tab name such as `fight` or `goals`).
+  final String view;
   final int count;
   final String? itemId;
 

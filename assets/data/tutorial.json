@@ -81,6 +81,17 @@
       }
     },
     {
+      "id": "panelToggle",
+      "after": "trainer",
+      "targets": [
+        "panel:toggle"
+      ],
+      "text": "tut_panel_toggle",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
       "id": "combo",
       "when": "comboFull",
       "after": "panel",
@@ -120,6 +131,42 @@
       "ensureAffordable": "skill:plancha"
     },
     {
+      "id": "skillLearn",
+      "after": "skill",
+      "view": "skills",
+      "targets": [
+        "view:skills"
+      ],
+      "text": "tut_skill_learn",
+      "advance": {
+        "type": "skillLearned"
+      }
+    },
+    {
+      "id": "skillBack",
+      "after": "skillLearn",
+      "view": "skills",
+      "targets": [
+        "nav:fight"
+      ],
+      "text": "tut_skill_back",
+      "advance": {
+        "type": "viewOpened",
+        "id": "fight"
+      }
+    },
+    {
+      "id": "skillUse",
+      "after": "skillBack",
+      "targets": [
+        "skillsRow"
+      ],
+      "text": "tut_skill_use",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
       "id": "boss",
       "when": "bossGate",
       "after": "panel",
@@ -145,6 +192,18 @@
       }
     },
     {
+      "id": "prestigeTour",
+      "after": "prestige",
+      "view": "talents",
+      "targets": [
+        "view:talents"
+      ],
+      "text": "tut_prestige_tour",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
       "id": "goals",
       "when": "goalReady",
       "after": "panel",
@@ -155,6 +214,67 @@
       "advance": {
         "type": "viewOpened",
         "id": "goals"
+      }
+    },
+    {
+      "id": "goalsLogin",
+      "after": "goals",
+      "view": "goals",
+      "targets": [
+        "goals:login"
+      ],
+      "text": "tut_goals_login",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "goalsDaily",
+      "after": "goalsLogin",
+      "view": "goals",
+      "targets": [
+        "goals:daily"
+      ],
+      "text": "tut_goals_daily",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "goalsAchievements",
+      "after": "goalsDaily",
+      "view": "goals",
+      "targets": [
+        "goals:achievements"
+      ],
+      "text": "tut_goals_achievements",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "goalsClaim",
+      "after": "goalsAchievements",
+      "view": "goals",
+      "targets": [
+        "view:goals"
+      ],
+      "text": "tut_goals_claim",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "goalsBack",
+      "after": "goalsClaim",
+      "view": "goals",
+      "targets": [
+        "nav:fight"
+      ],
+      "text": "tut_back",
+      "advance": {
+        "type": "viewOpened",
+        "id": "fight"
       }
     },
     {
@@ -171,6 +291,31 @@
       }
     },
     {
+      "id": "masksTour",
+      "after": "masks",
+      "view": "masks",
+      "targets": [
+        "view:masks"
+      ],
+      "text": "tut_masks_tour",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "masksBack",
+      "after": "masksTour",
+      "view": "masks",
+      "targets": [
+        "nav:fight"
+      ],
+      "text": "tut_back",
+      "advance": {
+        "type": "viewOpened",
+        "id": "fight"
+      }
+    },
+    {
       "id": "talents",
       "when": "talentAffordable",
       "after": "goals",
@@ -181,6 +326,31 @@
       "advance": {
         "type": "viewOpened",
         "id": "talents"
+      }
+    },
+    {
+      "id": "talentsTour",
+      "after": "talents",
+      "view": "talents",
+      "targets": [
+        "view:talents"
+      ],
+      "text": "tut_talents_tour",
+      "advance": {
+        "type": "ok"
+      }
+    },
+    {
+      "id": "talentsBack",
+      "after": "talentsTour",
+      "view": "talents",
+      "targets": [
+        "nav:fight"
+      ],
+      "text": "tut_back",
+      "advance": {
+        "type": "viewOpened",
+        "id": "fight"
       }
     }
   ]

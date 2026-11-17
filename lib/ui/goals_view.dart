@@ -20,6 +20,7 @@ import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'rows.dart';
+import 'tutorial_overlay.dart';
 import 'ui_state.dart';
 
 /// Width of the claim button (and of the progress text in its place).
@@ -104,13 +105,26 @@ class GoalsView extends ConsumerWidget {
             children: [
               for (final event in controller.activeEvents)
                 if (event.goals.isNotEmpty) ..._eventSection(ref, strings, event),
-              SectionHeader(strings.t('goals_login')),
-              const LoginCalendar(),
-              SizedBox(height: scale.px(rowGap)),
-              _loginButton(context, ref, strings),
-              SectionHeader(strings.t('goals_daily')),
+              TutorialTarget(
+                id: 'goals:login',
+                child: Column(
+                  children: [
+                    SectionHeader(strings.t('goals_login')),
+                    const LoginCalendar(),
+                    SizedBox(height: scale.px(rowGap)),
+                    _loginButton(context, ref, strings),
+                  ],
+                ),
+              ),
+              TutorialTarget(
+                id: 'goals:daily',
+                child: SectionHeader(strings.t('goals_daily')),
+              ),
               ..._dailySection(context, ref, strings),
-              SectionHeader(strings.t('goals_achievements')),
+              TutorialTarget(
+                id: 'goals:achievements',
+                child: SectionHeader(strings.t('goals_achievements')),
+              ),
               for (final a in achievements)
                 _GoalRow(
                   icon: PixelIcons.trophy,

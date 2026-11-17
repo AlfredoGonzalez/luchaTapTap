@@ -37,10 +37,11 @@ class GameScreen extends ConsumerWidget {
     final engine = ref.read(gameControllerProvider.notifier).engine;
     final hasOffline = state.pendingOffline != null;
     final bossIntro = engine.awaitingBossStart && !hasOffline && dialog == null;
-    // The tutorial only lights the fight screen, when nothing else is on top.
+    // A tutorial step shows on its own screen, when nothing else is on top.
+    final tutorialStep = ref.watch(tutorialProvider).step;
     final tutorial =
-        ref.watch(tutorialProvider).step != null &&
-        view == GameView.fight &&
+        tutorialStep != null &&
+        tutorialStep.view == view.name &&
         !engine.isBossFight &&
         dialog == null &&
         !hasOffline &&
@@ -106,7 +107,11 @@ class GameScreen extends ConsumerWidget {
                         offstage: view != GameView.fight,
                         child: FightView(height: contentHeight),
                       ),
-                      if (view != GameView.fight) _viewFor(view),
+                      if (view != GameView.fight)
+                        TutorialTarget(
+                          id: 'view:${view.name}',
+                          child: _viewFor(view),
+                        ),
                     ],
                   ),
                 ),

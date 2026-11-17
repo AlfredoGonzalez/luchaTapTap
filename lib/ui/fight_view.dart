@@ -81,7 +81,10 @@ class FightView extends ConsumerWidget {
           height: scale.px(comboRowHeight),
           child: const TutorialTarget(id: 'comboRow', child: _ComboRow()),
         ),
-        SizedBox(height: scale.px(skillsRowHeight), child: const _SkillsRow()),
+        SizedBox(
+          height: scale.px(skillsRowHeight),
+          child: const TutorialTarget(id: 'skillsRow', child: _SkillsRow()),
+        ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: scale.px(sideMargin)),
           child: SizedBox(

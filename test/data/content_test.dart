@@ -6,6 +6,7 @@ import 'package:lucha_tap_tap/data/content_bundle.dart';
 import 'package:lucha_tap_tap/data/content_exception.dart';
 import 'package:lucha_tap_tap/data/content_models.dart';
 import 'package:lucha_tap_tap/data/goals_models.dart';
+import 'package:lucha_tap_tap/ui/ui_state.dart';
 
 import '../test_content.dart';
 
@@ -265,6 +266,13 @@ void main() {
           if (RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+|·|Press Start').hasMatch(line.text)) continue;
           has('credits', line.text, 'text', line.text);
         }
+      }
+    });
+
+    test('every tutorial step shows on a real screen', () {
+      final views = {for (final v in GameView.values) v.name};
+      for (final step in loadShippedContent().tutorial.steps) {
+        expect(views, contains(step.view), reason: step.id);
       }
     });
 
