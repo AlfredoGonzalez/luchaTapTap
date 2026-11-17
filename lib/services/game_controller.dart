@@ -498,6 +498,9 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
 
   bool _tutorialShowing = false;
 
+  /// A tutorial step is on screen now.
+  bool get tutorialShowing => _tutorialShowing;
+
   /// A tutorial step is on screen: the lucky pickup does not run out and the
   /// kick's first circle waits to be tapped.
   set tutorialShowing(bool showing) {

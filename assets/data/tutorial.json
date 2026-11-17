@@ -96,8 +96,7 @@
       "when": "comboFull",
       "after": "panel",
       "targets": [
-        "comboRow",
-        "arena"
+        "kickScreen"
       ],
       "text": "tut_combo",
       "advance": {

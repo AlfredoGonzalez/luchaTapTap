@@ -161,3 +161,10 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - Goals: sorted by progress, claimed last, "new goals in" when done, swap a goal / new set for an ad (`goals.json` `daily.adRerollsPerDay`, `adRefreshesPerDay`).
 - Tabs: with `ui.lockTabs` Habilidades, Máscaras and Talentos are locked until usable (remembered in the settings); tab art `nav_<tab>` is drawn as a silhouette unless selected.
 - "Sonido" is now "Efectos".
+
+## Playtest round 3
+
+- Tutorial steps can live on any screen (`view` in tutorial.json): a tour of Metas (calendar, today's goals, achievements, claim, back), learning and using a skill, Máscaras and Talentos tours, the list switch next to x1; the lucky step ends when the belt is caught; no step shows during a boss fight.
+- The kick takes the whole screen: a comic burst (built in code from palette colors), the prompt on top and blue-and-white circles anywhere (kick.bottomMargin, and kick.tutorialBottomMargin keeps them clear of the coach's card).
+- Skills cost x3 per level (`costGrowth` in skills.json) and the hold works once per boss fight (`usesPerBoss`); the first prestige is back at about 21 minutes.
+- Nav: the picked tab shakes; a locked tab floats "unlocks at ..." text; Talentos and its "i" use plain words.

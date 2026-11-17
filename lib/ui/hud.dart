@@ -297,10 +297,12 @@ class _LockedHintLayerState extends ConsumerState<LockedHintLayer> {
             child: Container(
               color: Palette.ink.color,
               padding: EdgeInsets.all(scale.px(2)),
+              constraints: BoxConstraints(maxWidth: scale.px(120)),
               child: PixelText(
                 hint.text,
                 color: Palette.sunYellow.color,
                 align: TextAlign.center,
+                wrap: true,
               ),
             ),
           ),

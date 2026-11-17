@@ -135,10 +135,12 @@
     "startDelaySeconds": 0.6,
     "gapSeconds": 0.2,
     "minMoveFraction": 0.3,
-    "circleRadius": 14,
+    "circleRadius": 20,
     "minHitSize": 28,
     "edgeMargin": 20,
-    "topMargin": 52
+    "topMargin": 52,
+    "bottomMargin": 40,
+    "tutorialBottomMargin": 150
   },
 
   "milestones": {

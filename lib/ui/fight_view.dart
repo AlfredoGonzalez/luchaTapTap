@@ -14,7 +14,6 @@ import '../services/localized_text.dart';
 import 'arena_view.dart';
 import 'art_icon.dart';
 import 'ui_state.dart';
-import 'kick_layer.dart';
 import 'hud.dart';
 import 'palette_color.dart';
 import 'panels.dart';
@@ -64,12 +63,10 @@ class FightView extends ConsumerWidget {
                 virtualWidth: scale.virtualWidth,
                 virtualHeight: arenaHeight,
               ),
-              const KickCircles(),
               const _BossName(),
               const _EventBanner(),
               const _ActiveEffects(),
               const _NoticeBanner(),
-              const KickPrompt(),
               const _BossButton(),
               const _BossLossPanel(),
               const _BossWinPanel(),

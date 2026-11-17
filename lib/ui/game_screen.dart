@@ -8,6 +8,7 @@ import 'boss_intro.dart';
 import 'dialogs.dart';
 import 'fight_view.dart';
 import 'goals_view.dart';
+import 'kick_layer.dart';
 import 'hud.dart';
 import 'masks_view.dart';
 import 'palette_color.dart';
@@ -120,6 +121,9 @@ class GameScreen extends ConsumerWidget {
               ],
             ),
           ),
+          // The kick takes the whole screen while the combo is full.
+          if (view == GameView.fight && dialog == null && !hasOffline)
+            const KickScreen(),
           if (dialog == GameDialog.prestige) const PrestigeDialog(),
           if (dialog == GameDialog.debug) const DebugDialog(),
           if (dialog == GameDialog.privacy) const PrivacyDialog(),

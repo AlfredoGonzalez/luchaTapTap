@@ -876,6 +876,8 @@ class KickConfig {
     required this.minHitSize,
     required this.edgeMargin,
     required this.topMargin,
+    this.bottomMargin = 0,
+    this.tutorialBottomMargin = 0,
   });
 
   factory KickConfig.fromReader(JsonReader r) => KickConfig(
@@ -888,6 +890,10 @@ class KickConfig {
     minHitSize: r.number('minHitSize', min: 24),
     edgeMargin: r.number('edgeMargin', min: 0),
     topMargin: r.number('topMargin', min: 0),
+    bottomMargin: r.has('bottomMargin') ? r.number('bottomMargin', min: 0) : 0,
+    tutorialBottomMargin: r.has('tutorialBottomMargin')
+        ? r.number('tutorialBottomMargin', min: 0)
+        : 0,
   );
 
   /// Circles to tap, one after the other.
@@ -917,6 +923,11 @@ class KickConfig {
   /// for the boss clock and the prompt), in virtual pixels.
   final double edgeMargin;
   final double topMargin;
+
+  /// Room kept free at the bottom of the kick screen, and while the tutorial
+  /// card is on screen (it sits at the bottom).
+  final double bottomMargin;
+  final double tutorialBottomMargin;
 
   KickSettings get settings => KickSettings(
     targets: targets,

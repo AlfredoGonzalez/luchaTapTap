@@ -953,7 +953,8 @@ void main() {
 
   group('goals', () {
     testWidgets('the trophy opens Metas; a reached achievement is claimed there', (tester) async {
-      final c = await pumpApp(tester);
+      // A slow combo bar: ten taps must not bring up the kick screen.
+      final c = await pumpApp(tester, edit: (f) => (f['balance.json']!['combo'] as Map<String, dynamic>)['fillPerTap'] = 0.01);
       await tapArena(tester, 10); // first win
       await openTab(tester, 'Metas');
       expect(find.text('METAS'), findsOneWidget);
@@ -1304,6 +1305,7 @@ void tutorialTests() {
           for (var i = 0; i < 10; i++) {
             e.tap(); // first win: an achievement to claim
           }
+          e.failFinisher(); // the full bar would bring up the kick screen
         }),
       );
       await tester.pump(const Duration(milliseconds: 200));
