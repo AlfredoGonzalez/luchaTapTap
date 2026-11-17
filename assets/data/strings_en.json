@@ -361,6 +361,12 @@
     "active_trainerMultiplier": "Trainers x{v}",
     "active_burst": "Splash",
     "active_bossTimerExtend": "Headlock",
-    "active_boost": "Coins x{v}"
+    "active_boost": "Coins x{v}",
+    "goals_done": "You finished today's goals!",
+    "goals_next_in": "New goals in {t}",
+    "goals_ad_new": "New goals",
+    "goals_reroll": "Swap",
+    "goals_reroll_label": "Swap goal (watch ad)",
+    "goals_no_ad": "No ad available."
   }
 }

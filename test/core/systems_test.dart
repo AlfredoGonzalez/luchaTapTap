@@ -602,6 +602,47 @@ void main() {
       expect(e.dailyProgress(e.dailyGoals.single), 0);
     });
 
+    test('a goal can be swapped (limited per day); a new set once all are claimed', () {
+      final e = newEngine((f) {
+        final daily = f['goals.json']!['daily'] as Map<String, dynamic>;
+        daily['count'] = 1;
+        daily['adRerollsPerDay'] = 1;
+        daily['adRefreshesPerDay'] = 1;
+        daily['pool'] = [
+          {'id': 'golpes', 'counter': 'taps', 'target': 1, 'reward': {'belts': 1}},
+          {'id': 'peleas', 'counter': 'defeats', 'target': 1, 'reward': {'belts': 1}},
+          {'id': 'patadas', 'counter': 'finishers', 'target': 1, 'reward': {'belts': 1}},
+        ];
+      });
+      e.startDay(50);
+      final first = e.dailyGoals.single;
+      expect(e.canRerollDaily(first), isTrue);
+      expect(e.rerollDailyGoal(first.id), isTrue);
+      final second = e.dailyGoals.single;
+      expect(second.id, isNot(first.id));
+      expect(e.canRerollDaily(second), isFalse); // one swap a day
+      expect(e.canRefreshDaily, isFalse); // not all claimed yet
+      e.debugAddCoins(Big.fromDouble(1e9));
+      e.tap();
+      for (final t in e.content.trainers) {
+        e.buyTrainer(t.id, x1);
+      }
+      for (var i = 0; i < 200 && !e.dailyClaimable(second); i++) {
+        e.tap();
+        e.tick();
+        if (e.finisherReady) e.finisher();
+      }
+      expect(e.claimDailyGoal(second.id), isNotNull);
+      expect(e.dailyAllClaimed, isTrue);
+      expect(e.refreshDailyGoals(), isTrue);
+      expect(e.dailyGoals.single.id, isNot(second.id));
+      expect(e.dailyAllClaimed, isFalse);
+      expect(e.canRefreshDaily, isFalse);
+      e.startDay(51); // a new day resets the counts
+      expect(e.state.daily.rerolls, 0);
+      expect(e.state.daily.refreshes, 0);
+    });
+
     test('calendar: once per day, keeps the streak after a missed day, loops', () {
       final e = newEngine((f) {
         f['goals.json']!['login'] = {

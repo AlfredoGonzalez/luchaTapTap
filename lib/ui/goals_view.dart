@@ -95,7 +95,6 @@ class GoalsView extends ConsumerWidget {
       return fb.compareTo(fa);
     });
 
-    final goals = engine.dailyGoals;
     return Column(
       children: [
         ViewTitleBar(title: strings.t('view_goals')),
@@ -110,30 +109,7 @@ class GoalsView extends ConsumerWidget {
               SizedBox(height: scale.px(rowGap)),
               _loginButton(context, ref, strings),
               SectionHeader(strings.t('goals_daily')),
-              for (final g in goals)
-                _GoalRow(
-                  icon: PixelIcons.skillStar,
-                  artKey: SpriteLibrary.goalKey,
-                  title: goalText(strings, g.counter, g.target),
-                  reward: g.reward,
-                  value: engine.dailyProgress(g),
-                  target: g.target,
-                  claimable: engine.dailyClaimable(g),
-                  claimed: engine.dailyClaimed(g),
-                  onClaim: () => controller.claimDailyGoal(g.id),
-                ),
-              if (goals.isNotEmpty)
-                _GoalRow(
-                  icon: PixelIcons.chest,
-                  artKey: SpriteLibrary.chestKey,
-                  title: strings.t('goals_chest'),
-                  reward: content.goals.chest,
-                  value: goals.where(engine.dailyClaimed).length,
-                  target: goals.length,
-                  claimable: engine.dailyChestReady,
-                  claimed: engine.state.daily.chestClaimed,
-                  onClaim: controller.claimDailyChest,
-                ),
+              ..._dailySection(context, ref, strings),
               SectionHeader(strings.t('goals_achievements')),
               for (final a in achievements)
                 _GoalRow(
@@ -154,6 +130,104 @@ class GoalsView extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Today's goals: ready to claim first, then the closest to done, the
+  /// claimed ones last. When all are claimed, when new ones come (and new
+  /// ones for an ad). Each open goal may be swapped for an ad.
+  List<Widget> _dailySection(
+    BuildContext context,
+    WidgetRef ref,
+    Strings strings,
+  ) {
+    final scale = PixelScale.of(context);
+    final controller = ref.read(gameControllerProvider.notifier);
+    final engine = controller.engine;
+    final content = ref.read(contentProvider);
+    final goals = [...engine.dailyGoals];
+    int rank(DailyGoalDef g) => engine.dailyClaimable(g)
+        ? 0
+        : (engine.dailyClaimed(g) ? 2 : 1);
+    goals.sort((a, b) {
+      final r = rank(a).compareTo(rank(b));
+      if (r != 0) return r;
+      return (engine.dailyProgress(b) / b.target).compareTo(
+        engine.dailyProgress(a) / a.target,
+      );
+    });
+    Future<void> ad(Future<ShopResult> Function() call) async {
+      final result = await call();
+      if (result == ShopResult.noAd) {
+        ref.read(noticeProvider.notifier).show('goals_no_ad');
+      }
+    }
+
+    final chest = _GoalRow(
+      icon: PixelIcons.chest,
+      artKey: SpriteLibrary.chestKey,
+      title: strings.t('goals_chest'),
+      reward: content.goals.chest,
+      value: goals.where(engine.dailyClaimed).length,
+      target: goals.length,
+      claimable: engine.dailyChestReady,
+      claimed: engine.state.daily.chestClaimed,
+      onClaim: controller.claimDailyChest,
+    );
+    if (engine.dailyAllClaimed) {
+      final left = controller.untilTomorrow;
+      final clock =
+          '${left.inHours}:${(left.inMinutes % 60).toString().padLeft(2, '0')}';
+      return [
+        if (!engine.state.daily.chestClaimed) chest,
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: scale.px(4)),
+          child: Column(
+            children: [
+              PixelText(
+                strings.t('goals_done'),
+                color: Palette.sunYellow.color,
+                align: TextAlign.center,
+                wrap: true,
+              ),
+              SizedBox(height: scale.px(2)),
+              PixelText(
+                strings.t('goals_next_in', {'t': clock}),
+                color: Palette.fog.color,
+                align: TextAlign.center,
+              ),
+              if (engine.canRefreshDaily) ...[
+                SizedBox(height: scale.px(4)),
+                PixelButton(
+                  label: strings.t('goals_ad_new'),
+                  icon: PixelIcons.adWatch,
+                  width: 96,
+                  style: PixelButtonStyle.secondary,
+                  onPressed: () => ad(controller.refreshGoals),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ];
+    }
+    return [
+      for (final g in goals)
+        _GoalRow(
+          icon: PixelIcons.skillStar,
+          artKey: SpriteLibrary.goalKey,
+          title: goalText(strings, g.counter, g.target),
+          reward: g.reward,
+          value: engine.dailyProgress(g),
+          target: g.target,
+          claimable: engine.dailyClaimable(g),
+          claimed: engine.dailyClaimed(g),
+          onClaim: () => controller.claimDailyGoal(g.id),
+          onSwap: engine.canRerollDaily(g)
+              ? () => ad(() => controller.rerollGoal(g.id))
+              : null,
+        ),
+      if (goals.isNotEmpty) chest,
+    ];
   }
 
   /// A running event with goals: each goal, then its mask.
@@ -238,7 +312,11 @@ class _GoalRow extends ConsumerWidget {
     this.artKey,
     this.rewardLine,
     this.iconWidget,
+    this.onSwap,
   });
+
+  /// Shows a small "swap (ad)" button under the progress.
+  final VoidCallback? onSwap;
 
   final PixelIconData icon;
 
@@ -274,19 +352,34 @@ class _GoalRow extends ConsumerWidget {
         onPressed: onClaim,
       );
     } else {
+      final progress = PixelText(
+        claimed
+            ? strings.t('goals_claimed')
+            : strings.t('goals_progress', {
+                'a': _count(shown),
+                'b': _count(target),
+              }),
+        color: (claimed ? Palette.lime : Palette.fog).color,
+      );
       trailing = SizedBox(
         width: PixelScale.of(context).px(_claimWidth),
-        child: Center(
-          child: PixelText(
-            claimed
-                ? strings.t('goals_claimed')
-                : strings.t('goals_progress', {
-                    'a': _count(shown),
-                    'b': _count(target),
-                  }),
-            color: (claimed ? Palette.lime : Palette.fog).color,
-          ),
-        ),
+        child: onSwap == null
+            ? Center(child: progress)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  progress,
+                  SizedBox(height: PixelScale.of(context).px(2)),
+                  PixelButton(
+                    label: strings.t('goals_reroll'),
+                    icon: PixelIcons.adWatch,
+                    width: _claimWidth,
+                    style: PixelButtonStyle.secondary,
+                    semanticLabel: '${strings.t('goals_reroll_label')}: $title',
+                    onPressed: onSwap,
+                  ),
+                ],
+              ),
       );
     }
     final scale = PixelScale.of(context);

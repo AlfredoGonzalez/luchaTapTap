@@ -252,6 +252,8 @@ class GoalsDef {
     required this.chest,
     required this.loginRewards,
     required this.events,
+    this.adRerollsPerDay = 0,
+    this.adRefreshesPerDay = 0,
   });
 
   factory GoalsDef.fromReader(JsonReader r) {
@@ -288,6 +290,12 @@ class GoalsDef {
       chest: RewardDef.fromReader(daily.object('chest')),
       loginRewards: login,
       events: events,
+      adRerollsPerDay: daily.has('adRerollsPerDay')
+          ? daily.integer('adRerollsPerDay', min: 0)
+          : 0,
+      adRefreshesPerDay: daily.has('adRefreshesPerDay')
+          ? daily.integer('adRefreshesPerDay', min: 0)
+          : 0,
     );
   }
 
@@ -297,6 +305,13 @@ class GoalsDef {
 
   /// Given once all of the day's goals are claimed.
   final RewardDef chest;
+
+  /// Times a day one goal may be swapped for another by watching an ad.
+  final int adRerollsPerDay;
+
+  /// Times a day a new set of goals may be had by watching an ad, once all
+  /// of the day's goals are claimed.
+  final int adRefreshesPerDay;
 
   /// The calendar: one reward per day claimed, then it starts over.
   final List<RewardDef> loginRewards;

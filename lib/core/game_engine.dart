@@ -858,8 +858,93 @@ class GameEngine {
         base: {for (final g in picked) g.counter.name: counterValue(g.counter)},
         claimed: const {},
         chestClaimed: false,
+        rerolls: 0,
+        refreshes: 0,
       ),
     );
+  }
+
+  /// One of today's goals can still be swapped (with an ad): it is not
+  /// claimed and the day's swaps are not used up.
+  bool canRerollDaily(DailyGoalDef goal) =>
+      _state.daily.rerolls < content.goals.adRerollsPerDay &&
+      !dailyClaimed(goal) &&
+      !dailyClaimable(goal) &&
+      _rerollCandidates(goal).isNotEmpty;
+
+  /// Pool goals that may replace [goal]: not today's, and with a counter no
+  /// other goal of today uses (they share their starting value).
+  List<DailyGoalDef> _rerollCandidates(DailyGoalDef goal) {
+    final today = dailyGoals;
+    final usedCounters = {
+      for (final g in today)
+        if (g.id != goal.id) g.counter,
+    };
+    return [
+      for (final g in content.goals.dailyPool)
+        if (!today.any((t) => t.id == g.id) && !usedCounters.contains(g.counter))
+          g,
+    ];
+  }
+
+  /// Swaps goal [id] for a random other one (after an ad). False when not
+  /// allowed.
+  bool rerollDailyGoal(String id) {
+    final goal = dailyGoals.where((g) => g.id == id).firstOrNull;
+    if (goal == null || !canRerollDaily(goal)) return false;
+    final options = _rerollCandidates(goal);
+    final pick =
+        options[(rng.nextDouble() * options.length).floor().clamp(0, options.length - 1)];
+    final daily = _state.daily;
+    _state = _state.copyWith(
+      daily: daily.copyWith(
+        goals: [for (final g in daily.goals) g == id ? pick.id : g],
+        base: {...daily.base, pick.counter.name: counterValue(pick.counter)},
+        rerolls: daily.rerolls + 1,
+      ),
+    );
+    return true;
+  }
+
+  /// Every goal of today is claimed (the list is done).
+  bool get dailyAllClaimed {
+    final goals = dailyGoals;
+    return goals.isNotEmpty && goals.every(dailyClaimed);
+  }
+
+  /// A new set of goals can be had today (with an ad).
+  bool get canRefreshDaily =>
+      dailyAllClaimed &&
+      _state.daily.refreshes < content.goals.adRefreshesPerDay;
+
+  /// A new set of goals for today (after an ad); the chest is not given
+  /// again. False when not allowed.
+  bool refreshDailyGoals() {
+    if (!canRefreshDaily) return false;
+    final daily = _state.daily;
+    final pool = [
+      for (final g in content.goals.dailyPool)
+        if (!daily.goals.contains(g.id)) g,
+    ];
+    final source = pool.length >= content.goals.dailyCount
+        ? pool
+        : [...content.goals.dailyPool];
+    for (var i = source.length - 1; i > 0; i--) {
+      final j = (rng.nextDouble() * (i + 1)).floor().clamp(0, i);
+      final t = source[i];
+      source[i] = source[j];
+      source[j] = t;
+    }
+    final picked = source.take(content.goals.dailyCount).toList();
+    _state = _state.copyWith(
+      daily: daily.copyWith(
+        goals: [for (final g in picked) g.id],
+        base: {for (final g in picked) g.counter.name: counterValue(g.counter)},
+        claimed: const {},
+        refreshes: daily.refreshes + 1,
+      ),
+    );
+    return true;
   }
 
   /// Today's goals (empty before [startDay]).

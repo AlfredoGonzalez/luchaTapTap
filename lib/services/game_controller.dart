@@ -823,6 +823,37 @@ class GameController extends Notifier<GameState> with WidgetsBindingObserver {
     return ok;
   }
 
+  /// Swaps today's goal [id] for another after a rewarded ad.
+  Future<ShopResult> rerollGoal(String id) async {
+    final goal = _engine.dailyGoals.where((g) => g.id == id).firstOrNull;
+    if (goal == null || !_engine.canRerollDaily(goal)) {
+      return ShopResult.cooldown;
+    }
+    final watched = await ref.read(adServiceProvider).showRewarded('goal_swap');
+    if (!watched) return ShopResult.noAd;
+    if (!_engine.rerollDailyGoal(id)) return ShopResult.cooldown;
+    _publish();
+    saveNow();
+    return ShopResult.done;
+  }
+
+  /// A new set of goals for today after a rewarded ad.
+  Future<ShopResult> refreshGoals() async {
+    if (!_engine.canRefreshDaily) return ShopResult.cooldown;
+    final watched = await ref.read(adServiceProvider).showRewarded('goals_new');
+    if (!watched) return ShopResult.noAd;
+    if (!_engine.refreshDailyGoals()) return ShopResult.cooldown;
+    _publish();
+    saveNow();
+    return ShopResult.done;
+  }
+
+  /// Time until the next local day (new goals, the next calendar reward).
+  Duration get untilTomorrow {
+    final now = clock.now();
+    return DateTime(now.year, now.month, now.day + 1).difference(now);
+  }
+
   /// Takes the mask of event [eventId] once its goals are done.
   bool claimEventMask(String eventId) {
     final ok = _engine.claimEventMask(eventId);

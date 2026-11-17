@@ -265,6 +265,12 @@
     "active_trainerMultiplier": "Entrenadores x{v}",
     "active_burst": "Plancha",
     "active_bossTimerExtend": "Llave",
-    "active_boost": "Monedas x{v}"
+    "active_boost": "Monedas x{v}",
+    "goals_done": "¡Cumpliste las metas de hoy!",
+    "goals_next_in": "Nuevas metas en {t}",
+    "goals_ad_new": "Metas nuevas",
+    "goals_reroll": "Otra",
+    "goals_reroll_label": "Cambiar meta (ver anuncio)",
+    "goals_no_ad": "No hay anuncio disponible."
   }
 }

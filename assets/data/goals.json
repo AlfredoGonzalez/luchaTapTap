@@ -104,7 +104,9 @@
       "belts": 2,
       "boostSeconds": 600,
       "boostMultiplier": 2
-    }
+    },
+    "adRerollsPerDay": 2,
+    "adRefreshesPerDay": 1
   },
   "login": {
     "rewards": [
