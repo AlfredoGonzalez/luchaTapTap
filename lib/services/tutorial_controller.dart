@@ -20,6 +20,7 @@ class TutorialProgress {
     this.baseFinishers = 0,
     this.baseLucky = 0,
     this.baseSkills = 0,
+    this.baseClaims = 0,
   });
 
   final TutorialStep? step;
@@ -31,7 +32,18 @@ class TutorialProgress {
 
   /// Skills learned when the step began.
   final int baseSkills;
+
+  /// Rewards claimed on the Goals screen when the step began.
+  final int baseClaims;
 }
+
+/// Rewards claimed so far on the Goals screen (calendar days, daily goals,
+/// achievements and today's chest).
+int _claims(GameState game) =>
+    game.stat('loginDays') +
+    game.stat('dailyGoals') +
+    game.achievements.length +
+    (game.daily.chestClaimed ? 1 : 0);
 
 final tutorialProvider = NotifierProvider<TutorialNotifier, TutorialProgress>(
   TutorialNotifier.new,
@@ -149,6 +161,7 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
       baseFinishers: game.stat('finishers'),
       baseLucky: game.stat('luckyCaught'),
       baseSkills: game.skillLevels.values.where((l) => l > 0).length,
+      baseClaims: _claims(game),
       baseLevel: item == null
           ? 0
           : (step.advance == TutorialAdvance.trainerBought
@@ -178,6 +191,11 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
         game.stat('luckyCaught') > state.baseLucky,
       TutorialAdvance.skillLearned =>
         game.skillLevels.values.where((l) => l > 0).length > state.baseSkills,
+      TutorialAdvance.rewardClaimed =>
+        _claims(game) > state.baseClaims ||
+            !ref
+                .read(gameControllerProvider.notifier)
+                .goalsAttention,
       TutorialAdvance.viewOpened || TutorialAdvance.ok => false,
     };
     if (done) _finish(step);

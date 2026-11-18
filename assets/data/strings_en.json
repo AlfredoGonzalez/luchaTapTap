@@ -373,16 +373,17 @@
     "tab_locked_talents": "Unlocks with {n} belt",
     "tut_talents": "You can raise a talent! They are permanent boosts paid with belts. Open the Talents tab.",
     "tut_panel_toggle": "This button switches the list: upgrades for your wrestler or trainers who fight for you. It shows a dot when the other list has something you can buy.",
-    "tut_skill_learn": "Tap the Body Splash, then \"Learn\". Every level makes it stronger.",
+    "tut_skill_learn": "Tap the Body Splash's price to learn it. Every level makes it stronger.",
     "tut_skill_back": "Learned! Tap here to go back to the fight.",
     "tut_skill_use": "Here are your skills. Tap a button to use it; then it needs a few seconds to recharge.",
     "tut_goals_login": "At the top is the daily reward: come back every day and claim it. Miss a day and your streak just waits.",
     "tut_goals_daily": "Here are today's goals: finish all three and open the chest. Don't like one? You can swap it.",
     "tut_goals_achievements": "Below are the achievements: longer challenges that pay coins and belts.",
-    "tut_goals_claim": "Tap \"Claim\" on everything that is ready. When you are done, tap Got it.",
+    "tut_goals_claim": "This prize is ready! Tap \"Claim\" to get it.",
     "tut_back": "Tap here to go back to the fight.",
     "tut_masks_tour": "Tap a mask to see its bonus and price. Masks cost belts; the one you wear gives you its bonus.",
     "tut_talents_tour": "Each talent is a boost forever: pick one and tap \"Upgrade\". They cost belts. The \"i\" tells you how to earn them.",
-    "tut_prestige_tour": "Tap \"Change mask\": you go back to fight 1 without upgrades or trainers, but you earn belts and keep your masks and talents."
+    "tut_prestige_tour": "Tap \"Change mask\": you go back to fight 1 without upgrades or trainers, but you earn belts and keep your masks and talents.",
+    "tut_goals_back": "You claimed your prize! Now back to the fight: tap here."
   }
 }

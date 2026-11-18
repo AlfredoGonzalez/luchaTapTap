@@ -29,6 +29,10 @@ enum TutorialAdvance {
 
   /// The player learns any skill.
   skillLearned,
+
+  /// The player claims a reward on the Goals screen (calendar, goal, chest or
+  /// achievement). Ends at once when nothing can be claimed.
+  rewardClaimed,
 }
 
 /// When a step may begin (besides its `after` step being done).

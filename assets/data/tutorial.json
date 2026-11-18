@@ -134,7 +134,7 @@
       "after": "skill",
       "view": "skills",
       "targets": [
-        "view:skills"
+        "skill:plancha"
       ],
       "text": "tut_skill_learn",
       "advance": {
@@ -256,11 +256,11 @@
       "after": "goalsAchievements",
       "view": "goals",
       "targets": [
-        "view:goals"
+        "goals:claim"
       ],
       "text": "tut_goals_claim",
       "advance": {
-        "type": "ok"
+        "type": "rewardClaimed"
       }
     },
     {
@@ -270,7 +270,7 @@
       "targets": [
         "nav:fight"
       ],
-      "text": "tut_back",
+      "text": "tut_goals_back",
       "advance": {
         "type": "viewOpened",
         "id": "fight"

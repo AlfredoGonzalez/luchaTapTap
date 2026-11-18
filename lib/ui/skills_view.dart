@@ -16,6 +16,7 @@ import 'pixel_icons.dart';
 import 'pixel_scale.dart';
 import 'pixel_widgets.dart';
 import 'rows.dart';
+import 'tutorial_overlay.dart';
 import 'ui_state.dart';
 
 String _number(double v) => v == v.roundToDouble()
@@ -148,14 +149,17 @@ class _SkillRow extends ConsumerWidget {
                 width: 64,
                 onPressed: null,
               )
-            : CostButton(
-                cost: formatBigShort(quote.cost),
-                enabled: quote.canBuy,
-                semanticLabel: strings.skillName(skill),
-                onPressed: () {
-                  ref.read(selectedSkillProvider.notifier).select(skill.id);
-                  ref.read(gameControllerProvider.notifier).buySkill(skill.id);
-                },
+            : TutorialTarget(
+                id: 'skill:${skill.id}',
+                child: CostButton(
+                  cost: formatBigShort(quote.cost),
+                  enabled: quote.canBuy,
+                  semanticLabel: strings.skillName(skill),
+                  onPressed: () {
+                    ref.read(selectedSkillProvider.notifier).select(skill.id);
+                    ref.read(gameControllerProvider.notifier).buySkill(skill.id);
+                  },
+                ),
               ),
       ),
     );

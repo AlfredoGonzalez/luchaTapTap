@@ -214,25 +214,20 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
                         ),
                       ],
                     ),
-                    SizedBox(height: scale.px(5)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        PixelButton(
-                          label: strings.t('tut_skip'),
-                          style: PixelButtonStyle.secondary,
-                          width: 56,
-                          onPressed: ref.read(tutorialProvider.notifier).skip,
+                    // No "skip": the steps are short and each one waits
+                    // for the player (Ajustes > Tutorial plays it again).
+                    if (isOk) ...[
+                      SizedBox(height: scale.px(5)),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: PixelButton(
+                          label: strings.t('tut_ok'),
+                          style: PixelButtonStyle.gold,
+                          width: 80,
+                          onPressed: ref.read(tutorialProvider.notifier).ok,
                         ),
-                        if (isOk)
-                          PixelButton(
-                            label: strings.t('tut_ok'),
-                            style: PixelButtonStyle.gold,
-                            width: 80,
-                            onPressed: ref.read(tutorialProvider.notifier).ok,
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),

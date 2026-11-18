@@ -96,6 +96,21 @@ class GoalsView extends ConsumerWidget {
       return fb.compareTo(fa);
     });
 
+    // The one claim button the tutorial lights: the calendar first, then a
+    // daily goal, the chest, an achievement.
+    final firstDaily = engine.dailyGoals.where(engine.dailyClaimable).firstOrNull;
+    final firstAchievement = achievements
+        .where(engine.achievementClaimable)
+        .firstOrNull;
+    final String? focus = controller.loginReady
+        ? null
+        : firstDaily != null
+        ? 'daily:${firstDaily.id}'
+        : engine.dailyChestReady
+        ? 'chest'
+        : firstAchievement == null
+        ? null
+        : 'ach:${firstAchievement.id}';
     return Column(
       children: [
         ViewTitleBar(title: strings.t('view_goals')),
@@ -120,7 +135,7 @@ class GoalsView extends ConsumerWidget {
                 id: 'goals:daily',
                 child: SectionHeader(strings.t('goals_daily')),
               ),
-              ..._dailySection(context, ref, strings),
+              ..._dailySection(context, ref, strings, focus),
               TutorialTarget(
                 id: 'goals:achievements',
                 child: SectionHeader(strings.t('goals_achievements')),
@@ -137,6 +152,7 @@ class GoalsView extends ConsumerWidget {
                   claimable: engine.achievementClaimable(a),
                   claimed: engine.achievementClaimed(a),
                   onClaim: () => controller.claimAchievement(a.id),
+                  tutorialClaim: focus == 'ach:${a.id}',
                 ),
               SizedBox(height: scale.px(rowGap)),
             ],
@@ -153,6 +169,7 @@ class GoalsView extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Strings strings,
+    String? focus,
   ) {
     final scale = PixelScale.of(context);
     final controller = ref.read(gameControllerProvider.notifier);
@@ -186,6 +203,7 @@ class GoalsView extends ConsumerWidget {
       claimable: engine.dailyChestReady,
       claimed: engine.state.daily.chestClaimed,
       onClaim: controller.claimDailyChest,
+      tutorialClaim: focus == 'chest',
     );
     if (engine.dailyAllClaimed) {
       final left = controller.untilTomorrow;
@@ -236,6 +254,7 @@ class GoalsView extends ConsumerWidget {
           claimable: engine.dailyClaimable(g),
           claimed: engine.dailyClaimed(g),
           onClaim: () => controller.claimDailyGoal(g.id),
+          tutorialClaim: focus == 'daily:${g.id}',
           onSwap: engine.canRerollDaily(g)
               ? () => ad(() => controller.rerollGoal(g.id))
               : null,
@@ -290,11 +309,15 @@ class GoalsView extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         ready
-            ? PixelButton(
-                label: strings.t('goals_claim'),
-                width: 72,
-                style: PixelButtonStyle.gold,
-                onPressed: controller.claimLogin,
+            ? TutorialTarget(
+                // The first thing to claim is the calendar when it is ready.
+                id: 'goals:claim',
+                child: PixelButton(
+                  label: strings.t('goals_claim'),
+                  width: 72,
+                  style: PixelButtonStyle.gold,
+                  onPressed: controller.claimLogin,
+                ),
               )
             : SizedBox(
                 height: PixelScale.of(context).px(24),
@@ -327,7 +350,11 @@ class _GoalRow extends ConsumerWidget {
     this.rewardLine,
     this.iconWidget,
     this.onSwap,
+    this.tutorialClaim = false,
   });
+
+  /// This row's claim button is the one the tutorial lights.
+  final bool tutorialClaim;
 
   /// Shows a small "swap (ad)" button under the progress.
   final VoidCallback? onSwap;
@@ -358,13 +385,16 @@ class _GoalRow extends ConsumerWidget {
     final shown = value > target ? target : value;
     final Widget trailing;
     if (claimable) {
-      trailing = PixelButton(
+      final button = PixelButton(
         label: strings.t('goals_claim'),
         width: _claimWidth,
         style: PixelButtonStyle.gold,
         semanticLabel: '${strings.t('goals_claim')} $title',
         onPressed: onClaim,
       );
+      trailing = tutorialClaim
+          ? TutorialTarget(id: 'goals:claim', child: button)
+          : button;
     } else {
       final progress = PixelText(
         claimed

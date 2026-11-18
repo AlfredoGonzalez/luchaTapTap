@@ -1209,7 +1209,7 @@ void tutorialTests() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('¡Toca la arena para golpear al oponente!'), findsOneWidget);
       expect(find.text('El Profe'), findsOneWidget);
-      expect(find.text('Saltar'), findsOneWidget);
+      expect(find.text('Saltar'), findsNothing); // no skipping: each step waits
       await closeApp(tester);
     });
 
@@ -1247,15 +1247,6 @@ void tutorialTests() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('El Profe'), findsNothing);
       expect(c.read(settingsProvider).tutorialDone, containsAll(['tap', 'defeat', 'upgrade', 'panel', 'comboHint']));
-      await closeApp(tester);
-    });
-
-    testWidgets('"Saltar" ends it', (tester) async {
-      final c = await pumpApp(tester, tutorial: true);
-      await tester.pump(const Duration(milliseconds: 100));
-      await tapButton(tester, 'Saltar');
-      expect(find.text('El Profe'), findsNothing);
-      expect(c.read(tutorialProvider).step, isNull);
       await closeApp(tester);
     });
 
@@ -1315,14 +1306,21 @@ void tutorialTests() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(c.read(settingsProvider).tutorialDone, contains('goals'));
       // The tour of the Goals screen, then back to the fight.
-      for (final text in ['recompensa diaria', 'metas de hoy', 'logros', 'Cobrar']) {
+      for (final text in ['recompensa diaria', 'metas de hoy', 'logros']) {
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.textContaining(text), findsWidgets, reason: text);
         await tapButton(tester, 'Entendido');
       }
+      // Something ready is lit and the step waits until it is claimed.
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.textContaining('volver a la pelea'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Este premio ya está listo'), findsOneWidget);
+      expect(find.text('Entendido'), findsNothing);
+      await tapButton(tester, 'Cobrar'); // the calendar's, first in line
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.textContaining('Ya cobraste tu premio'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Mejoras'));
       await tester.pump(const Duration(milliseconds: 200));
       expect(c.read(settingsProvider).tutorialDone, contains('goalsBack'));
@@ -1364,7 +1362,8 @@ void tutorialTests() {
     testWidgets('"Tutorial" in the settings plays it again', (tester) async {
       final c = await pumpApp(tester, tutorial: true);
       await tester.pump(const Duration(milliseconds: 100));
-      await tapButton(tester, 'Saltar');
+      c.read(tutorialProvider.notifier).skip(); // as if it had been played
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.bySemanticsLabel('AJUSTES'));
       await tester.pump(_short);
       await tester.tap(find.bySemanticsLabel('Tutorial').last);
