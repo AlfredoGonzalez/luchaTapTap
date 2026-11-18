@@ -259,6 +259,7 @@
     "adLoadTimeoutSeconds": 10,
     "restoreWaitSeconds": 6,
     "purchaseWaitSeconds": 180,
-    "testRewardedUnitId": "ca-app-pub-3940256099942544/5224354917"
+    "testRewardedUnitId": "ca-app-pub-3940256099942544/5224354917",
+    "rewardedUnitId": "ca-app-pub-8970324219631987/2276719983"
   }
 }
