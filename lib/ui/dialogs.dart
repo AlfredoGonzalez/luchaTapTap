@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/big.dart';
 import '../core/number_format.dart';
@@ -260,17 +261,30 @@ class BeltsInfoDialog extends ConsumerWidget {
   }
 }
 
-/// Privacy policy placeholder: the real text and link come before launch.
+/// The privacy policy: a short line, its address and "Abrir" (the browser).
 class PrivacyDialog extends ConsumerWidget {
   const PrivacyDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(stringsProvider);
+    final url = strings.t('privacy_url');
     return PixelDialog(
       title: strings.t('privacy_title'),
-      body: [PixelText(strings.t('privacy_text'), wrap: true)],
+      body: [
+        PixelText(strings.t('privacy_text'), wrap: true),
+        const SizedBox(height: 4),
+        PixelText(url, wrap: true, color: Palette.sky.color),
+      ],
       actions: [
+        PixelButton(
+          label: strings.t('privacy_open'),
+          style: PixelButtonStyle.confirm,
+          onPressed: () => launchUrl(
+            Uri.parse(url),
+            mode: LaunchMode.externalApplication,
+          ),
+        ),
         PixelButton(
           label: strings.t('dialog_close'),
           style: PixelButtonStyle.secondary,

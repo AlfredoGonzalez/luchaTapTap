@@ -105,7 +105,7 @@ Decisions made while building M2 and M3 where the documents were silent or disag
 
 ## Still open (designer decides)
 
-- Mask slot colors for trunks and cape, app icon, store title, `applicationId` (currently `com.example.lucha_tap_tap`).
+- Mask slot colors for trunks and cape, app icon, store title.
 - Mask names and the 24x24 vs 16x16 icon size; whether to add volume sliders; special trainers.
 - Price points, rewarded-ad cooldowns, music and SFX packs.
 - Tall-phone mockup (180 x 390) and whether the offline cap talent range should differ from the 8 h maximum.
@@ -168,3 +168,9 @@ A bot that taps four times a second and buys everything reaches fight 20 within 
 - The kick takes the whole screen: a comic burst (built in code from palette colors), the prompt on top and blue-and-white circles anywhere (kick.bottomMargin, and kick.tutorialBottomMargin keeps them clear of the coach's card).
 - Skills cost x3 per level (`costGrowth` in skills.json) and the hold works once per boss fight (`usesPerBoss`); the first prestige is back at about 21 minutes.
 - Nav: the picked tab shakes; a locked tab floats "unlocks at ..." text; Talentos and its "i" use plain words.
+
+## Google Play setup
+
+- `applicationId` and namespace: `com.am23studios.luchataptap` (permanent once on Play).
+- Signing: `android/key.properties` (never committed) points to the upload keystore; without it release builds use the debug key (test APKs). The workflow "Crear AAB para Play" (`.github/workflows/aab.yml`) writes both from the repository secrets `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEYSTORE_PASSWORD`, `UPLOAD_KEY_ALIAS`, `UPLOAD_KEY_PASSWORD`, builds a signed AAB with the run number as version code and keeps it as a run artifact.
+- Privacy policy: https://23amstudios.monse.mx/privacidad/luchataptap, shown in Ajustes > Privacidad with an "Abrir" button (url_launcher).

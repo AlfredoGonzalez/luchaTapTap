@@ -152,7 +152,7 @@
     "restore_none": "No hay compras que restaurar.",
     "restore_done": "Compras restauradas.",
     "privacy_title": "Privacidad",
-    "privacy_text": "La política de privacidad se publicará antes del lanzamiento.",
+    "privacy_text": "Puedes leer nuestra política de privacidad en:",
     "delete_title": "¿Borrar datos?",
     "delete_text": "Se borra tu partida completa. No se puede deshacer.",
     "delete_confirm": "Borrar",
@@ -288,6 +288,8 @@
     "tut_masks_tour": "Toca una máscara para ver su ventaja y su precio. Se compran con cinturones; la que te pongas te da su ventaja.",
     "tut_talents_tour": "Cada talento es una mejora para siempre. Elige uno y toca \"Mejorar\" (se pagan con cinturones).",
     "tut_prestige_tour": "Toca \"Cambiar de máscara\": vuelves a la pelea 1 sin mejoras ni entrenadores, pero ganas cinturones y conservas máscaras y talentos.",
-    "tut_goals_back": "¡Ya cobraste tu premio! Ahora regresemos a la lucha: toca aquí."
+    "tut_goals_back": "¡Ya cobraste tu premio! Ahora regresemos a la lucha: toca aquí.",
+    "privacy_url": "https://23amstudios.monse.mx/privacidad/luchataptap",
+    "privacy_open": "Abrir"
   }
 }

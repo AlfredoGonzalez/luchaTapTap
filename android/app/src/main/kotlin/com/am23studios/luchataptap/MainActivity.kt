@@ -1,4 +1,4 @@
-package com.example.lucha_tap_tap
+package com.am23studios.luchataptap
 
 import io.flutter.embedding.android.FlutterActivity
 

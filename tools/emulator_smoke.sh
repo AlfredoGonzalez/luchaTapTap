@@ -3,7 +3,7 @@
 # app, waits, then prints what the system logged about it (crashes, ANRs).
 set -u
 APK=build/app/outputs/flutter-apk/app-release.apk
-PKG=com.example.lucha_tap_tap
+PKG=com.am23studios.luchataptap
 adb install -r "$APK" || { echo "INSTALL FAILED"; exit 1; }
 adb logcat -c
 adb shell am start -W -n "$PKG/.MainActivity"

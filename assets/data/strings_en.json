@@ -152,7 +152,7 @@
     "restore_none": "No purchases to restore.",
     "restore_done": "Purchases restored.",
     "privacy_title": "Privacy",
-    "privacy_text": "The privacy policy will be published before launch.",
+    "privacy_text": "You can read our privacy policy at:",
     "delete_title": "Delete data?",
     "delete_text": "Your whole game will be deleted. This cannot be undone.",
     "delete_confirm": "Delete",
@@ -384,6 +384,8 @@
     "tut_masks_tour": "Tap a mask to see its bonus and price. Masks cost belts; the one you wear gives you its bonus.",
     "tut_talents_tour": "Each talent is a boost forever. Pick one and tap \"Upgrade\" (they cost belts).",
     "tut_prestige_tour": "Tap \"Change mask\": you go back to fight 1 without upgrades or trainers, but you earn belts and keep your masks and talents.",
-    "tut_goals_back": "You claimed your prize! Now back to the fight: tap here."
+    "tut_goals_back": "You claimed your prize! Now back to the fight: tap here.",
+    "privacy_url": "https://23amstudios.monse.mx/privacidad/luchataptap",
+    "privacy_open": "Open"
   }
 }
