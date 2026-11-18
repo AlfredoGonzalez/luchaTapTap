@@ -342,7 +342,7 @@
     "goals_event": "EVENT: {name}",
     "goals_event_mask": "{name} mask",
     "goals_event_hint": "Complete the event goals",
-    "tut_combo_hint": "Tap fast! Every hit fills this bar. When it is full, you will land a mighty kick.",
+    "tut_combo_hint": "Tap the arena really fast! Every hit fills this bar. Fill it to land your first kick.",
     "tut_goals": "You reached a goal! Tap the trophy to claim your prize.",
     "tut_masks": "You can afford a new mask! Each one gives a different edge. Open the Masks tab.",
     "belts_progress": "Changing masks now would give you {n} belts. You need {min} to change.",
@@ -382,7 +382,7 @@
     "tut_goals_claim": "This prize is ready! Tap \"Claim\" to get it.",
     "tut_back": "Tap here to go back to the fight.",
     "tut_masks_tour": "Tap a mask to see its bonus and price. Masks cost belts; the one you wear gives you its bonus.",
-    "tut_talents_tour": "Each talent is a boost forever: pick one and tap \"Upgrade\". They cost belts. The \"i\" tells you how to earn them.",
+    "tut_talents_tour": "Each talent is a boost forever. Pick one and tap \"Upgrade\" (they cost belts).",
     "tut_prestige_tour": "Tap \"Change mask\": you go back to fight 1 without upgrades or trainers, but you earn belts and keep your masks and talents.",
     "tut_goals_back": "You claimed your prize! Now back to the fight: tap here."
   }

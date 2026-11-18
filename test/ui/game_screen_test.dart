@@ -1242,11 +1242,15 @@ void tutorialTests() {
       expect(find.textContaining('Aquí compras mejoras'), findsOneWidget);
       await tapButton(tester, 'Entendido');
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('¡Toca rápido!'), findsOneWidget); // the kick bar
-      await tapButton(tester, 'Entendido');
+      expect(find.textContaining('muy rápido'), findsOneWidget); // the kick bar
+      expect(find.text('Entendido'), findsNothing); // it waits for the full bar
+      for (var i = 0; i < 12 && !c.read(gameControllerProvider.notifier).engine.finisherReady; i++) {
+        await tapArena(tester);
+      }
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('El Profe'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
       expect(c.read(settingsProvider).tutorialDone, containsAll(['tap', 'defeat', 'upgrade', 'panel', 'comboHint']));
+      expect(find.textContaining('Barra llena'), findsOneWidget); // then the kick
       await closeApp(tester);
     });
 
@@ -1269,7 +1273,7 @@ void tutorialTests() {
       );
     }
 
-    const intro = ['tap', 'defeat', 'upgrade', 'panel', 'comboHint'];
+    const intro = ['tap', 'defeat', 'upgrade', 'panel', 'comboHint', 'combo'];
     const goalsTour = ['goalsLogin', 'goalsDaily', 'goalsAchievements', 'goalsClaim', 'goalsBack'];
 
     testWidgets('a trainer step shows when one can be hired and ends when hired', (tester) async {
@@ -1292,7 +1296,7 @@ void tutorialTests() {
       final c = await pumpApp(
         tester,
         tutorial: true,
-        save: withTutorialDone([...intro, 'combo', 'lucky'], (e) {
+        save: withTutorialDone([...intro, 'lucky'], (e) {
           for (var i = 0; i < 10; i++) {
             e.tap(); // first win: an achievement to claim
           }
@@ -1331,6 +1335,8 @@ void tutorialTests() {
       final c = await pumpApp(
         tester,
         tutorial: true,
+        // With locked tabs, Máscaras opens when its step begins.
+        edit: (f) => (f['balance.json']!['ui'] as Map<String, dynamic>)['lockTabs'] = true,
         save: withTutorialDone([...intro, 'goals', ...goalsTour], (e) => e.debugGrantBelts(100)),
       );
       await tester.pump(const Duration(milliseconds: 200));
@@ -1346,7 +1352,7 @@ void tutorialTests() {
       final c = await pumpApp(
         tester,
         tutorial: true,
-        save: withTutorialDone([...intro, 'trainer', 'panelToggle'], (e) {
+        save: withTutorialDone(['tap', 'defeat', 'upgrade', 'panel', 'comboHint', 'trainer', 'panelToggle'], (e) {
           for (var i = 0; i < 60; i++) {
             e.tap();
           }

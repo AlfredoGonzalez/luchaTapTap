@@ -9,6 +9,7 @@ import '../core/palette.dart';
 import '../data/content_models.dart';
 import '../game/sprite_library.dart';
 import '../services/game_controller.dart';
+import '../services/tutorial_controller.dart';
 import 'art_icon.dart';
 import 'dialogs.dart';
 import 'palette_color.dart';
@@ -338,7 +339,7 @@ Set<GameView> _lockedTabs(WidgetRef ref) {
   if (!content.balance.ui.lockTabs) return const {};
   final engine = ref.read(gameControllerProvider.notifier).engine;
   final state = engine.state;
-  final open = {
+  final open = <GameView>{
     if (content.skills.any(
       (s) => state.skillLevel(s.id) > 0 || engine.quoteSkill(s.id).canBuy,
     ))
@@ -352,6 +353,16 @@ Set<GameView> _lockedTabs(WidgetRef ref) {
         engine.prestigePreview().canPrestige)
       GameView.talents,
   };
+  // A tab whose tutorial step has not begun stays locked even when it could
+  // open, so the coach introduces it first.
+  final tutorial = ref.read(tutorialProvider.notifier);
+  ref.watch(tutorialProvider);
+  const introStep = {
+    GameView.skills: 'skill',
+    GameView.masks: 'masks',
+    GameView.talents: 'talents',
+  };
+  open.removeWhere((v) => !tutorial.reached(introStep[v]!));
   final remembered = ref.watch(settingsProvider).unlockedTabs;
   final fresh = [
     for (final v in open)

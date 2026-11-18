@@ -246,7 +246,7 @@
     "goals_event": "EVENTO: {name}",
     "goals_event_mask": "Máscara {name}",
     "goals_event_hint": "Cumple las metas del evento",
-    "tut_combo_hint": "¡Toca rápido! Cada golpe llena esta barra. Cuando se llene, darás una patada muy fuerte.",
+    "tut_combo_hint": "¡Toca la arena muy rápido! Cada golpe llena esta barra. Llénala para dar tu primera patada.",
     "tut_goals": "¡Cumpliste una meta! Toca el trofeo para cobrar tu premio.",
     "tut_masks": "¡Ya te alcanza para una máscara nueva! Cada una da una ventaja distinta. Toca la pestaña de Máscaras.",
     "belts_progress": "Cambiar de máscara hoy te daría {n} cinturones. Necesitas {min} para poder cambiar.",
@@ -286,7 +286,7 @@
     "tut_goals_claim": "¡Este premio ya está listo! Toca \"Cobrar\" para recibirlo.",
     "tut_back": "Toca aquí para volver a la pelea.",
     "tut_masks_tour": "Toca una máscara para ver su ventaja y su precio. Se compran con cinturones; la que te pongas te da su ventaja.",
-    "tut_talents_tour": "Cada talento es una mejora para siempre: elige uno y toca \"Mejorar\". Se pagan con cinturones. La \"i\" te explica cómo ganarlos.",
+    "tut_talents_tour": "Cada talento es una mejora para siempre. Elige uno y toca \"Mejorar\" (se pagan con cinturones).",
     "tut_prestige_tour": "Toca \"Cambiar de máscara\": vuelves a la pelea 1 sin mejoras ni entrenadores, pero ganas cinturones y conservas máscaras y talentos.",
     "tut_goals_back": "¡Ya cobraste tu premio! Ahora regresemos a la lucha: toca aquí."
   }

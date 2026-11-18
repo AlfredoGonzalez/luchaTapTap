@@ -21,6 +21,7 @@ class TutorialProgress {
     this.baseLucky = 0,
     this.baseSkills = 0,
     this.baseClaims = 0,
+    this.baseTalents = 0,
   });
 
   final TutorialStep? step;
@@ -35,7 +36,13 @@ class TutorialProgress {
 
   /// Rewards claimed on the Goals screen when the step began.
   final int baseClaims;
+
+  /// Talent levels owned when the step began.
+  final int baseTalents;
 }
+
+int _talentLevels(GameState game) =>
+    game.talentLevels.values.fold(0, (a, b) => a + b);
 
 /// Rewards claimed so far on the Goals screen (calendar days, daily goals,
 /// achievements and today's chest).
@@ -162,6 +169,7 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
       baseLucky: game.stat('luckyCaught'),
       baseSkills: game.skillLevels.values.where((l) => l > 0).length,
       baseClaims: _claims(game),
+      baseTalents: _talentLevels(game),
       baseLevel: item == null
           ? 0
           : (step.advance == TutorialAdvance.trainerBought
@@ -191,6 +199,8 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
         game.stat('luckyCaught') > state.baseLucky,
       TutorialAdvance.skillLearned =>
         game.skillLevels.values.where((l) => l > 0).length > state.baseSkills,
+      TutorialAdvance.comboFull => _engine.finisherReady,
+      TutorialAdvance.talentBought => _talentLevels(game) > state.baseTalents,
       TutorialAdvance.rewardClaimed =>
         _claims(game) > state.baseClaims ||
             !ref
@@ -206,6 +216,13 @@ class TutorialNotifier extends Notifier<TutorialProgress> {
     ref.read(settingsProvider.notifier).setTutorialDone(_done.toList());
     state = _pick(ref.read(gameControllerProvider));
   }
+
+  /// Step [id] has begun or is done (always true with the tutorial off):
+  /// the tab it introduces may open.
+  bool reached(String id) =>
+      !ref.read(tutorialEnabledProvider) ||
+      _done.contains(id) ||
+      state.step?.id == id;
 
   /// "Entendido" on a step that waits for it.
   void ok() {
