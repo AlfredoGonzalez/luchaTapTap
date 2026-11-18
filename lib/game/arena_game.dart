@@ -949,6 +949,7 @@ class _DamageNumber extends TextComponent {
 
   static TextPaint _paint(int color, bool big, double opacity) => TextPaint(
     style: TextStyle(
+      fontFamily: 'PressStart2P',
       color: color.color.withValues(alpha: opacity),
       fontSize: big ? 16 : 8,
       height: 1,
